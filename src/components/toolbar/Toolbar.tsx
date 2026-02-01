@@ -1,4 +1,4 @@
-import { Pencil, Highlighter, Square, Ruler, Undo2, Redo2, FolderOpen, Save, Copy, Maximize, Minus, Plus } from 'lucide-react';
+import { Pencil, Highlighter, Square, Ruler, Undo2, Redo2, FolderOpen, Save, Copy, Maximize, Minus, Plus, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Slider } from '../ui/slider';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
@@ -20,6 +20,8 @@ interface ToolbarProps {
   onOpen: () => void;
   onSave: () => void;
   onCopy: () => void;
+  onSettings: () => void;
+  hasImage: boolean;
   zoom: number;
   onZoomChange: (zoom: number) => void;
   onFitToWindow: () => void;
@@ -40,6 +42,8 @@ export function Toolbar({
   onOpen,
   onSave,
   onCopy,
+  onSettings,
+  hasImage,
   zoom,
   onZoomChange,
   onFitToWindow,
@@ -49,20 +53,18 @@ export function Toolbar({
     <TooltipProvider delayDuration={0}>
       <div className="flex flex-col select-none">
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-4 py-2 bg-[#2d2d2d] border-b border-[#3d3d3d]">
+        <div className="flex items-center justify-between px-3 py-2 bg-[#252525] border-b border-[#333]">
           <div className="flex items-center gap-1">
-            <span className="text-white font-semibold text-sm mr-4">OmniSnip</span>
-            
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={onOpen}
-                  className="text-gray-300 hover:text-white hover:bg-[#3d3d3d] h-8"
+                  className="h-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a]"
                 >
-                  <FolderOpen className="h-4 w-4 mr-1" />
-                  Open
+                  <FolderOpen className="h-4 w-4 mr-1.5" />
+                  <span className="text-sm">Open</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Ctrl+O</TooltipContent>
@@ -74,10 +76,11 @@ export function Toolbar({
                   variant="ghost" 
                   size="sm" 
                   onClick={onSave}
-                  className="text-gray-300 hover:text-white hover:bg-[#3d3d3d] h-8"
+                  disabled={!hasImage}
+                  className="h-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <Save className="h-4 w-4 mr-1" />
-                  Save
+                  <Save className="h-4 w-4 mr-1.5" />
+                  <span className="text-sm">Save</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Ctrl+S</TooltipContent>
@@ -89,10 +92,11 @@ export function Toolbar({
                   variant="ghost" 
                   size="sm" 
                   onClick={onCopy}
-                  className="text-gray-300 hover:text-white hover:bg-[#3d3d3d] h-8"
+                  disabled={!hasImage}
+                  className="h-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a] disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
+                  <Copy className="h-4 w-4 mr-1.5" />
+                  <span className="text-sm">Copy</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Ctrl+C</TooltipContent>
@@ -100,6 +104,7 @@ export function Toolbar({
           </div>
 
           <div className="flex items-center gap-1">
+            {/* Undo/Redo */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -107,7 +112,7 @@ export function Toolbar({
                   size="icon"
                   onClick={onUndo}
                   disabled={!canUndo}
-                  className="text-gray-300 hover:text-white hover:bg-[#3d3d3d] h-8 w-8 disabled:opacity-30"
+                  className="h-8 w-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a] disabled:opacity-40"
                 >
                   <Undo2 className="h-4 w-4" />
                 </Button>
@@ -122,20 +127,38 @@ export function Toolbar({
                   size="icon"
                   onClick={onRedo}
                   disabled={!canRedo}
-                  className="text-gray-300 hover:text-white hover:bg-[#3d3d3d] h-8 w-8 disabled:opacity-30"
+                  className="h-8 w-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a] disabled:opacity-40"
                 >
                   <Redo2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
             </Tooltip>
+
+            {/* Divider */}
+            <div className="w-px h-5 bg-[#444] mx-2" />
+
+            {/* Settings */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onSettings}
+                  className="h-8 w-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a]"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Settings</TooltipContent>
+            </Tooltip>
           </div>
         </div>
 
         {/* Tools Bar */}
-        <div className="flex items-center gap-3 px-4 py-2 bg-[#2d2d2d]">
+        <div className="flex items-center gap-3 px-3 py-2 bg-[#1e1e1e] border-b border-[#333]">
           {/* Drawing Tools */}
-          <div className="flex items-center gap-1 bg-[#1e1e1e] rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-[#252525] rounded-lg p-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -145,12 +168,12 @@ export function Toolbar({
                   className={cn(
                     'h-8 px-3',
                     tool === 'pen' 
-                      ? 'bg-[#005a9e] text-white hover:bg-[#004578]' 
-                      : 'text-gray-300 hover:text-white hover:bg-[#3d3d3d]'
+                      ? 'bg-white/15 text-white hover:bg-white/20' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
                   )}
                 >
-                  <Pencil className="h-4 w-4 mr-1" />
-                  Pen
+                  <Pencil className="h-4 w-4 mr-1.5" />
+                  <span className="text-sm">Pen</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Pen Tool (1)</TooltipContent>
@@ -165,12 +188,12 @@ export function Toolbar({
                   className={cn(
                     'h-8 px-3',
                     tool === 'highlighter' 
-                      ? 'bg-[#005a9e] text-white hover:bg-[#004578]' 
-                      : 'text-gray-300 hover:text-white hover:bg-[#3d3d3d]'
+                      ? 'bg-white/15 text-white hover:bg-white/20' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
                   )}
                 >
-                  <Highlighter className="h-4 w-4 mr-1" />
-                  Marker
+                  <Highlighter className="h-4 w-4 mr-1.5" />
+                  <span className="text-sm">Marker</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Marker - Square highlighter (2)</TooltipContent>
@@ -185,49 +208,52 @@ export function Toolbar({
                   className={cn(
                     'h-8 px-3',
                     tool === 'area' 
-                      ? 'bg-[#005a9e] text-white hover:bg-[#004578]' 
-                      : 'text-gray-300 hover:text-white hover:bg-[#3d3d3d]'
+                      ? 'bg-white/15 text-white hover:bg-white/20' 
+                      : 'text-gray-400 hover:text-white hover:bg-white/10'
                   )}
                 >
-                  <Square className="h-4 w-4 mr-1" />
-                  Area
+                  <Square className="h-4 w-4 mr-1.5" />
+                  <span className="text-sm">Area</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Area Highlight (3)</TooltipContent>
             </Tooltip>
           </div>
 
-          <div className="w-px h-8 bg-[#3d3d3d]" />
+          <div className="w-px h-8 bg-[#333]" />
 
-          {/* Color Palette */}
-          <div className="flex items-center gap-1">
+          {/* Color Palette with smooth anti-aliased circles */}
+          <div className="flex items-center gap-1.5">
             {palette.colors.slice(0, 7).map((color) => (
               <Tooltip key={color}>
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => onBrushChange({ color })}
                     className={cn(
-                      'w-7 h-7 rounded-full transition-all border-2',
+                      'w-6 h-6 rounded-full transition-all',
                       brush.color === color
-                        ? 'border-white scale-110 shadow-lg'
-                        : 'border-transparent hover:scale-105 hover:border-gray-400'
+                        ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e1e1e] scale-110'
+                        : 'hover:scale-105 hover:ring-2 hover:ring-white/50'
                     )}
-                    style={{ backgroundColor: color }}
+                    style={{ 
+                      backgroundColor: color,
+                      boxShadow: brush.color === color ? '0 2px 8px rgba(0,0,0,0.3)' : 'none'
+                    }}
                   />
                 </TooltipTrigger>
-                <TooltipContent>Color: {color}</TooltipContent>
+                <TooltipContent>{color}</TooltipContent>
               </Tooltip>
             ))}
           </div>
 
-          <div className="w-px h-8 bg-[#3d3d3d]" />
+          <div className="w-px h-8 bg-[#333]" />
 
           {/* Size & Opacity Controls */}
           <div className="flex items-center gap-4">
-            {/* Size Slider - for all tools */}
-            <div className="flex flex-col gap-1 w-28">
+            {/* Size Slider */}
+            <div className="flex flex-col gap-1 w-24">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Size</span>
+                <span className="text-xs text-gray-500">Size</span>
                 <span className="text-xs text-gray-300 font-mono">{brush.size}px</span>
               </div>
               <Slider
@@ -239,10 +265,10 @@ export function Toolbar({
               />
             </div>
 
-            {/* Opacity Slider - for all tools */}
-            <div className="flex flex-col gap-1 w-28">
+            {/* Opacity Slider */}
+            <div className="flex flex-col gap-1 w-24">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Opacity</span>
+                <span className="text-xs text-gray-500">Opacity</span>
                 <span className="text-xs text-gray-300 font-mono">{Math.round(brush.opacity * 100)}%</span>
               </div>
               <Slider
@@ -256,9 +282,9 @@ export function Toolbar({
 
             {/* Border Radius - only for marker */}
             {tool === 'highlighter' && (
-              <div className="flex flex-col gap-1 w-28">
+              <div className="flex flex-col gap-1 w-24">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">Radius</span>
+                  <span className="text-xs text-gray-500">Radius</span>
                   <span className="text-xs text-gray-300 font-mono">{brush.borderRadius || 0}px</span>
                 </div>
                 <Slider
@@ -272,9 +298,8 @@ export function Toolbar({
             )}
 
             {/* Brush Preview */}
-            <div className="flex items-center justify-center w-10 h-10 bg-[#1e1e1e] rounded-lg border border-[#3d3d3d]">
+            <div className="flex items-center justify-center w-10 h-10 bg-[#252525] rounded-lg border border-[#333]">
               {tool === 'highlighter' ? (
-                // Square marker preview - height controlled by slider, width is 30% of height
                 <div
                   className="bg-current"
                   style={{
@@ -286,7 +311,6 @@ export function Toolbar({
                   }}
                 />
               ) : (
-                // Circle pen/area preview
                 <div
                   className="rounded-full"
                   style={{
@@ -300,7 +324,7 @@ export function Toolbar({
             </div>
           </div>
 
-          <div className="w-px h-8 bg-[#3d3d3d]" />
+          <div className="w-px h-8 bg-[#333]" />
 
           {/* Ruler Toggle */}
           <Tooltip>
@@ -312,33 +336,33 @@ export function Toolbar({
                 className={cn(
                   'h-8 px-3',
                   ruler.visible 
-                    ? 'bg-[#005a9e] text-white hover:bg-[#004578]' 
-                    : 'text-gray-300 hover:text-white hover:bg-[#3d3d3d]'
+                    ? 'bg-white/15 text-white hover:bg-white/20' 
+                    : 'text-gray-400 hover:text-white hover:bg-white/10'
                 )}
               >
-                <Ruler className="h-4 w-4 mr-1" />
-                Ruler
+                <Ruler className="h-4 w-4 mr-1.5" />
+                <span className="text-sm">Ruler</span>
                 {ruler.visible && (
-                  <span className="ml-1 text-xs opacity-80">
+                  <span className="ml-1.5 text-xs text-gray-400">
                     {Math.round(ruler.angle % 360)}°
                   </span>
                 )}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Toggle Ruler (Ctrl+R) - Scroll to rotate, Drag to move</TooltipContent>
+            <TooltipContent>Toggle Ruler (Ctrl+R)</TooltipContent>
           </Tooltip>
 
           <div className="flex-1" />
 
           {/* Zoom Controls */}
-          <div className="flex items-center gap-1 bg-[#1e1e1e] rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-[#252525] rounded-lg p-1">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => onZoomChange(Math.max(0.1, zoom / 1.2))}
-                  className="h-7 w-7 text-gray-300 hover:text-white hover:bg-[#3d3d3d]"
+                  className="h-7 w-7 text-gray-400 hover:text-white hover:bg-white/10"
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
@@ -346,7 +370,7 @@ export function Toolbar({
               <TooltipContent>Zoom Out (Ctrl+-)</TooltipContent>
             </Tooltip>
 
-            <span className="text-xs text-gray-300 w-14 text-center font-mono">
+            <span className="text-xs text-gray-300 w-12 text-center font-mono">
               {Math.round(zoom * 100)}%
             </span>
 
@@ -356,7 +380,7 @@ export function Toolbar({
                   variant="ghost"
                   size="icon"
                   onClick={() => onZoomChange(Math.min(5, zoom * 1.2))}
-                  className="h-7 w-7 text-gray-300 hover:text-white hover:bg-[#3d3d3d]"
+                  className="h-7 w-7 text-gray-400 hover:text-white hover:bg-white/10"
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
@@ -364,7 +388,7 @@ export function Toolbar({
               <TooltipContent>Zoom In (Ctrl++)</TooltipContent>
             </Tooltip>
 
-            <div className="w-px h-5 bg-[#3d3d3d] mx-1" />
+            <div className="w-px h-4 bg-[#444] mx-1" />
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -372,7 +396,7 @@ export function Toolbar({
                   variant="ghost"
                   size="icon"
                   onClick={onFitToWindow}
-                  className="h-7 w-7 text-gray-300 hover:text-white hover:bg-[#3d3d3d]"
+                  className="h-7 w-7 text-gray-400 hover:text-white hover:bg-white/10"
                 >
                   <Maximize className="h-3 w-3" />
                 </Button>

@@ -32,6 +32,8 @@ function App() {
 
   // State
   const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [recentDir, setRecentDir] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [tool, setTool] = useState<Tool>('pen');
   const [zoom, setZoom] = useState(1);
   const [viewOffset, setViewOffset] = useState({ x: 0, y: 0 });
@@ -60,7 +62,14 @@ function App() {
 
       if (!filePath) return;
 
-      const fileData = await readFile(filePath as string);
+      // Track directory of opened file
+      const path = filePath as string;
+      const lastSlash = path.lastIndexOf('/');
+      if (lastSlash > 0) {
+        setRecentDir(path.substring(0, lastSlash));
+      }
+
+      const fileData = await readFile(path);
       const blob = new Blob([fileData], { type: 'image/png' });
       const url = URL.createObjectURL(blob);
 
@@ -138,8 +147,9 @@ function App() {
     tempCtx.drawImage(baseCanvas, 0, 0);
     tempCtx.drawImage(drawCanvasRef.current, 0, 0);
 
-    await saveImage(tempCanvas);
-  }, [saveImage]);
+    const defaultPath = recentDir ? `${recentDir}/annotated-image.png` : 'annotated-image.png';
+    await saveImage(tempCanvas, defaultPath);
+  }, [saveImage, recentDir]);
 
   // Handle copy to clipboard
   const handleCopy = useCallback(async () => {
@@ -243,7 +253,9 @@ function App() {
     }
   }, [redo]);
 
-
+  const handleSettings = useCallback(() => {
+    setSettingsOpen(true);
+  }, []);
 
   // Handle ruler interactions
   const handleRulerDragStart = useCallback((point: Point) => {
@@ -396,6 +408,8 @@ function App() {
         onOpen={handleOpen}
         onSave={handleSave}
         onCopy={handleCopy}
+        onSettings={handleSettings}
+        hasImage={!!imageSrc}
         zoom={zoom}
         onZoomChange={handleZoomChange}
         onFitToWindow={handleFitToWindow}
@@ -406,6 +420,8 @@ function App() {
         onUpdateSettings={updateSettings}
         onUpdateColorPreset={updateColorPreset}
         onResetSettings={resetSettings}
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
       />
 
       <DrawingCanvas

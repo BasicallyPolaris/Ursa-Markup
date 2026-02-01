@@ -38,7 +38,7 @@ export function useClipboard() {
     }
   }, [])
 
-  const saveImage = useCallback(async (canvas: HTMLCanvasElement) => {
+  const saveImage = useCallback(async (canvas: HTMLCanvasElement, defaultPath?: string) => {
     try {
       const filePath = await save({
         filters: [
@@ -46,7 +46,7 @@ export function useClipboard() {
           { name: 'JPEG Image', extensions: ['jpg', 'jpeg'] },
           { name: 'WebP Image', extensions: ['webp'] },
         ],
-        defaultPath: 'annotated-image.png'
+        defaultPath: defaultPath || 'annotated-image.png'
       })
 
       if (!filePath) return false

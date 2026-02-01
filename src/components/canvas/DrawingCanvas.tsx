@@ -767,7 +767,7 @@ export function DrawingCanvas({
     return (
       <div
         ref={containerRef}
-        className={cn('flex items-center justify-center', className)}
+        className={cn('flex items-center justify-center select-none', className)}
         style={{ 
           width: '100%', 
           height: '100%',
@@ -777,10 +777,10 @@ export function DrawingCanvas({
           backgroundColor: '#1a1a1a'
         }}
       >
-        <div className="text-center">
-          <p className="text-gray-400 text-lg mb-2">OmniSnip</p>
-          <p className="text-gray-500 text-sm">Press Ctrl+O to open an image</p>
-          <p className="text-gray-600 text-xs mt-2">Ctrl+Click to pan • Ctrl+Scroll to zoom</p>
+        <div className="text-center pointer-events-none">
+          <p className="text-white/90 text-lg mb-2 font-medium">OmniSnip</p>
+          <p className="text-white/60 text-sm mb-1">Press Ctrl+O to open an image</p>
+          <p className="text-white/40 text-xs">Ctrl+Click to pan • Ctrl+Scroll to zoom</p>
         </div>
         
         <canvas ref={baseCanvasRef} style={{ display: 'none' }} />

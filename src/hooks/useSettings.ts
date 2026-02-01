@@ -20,20 +20,20 @@ export interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
   autoCopyOnChange: false,
   colorPresets: [
-    '#FFB3BA', // Pastel Red
-    '#FFDFBA', // Pastel Orange
-    '#FFFFBA', // Pastel Yellow
-    '#BAFFC9', // Pastel Green
-    '#BAE1FF', // Pastel Blue
-    '#E2BAFF', // Pastel Purple
-    '#FFB3E6', // Pastel Pink
+    '#FF6B6B', // Coral Red
+    '#FF9F43', // Orange
+    '#FFE066', // Yellow
+    '#6BCB77', // Green
+    '#4D96FF', // Blue
+    '#9B59B6', // Purple
+    '#FF6B9D', // Pink
   ],
   defaultTool: 'pen',
   defaultPenSize: 3,
   defaultMarkerSize: 20,
   defaultPenOpacity: 1,
-  defaultMarkerOpacity: 0.4,
-  defaultMarkerBorderRadius: 0,
+  defaultMarkerOpacity: 0.1,
+  defaultMarkerBorderRadius: 4,
 };
 
 export function useSettings() {
