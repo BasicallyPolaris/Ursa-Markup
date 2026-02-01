@@ -1,0 +1,50 @@
+{
+  "palettes": [
+    {
+      "name": "pastel",
+      "colors": [
+        "#FFB3BA",
+        "#FFDFBA",
+        "#FFFFBA",
+        "#BAFFC9",
+        "#BAE1FF",
+        "#E2BAFF",
+        "#FFB3E6",
+        "#C4C4C4",
+        "#333333"
+      ]
+    },
+    {
+      "name": "neon",
+      "colors": [
+        "#FF6B6B",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FECA57",
+        "#FF9FF3",
+        "#54A0FF",
+        "#5F27CD",
+        "#000000"
+      ]
+    }
+  ],
+  "defaultPalette": "pastel",
+  "tools": {
+    "pen": {
+      "minSize": 1,
+      "maxSize": 20,
+      "defaultSize": 3
+    },
+    "highlighter": {
+      "opacity": 0.4,
+      "minSize": 5,
+      "maxSize": 50,
+      "defaultSize": 20
+    },
+    "area": {
+      "opacity": 0.3,
+      "defaultSize": 2
+    }
+  }
+}
