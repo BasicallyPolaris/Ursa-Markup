@@ -1,6 +1,6 @@
-# OmniSnip Theme System
+# OmniMark Theme System
 
-The OmniSnip theme system provides centralized color management that is fully customizable through a single configuration file.
+The OmniMark theme system provides centralized color management that is fully customizable through a single configuration file.
 
 ## Quick Start
 
@@ -9,11 +9,13 @@ All theming is controlled through **`public/config/theme.json`**. Edit this file
 ## Theme Configuration
 
 ### Location
+
 ```
 public/config/theme.json
 ```
 
 ### Color Formats Supported
+
 - **HEX** (recommended): `#1e1e1e`, `#FFB3BA`
 - **RGB**: `rgb(255, 255, 255)`
 - **HSL**: `hsl(207, 100%, 31%)`
@@ -24,17 +26,17 @@ All colors are automatically converted to HSL internally for CSS variable compat
 
 ### UI Colors (`colors`)
 
-| Section | Description | Example Properties |
-|---------|-------------|-------------------|
-| `app` | Main application background/foreground | `background`, `foreground` |
-| `toolbar` | Toolbar backgrounds and borders | `background`, `backgroundSecondary`, `border` |
-| `panel` | Dialog/panel styling | `background`, `border` |
+| Section   | Description                            | Example Properties                                  |
+| --------- | -------------------------------------- | --------------------------------------------------- |
+| `app`     | Main application background/foreground | `background`, `foreground`                          |
+| `toolbar` | Toolbar backgrounds and borders        | `background`, `backgroundSecondary`, `border`       |
+| `panel`   | Dialog/panel styling                   | `background`, `border`                              |
 | `surface` | Interactive elements (buttons, inputs) | `background`, `backgroundHover`, `backgroundActive` |
-| `text` | Text colors | `primary`, `secondary`, `muted` |
-| `accent` | Primary accent color | `primary`, `primaryForeground`, `hover` |
-| `toggle` | Switch/toggle states | `checked`, `unchecked` |
-| `canvas` | Canvas background and pattern | `background`, `pattern` |
-| `ruler` | Ruler colors (canvas-rendered) | `background`, `border`, `tick`, `text`, `compass` |
+| `text`    | Text colors                            | `primary`, `secondary`, `muted`                     |
+| `accent`  | Primary accent color                   | `primary`, `primaryForeground`, `hover`             |
+| `toggle`  | Switch/toggle states                   | `checked`, `unchecked`                              |
+| `canvas`  | Canvas background and pattern          | `background`, `pattern`                             |
+| `ruler`   | Ruler colors (canvas-rendered)         | `background`, `border`, `tick`, `text`, `compass`   |
 
 ### Drawing Palettes (`palettes`)
 
@@ -93,11 +95,11 @@ If `theme.json` is missing or invalid, the app falls back to these dark theme de
 
 ```javascript
 // Dark theme (default)
-background: '#1e1e1e'
-foreground: '#ffffff'
-toolbarBackground: '#252525'
-toolbarBorder: '#2a2a2a'
-accent: '#005a9e'
+background: "#1e1e1e";
+foreground: "#ffffff";
+toolbarBackground: "#252525";
+toolbarBorder: "#2a2a2a";
+accent: "#005a9e";
 ```
 
 ## Creating Custom Themes
@@ -185,16 +187,19 @@ Component classes (e.g., bg-toolbar-bg)
 ## Troubleshooting
 
 ### Theme Not Loading
+
 - Check browser console for JSON parse errors
 - Verify `public/config/theme.json` exists and is valid JSON
 - Invalid themes automatically fall back to defaults
 
 ### Colors Not Applied
+
 - Ensure color format is correct (HEX recommended)
 - Check that CSS variables are being set (inspect `:root` in dev tools)
 - Verify component is using theme classes (not hardcoded values)
 
 ### Canvas/Ruler Colors
+
 - Ruler colors are read from CSS variables at render time
 - If colors appear wrong, ensure theme loaded before canvas renders
 

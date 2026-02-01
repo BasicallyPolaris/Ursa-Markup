@@ -1,4 +1,4 @@
-# OmniSnip
+# OmniMark
 
 A cross-platform image annotation tool inspired by the Windows Snipping Tool. Built with Tauri, React, and TypeScript.
 
@@ -14,17 +14,17 @@ A cross-platform image annotation tool inspired by the Windows Snipping Tool. Bu
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+O` | Open image |
-| `Ctrl+S` | Save image |
-| `Ctrl+C` | Copy to clipboard |
-| `Ctrl+Z` | Undo |
-| `Ctrl+Shift+Z` | Redo |
-| `Ctrl+R` | Toggle ruler |
-| `1` | Pen tool |
-| `2` | Highlighter tool |
-| `3` | Area tool |
+| Shortcut       | Action                     |
+| -------------- | -------------------------- |
+| `Ctrl+O`       | Open image                 |
+| `Ctrl+S`       | Save image                 |
+| `Ctrl+C`       | Copy to clipboard          |
+| `Ctrl+Z`       | Undo                       |
+| `Ctrl+Shift+Z` | Redo                       |
+| `Ctrl+R`       | Toggle ruler               |
+| `1`            | Pen tool                   |
+| `2`            | Highlighter tool           |
+| `3`            | Area tool                  |
 | `Shift + drag` | Snap drawing to ruler line |
 
 ## Tech Stack
@@ -59,7 +59,7 @@ bun run tauri build
 ### Project Structure
 
 ```
-omnisnip/
+OmniMark/
 ├── src-tauri/          # Rust backend
 │   ├── src/
 │   │   ├── main.rs

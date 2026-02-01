@@ -35,6 +35,7 @@ function App() {
   // State
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [recentDir, setRecentDir] = useState<string | null>(null);
+  const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tool, setTool] = useState<Tool>('pen');
   const [zoom, setZoom] = useState(1);
@@ -64,12 +65,15 @@ function App() {
 
       if (!filePath) return;
 
-      // Track directory of opened file
+      // Track directory and filename of opened file
       const path = filePath as string;
       const lastSlash = path.lastIndexOf('/');
+      const fileName = lastSlash > 0 ? path.substring(lastSlash + 1) : path;
+      console.log('Opening file:', path, 'Extracted filename:', fileName);
       if (lastSlash > 0) {
         setRecentDir(path.substring(0, lastSlash));
       }
+      setCurrentFileName(fileName);
 
       const fileData = await readFile(path);
       const blob = new Blob([fileData], { type: 'image/png' });
@@ -351,10 +355,25 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleOpen, handleSave, handleCopy, handleUndo, handleRedo, toggleRuler, handleToolChange, handleZoomChange, zoom]);
 
+  // Update window title when file changes
+  useEffect(() => {
+    const updateTitle = async () => {
+      const currentWindow = getCurrentWindow();
+      console.log('Setting window title:', currentFileName ? `${currentFileName} - OmniMark` : 'OmniMark');
+      if (currentFileName) {
+        await currentWindow.setTitle(`${currentFileName} - OmniMark`);
+      } else {
+        await currentWindow.setTitle('OmniMark');
+      }
+    };
+    updateTitle();
+  }, [currentFileName]);
+
   // Update window size when image changes
   useEffect(() => {
     if (!imageSrc) {
       hasCenteredRef.current = false;
+      setCurrentFileName(null);
       // Clear history when image is removed
       clearHistory();
       return;

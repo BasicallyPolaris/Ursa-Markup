@@ -1,5 +1,5 @@
 {
-  "_comment": "OmniSnip Theme Configuration - Customize colors and palettes here. Colors support HEX, RGB, and HSL formats. Default dark theme matching original design.",
+  "_comment": "OmniMark Theme Configuration - Customize colors and palettes here. Colors support HEX, RGB, and HSL formats. Default dark theme matching original design.",
   "colors": {
     "app": {
       "background": "#1e1e1e",
