@@ -14,6 +14,15 @@
     "fs:allow-write-file",
     "fs:allow-home-read",
     "fs:allow-home-write",
-    "fs:scope-download-recursive"
+    "fs:scope-download-recursive",
+    "store:default",
+    "store:allow-get",
+    "store:allow-set",
+    "store:allow-save",
+    "store:allow-keys",
+    "store:allow-values",
+    "store:allow-entries",
+    "store:allow-length",
+    "store:allow-load"
   ]
 }

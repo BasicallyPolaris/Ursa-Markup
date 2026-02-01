@@ -5,30 +5,42 @@ import { readFile } from '@tauri-apps/plugin-fs';
 import { getCurrentWindow, PhysicalSize } from '@tauri-apps/api/window';
 import { DrawingCanvas } from './components/canvas/DrawingCanvas';
 import { Toolbar } from './components/toolbar/Toolbar';
-import { useHistory } from './hooks/useHistory';
+import { SettingsPanel } from './components/settings/SettingsPanel';
+import { useStrokeHistory } from './hooks/useStrokeHistory';
 import { useRuler } from './hooks/useRuler';
 import { useClipboard } from './hooks/useClipboard';
+import { useSettings } from './hooks/useSettings';
 import type { Tool, BrushSettings, Point } from './types';
-import { DEFAULT_CONFIG, PASTEL_PALETTE } from './types';
 import './App.css';
 
 function App() {
+  // Hooks
+  const { 
+    canUndo, 
+    canRedo, 
+    startStrokeGroup, 
+    startStroke, 
+    addPointToStroke, 
+    endStrokeGroup,
+    undo, 
+    redo, 
+    clearHistory
+  } = useStrokeHistory();
+  const { ruler, toggleRuler, startDragging, drag, stopDragging, rotateRuler } = useRuler();
+  const { copyToClipboard, saveImage } = useClipboard();
+  const { settings, updateSettings, updateColorPreset, resetSettings } = useSettings();
+
   // State
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [tool, setTool] = useState<Tool>('pen');
   const [zoom, setZoom] = useState(1);
   const [viewOffset, setViewOffset] = useState({ x: 0, y: 0 });
   const [brush, setBrush] = useState<BrushSettings>({
-    color: PASTEL_PALETTE.colors[0],
-    size: DEFAULT_CONFIG.tools.pen.defaultSize,
-    opacity: 1,
+    color: settings.colorPresets[0],
+    size: settings.defaultPenSize,
+    opacity: settings.defaultPenOpacity,
   });
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
-
-  // Hooks
-  const { canUndo, canRedo, saveState, undo, redo, clearHistory } = useHistory();
-  const { ruler, toggleRuler, startDragging, drag, stopDragging, rotateRuler } = useRuler();
-  const { copyToClipboard, saveImage } = useClipboard();
 
   // Refs
   const drawCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -97,15 +109,6 @@ function App() {
     const viewOffsetX = -panX / finalZoom;
     const viewOffsetY = -panY / finalZoom;
     
-    console.log('[handleFitToWindow] Centering:', {
-      canvasSize,
-      containerSize: { width: rect.width, height: rect.height },
-      imageScreenSize: { width: imageScreenWidth, height: imageScreenHeight },
-      pan: { x: panX, y: panY },
-      zoom: finalZoom,
-      viewOffset: { x: viewOffsetX, y: viewOffsetY }
-    });
-    
     setZoom(finalZoom);
     setViewOffset({ x: viewOffsetX, y: viewOffsetY });
   }, [canvasSize]);
@@ -170,14 +173,15 @@ function App() {
     if (newTool === 'pen') {
       setBrush((prev) => ({ 
         ...prev, 
-        size: DEFAULT_CONFIG.tools.pen.defaultSize,
-        opacity: 1 
+        size: settings.defaultPenSize,
+        opacity: settings.defaultPenOpacity 
       }));
     } else if (newTool === 'highlighter') {
       setBrush((prev) => ({ 
         ...prev, 
-        size: DEFAULT_CONFIG.tools.highlighter.defaultSize,
-        opacity: DEFAULT_CONFIG.tools.highlighter.opacity
+        size: settings.defaultMarkerSize,
+        opacity: settings.defaultMarkerOpacity,
+        borderRadius: settings.defaultMarkerBorderRadius
       }));
     } else if (newTool === 'area') {
       setBrush((prev) => ({ 
@@ -185,16 +189,13 @@ function App() {
         opacity: 0.3 
       }));
     }
-  }, []);
+  }, [settings]);
 
   // Handle zoom change - zoom towards mouse position using viewOffset approach
   // Using functional updates to avoid stale closure issues
   const handleZoomChange = useCallback((newZoom: number, mouseX?: number, mouseY?: number) => {
-    console.log('[handleZoomChange] Called with:', { newZoom, mouseX, mouseY });
-    
     const container = containerRef.current;
     if (!container || mouseX === undefined || mouseY === undefined) {
-      console.log('[handleZoomChange] No container or mouse position, simple zoom');
       setZoom(newZoom);
       return;
     }
@@ -205,16 +206,8 @@ function App() {
     const mouseScreenX = mouseX - rect.left;
     const mouseScreenY = mouseY - rect.top;
     
-    console.log('[handleZoomChange] Calculating with:', { 
-      mouseScreenX, 
-      mouseScreenY, 
-      rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
-    });
-    
     // Use functional state updates to avoid stale closures
     setZoom(prevZoom => {
-      console.log('[handleZoomChange] Functional zoom update, prevZoom:', prevZoom);
-      
       // Calculate new viewOffset based on prevZoom (the zoom we're transitioning FROM)
       setViewOffset(prevOffset => {
         // Calculate the canvas point currently under the mouse using PREVIOUS state
@@ -226,14 +219,6 @@ function App() {
         // newViewOffset.x = canvasX - mouseScreenX / newZoom
         const newViewOffsetX = canvasX - mouseScreenX / newZoom;
         const newViewOffsetY = canvasY - mouseScreenY / newZoom;
-        
-        console.log('[handleZoomChange] New viewOffset:', { 
-          newViewOffsetX, 
-          newViewOffsetY, 
-          canvasX, 
-          canvasY,
-          prevOffset
-        });
         
         return { x: newViewOffsetX, y: newViewOffsetY };
       });
@@ -258,15 +243,7 @@ function App() {
     }
   }, [redo]);
 
-  // Handle save state
-  const handleSaveState = useCallback((canvas: HTMLCanvasElement) => {
-    saveState(canvas);
-  }, [saveState]);
 
-  // Handle stroke end
-  const handleStrokeEnd = useCallback(() => {
-    // Auto-copy disabled - only copy on explicit Ctrl+C
-  }, []);
 
   // Handle ruler interactions
   const handleRulerDragStart = useCallback((point: Point) => {
@@ -327,6 +304,19 @@ function App() {
             e.preventDefault();
             handleFitToWindowRef.current();
             break;
+          case '1':
+          case '2':
+          case '3':
+          case '4':
+          case '5':
+          case '6':
+          case '7':
+            e.preventDefault();
+            const colorIndex = parseInt(e.key) - 1;
+            if (colorIndex < settings.colorPresets.length) {
+              handleBrushChange({ color: settings.colorPresets[colorIndex] });
+            }
+            break;
         }
       } else {
         switch (e.key) {
@@ -351,8 +341,13 @@ function App() {
   useEffect(() => {
     if (!imageSrc) {
       hasCenteredRef.current = false;
+      // Clear history when image is removed
+      clearHistory();
       return;
     }
+    
+    // Clear history when a new image is loaded
+    clearHistory();
 
     const img = new Image();
     img.onload = () => {
@@ -370,12 +365,12 @@ function App() {
       setTimeout(() => {
         if (!hasCenteredRef.current) {
           hasCenteredRef.current = true;
-          handleFitToWindow();
+          handleFitToWindowRef.current();
         }
       }, 150);
     };
     img.src = imageSrc;
-  }, [imageSrc, handleFitToWindow]);
+  }, [imageSrc]);
 
   // Get canvas ref
   useEffect(() => {
@@ -406,6 +401,13 @@ function App() {
         onFitToWindow={handleFitToWindow}
       />
 
+      <SettingsPanel
+        settings={settings}
+        onUpdateSettings={updateSettings}
+        onUpdateColorPreset={updateColorPreset}
+        onResetSettings={resetSettings}
+      />
+
       <DrawingCanvas
         imageSrc={imageSrc}
         tool={tool}
@@ -421,8 +423,10 @@ function App() {
         onRulerDrag={handleRulerDrag}
         onRulerDragEnd={handleRulerDragEnd}
         onRulerRotate={handleRulerRotate}
-        onStrokeEnd={handleStrokeEnd}
-        onSaveState={handleSaveState}
+        onStartStrokeGroup={startStrokeGroup}
+        onStartStroke={startStroke}
+        onAddPointToStroke={addPointToStroke}
+        onEndStrokeGroup={endStrokeGroup}
         className="flex-1"
       />
     </div>

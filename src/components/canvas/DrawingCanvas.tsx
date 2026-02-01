@@ -17,8 +17,11 @@ interface DrawingCanvasProps {
   onRulerDrag: (point: Point) => void;
   onRulerDragEnd: () => void;
   onRulerRotate: (delta: number) => void;
-  onStrokeEnd: () => void;
-  onSaveState: (canvas: HTMLCanvasElement) => void;
+  // Stroke-based history methods
+  onStartStrokeGroup: () => void;
+  onStartStroke: (tool: Tool, brush: BrushSettings, point: Point) => void;
+  onAddPointToStroke: (point: Point) => void;
+  onEndStrokeGroup: () => void;
   className?: string;
 }
 
@@ -37,8 +40,11 @@ export function DrawingCanvas({
   onRulerDrag,
   onRulerDragEnd,
   onRulerRotate,
-  onStrokeEnd,
-  onSaveState,
+  // Stroke-based history methods
+  onStartStrokeGroup,
+  onStartStroke,
+  onAddPointToStroke,
+  onEndStrokeGroup,
   className,
 }: DrawingCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -60,7 +66,34 @@ export function DrawingCanvas({
 
   // Initialize canvas with image
   useEffect(() => {
-    if (!imageSrc) return;
+    if (!imageSrc) {
+      // Clear canvases when image is removed to free memory
+      const baseCanvas = baseCanvasRef.current;
+      const drawCanvas = drawCanvasRef.current;
+      
+      if (baseCanvas) {
+        const baseCtx = baseCanvas.getContext('2d');
+        if (baseCtx) {
+          baseCtx.clearRect(0, 0, baseCanvas.width, baseCanvas.height);
+        }
+        baseCanvas.width = 0;
+        baseCanvas.height = 0;
+      }
+      
+      if (drawCanvas) {
+        const drawCtx = drawCanvas.getContext('2d');
+        if (drawCtx) {
+          drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+        }
+        drawCanvas.width = 0;
+        drawCanvas.height = 0;
+      }
+      
+      // Clear colored pixels tracking
+      coloredPixelsRef.current.clear();
+      
+      return;
+    }
 
     const img = new Image();
     img.onload = () => {
@@ -86,11 +119,19 @@ export function DrawingCanvas({
         drawCtx.imageSmoothingQuality = 'high';
         drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
       }
+      
+      // Clear colored pixels tracking for new image
+      coloredPixelsRef.current.clear();
 
       onCanvasSizeChange({ width: img.width, height: img.height });
       // Don't reset viewOffset here - let App.tsx handle it once on open
     };
     img.src = imageSrc;
+    
+    // Cleanup: clear canvases and coloredPixels when unmounting or switching images
+    return () => {
+      coloredPixelsRef.current.clear();
+    };
   }, [imageSrc, onCanvasSizeChange, onViewOffsetChange]);
 
   // Keep zoomRef in sync with zoom prop
@@ -109,14 +150,6 @@ export function DrawingCanvas({
     // ALWAYS use refs for fresh values to avoid stale closure issues
     const currentZoom = zoomRef.current;
     const currentViewOffset = viewOffsetRef.current;
-    
-    // Debug log occasionally to see what's happening
-    if (Math.random() < 0.05) {
-      console.log('[renderDisplay] Rendering:', { 
-        zoom: currentZoom, 
-        viewOffset: { x: currentViewOffset.x.toFixed(1), y: currentViewOffset.y.toFixed(1) }
-      });
-    }
     
     const baseCanvas = baseCanvasRef.current;
     const drawCanvas = drawCanvasRef.current;
@@ -366,7 +399,7 @@ export function DrawingCanvas({
     const rotatedX = dx * Math.cos(angleRad) - dy * Math.sin(angleRad);
     const rotatedY = dx * Math.sin(angleRad) + dy * Math.cos(angleRad);
 
-    const rulerLength = Math.sqrt(canvasSize.width ** 2 + canvasSize.height ** 2) * 2;
+    const rulerLength = Math.sqrt(canvasSize.width ** 2 + canvasSize.height ** 2) * 3;
 
     return Math.abs(rotatedX) <= rulerLength / 2 && Math.abs(rotatedY) <= RULER_HEIGHT / 2;
   }, [ruler, canvasSize]);
@@ -408,20 +441,16 @@ export function DrawingCanvas({
 
   // Mouse down handler
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    console.log('[MouseDown] Event:', { button: e.button, ctrlKey: e.ctrlKey, clientX: e.clientX, clientY: e.clientY });
     e.preventDefault();
     const canvasPoint = screenToCanvas(e.clientX, e.clientY);
-    console.log('[MouseDown] Canvas point:', canvasPoint);
 
     // Pan with middle mouse or Ctrl+left click
     if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
-      console.log('[MouseDown] PAN START - button:', e.button, 'ctrlKey:', e.ctrlKey);
       setIsPanning(true);
       panStartRef.current = { 
         x: canvasPoint.x,
         y: canvasPoint.y
       };
-      console.log('[MouseDown] panStartRef set to:', panStartRef.current);
       return;
     }
 
@@ -454,20 +483,17 @@ export function DrawingCanvas({
       ctx.beginPath();
       ctx.moveTo(canvasPoint.x, canvasPoint.y);
     } else if (tool === 'highlighter') {
-      // Highlighter: path-based grid cell filling
       ctx.globalAlpha = brush.opacity;
       ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = brush.color;
-      // Clear colored pixels tracking for new stroke
       coloredPixelsRef.current.clear();
-      // Draw initial marker rectangle using grid cells with optional rounding
-      // Slider controls height, width is 30% of height
+      
       const height = brush.size;
       const width = brush.size * 0.3;
       const halfWidth = width / 2;
       const halfHeight = height / 2;
-      const borderRadius = brush.borderRadius || 0;
       
+      // Draw initial marker - check all pixels under the marker
       const startGridX = Math.floor(canvasPoint.x - halfWidth);
       const endGridX = Math.ceil(canvasPoint.x + halfWidth);
       const startGridY = Math.floor(canvasPoint.y - halfHeight);
@@ -475,34 +501,17 @@ export function DrawingCanvas({
       
       for (let gridX = startGridX; gridX < endGridX; gridX++) {
         for (let gridY = startGridY; gridY < endGridY; gridY++) {
-          // Check if pixel center is inside rounded rectangle
           const pixelCenterX = gridX + 0.5;
           const pixelCenterY = gridY + 0.5;
           
-          // Check if inside rounded rectangle
           const dx = Math.abs(pixelCenterX - canvasPoint.x);
           const dy = Math.abs(pixelCenterY - canvasPoint.y);
           
-          let inside = true;
-          if (borderRadius > 0) {
-            // Check corners for rounding
-            const cornerX = halfWidth - borderRadius;
-            const cornerY = halfHeight - borderRadius;
-            
-            if (dx > cornerX && dy > cornerY) {
-              // In corner region, check distance from corner center
-              const cornerDx = dx - cornerX;
-              const cornerDy = dy - cornerY;
-              if (cornerDx * cornerDx + cornerDy * cornerDy > borderRadius * borderRadius) {
-                inside = false;
-              }
-            }
-          }
-          
-          if (inside && dx <= halfWidth && dy <= halfHeight) {
+          if (dx <= halfWidth && dy <= halfHeight) {
             const pixelKey = `${gridX},${gridY}`;
             coloredPixelsRef.current.add(pixelKey);
-            ctx.fillRect(gridX, gridY, 1, 1);
+            // Draw smooth pixel with anti-aliasing (slightly larger than 1x1 for smooth edges)
+            ctx.fillRect(gridX - 0.5, gridY - 0.5, 2, 2);
           }
         }
       }
@@ -511,7 +520,11 @@ export function DrawingCanvas({
       ctx.globalCompositeOperation = 'source-over';
       ctx.fillStyle = brush.color;
     }
-  }, [tool, brush, isClickOnRuler, onRulerDragStart, screenToCanvas]);
+
+    // Start stroke-based recording
+    onStartStrokeGroup();
+    onStartStroke(tool, brush, canvasPoint);
+  }, [tool, brush, isClickOnRuler, onRulerDragStart, screenToCanvas, onStartStrokeGroup, onStartStroke]);
 
   // Mouse move handler
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -526,14 +539,6 @@ export function DrawingCanvas({
         x: viewOffset.x + deltaX,
         y: viewOffset.y + deltaY
       };
-      console.log('[handleMouseMove] panning:', { 
-        deltaX, 
-        deltaY, 
-        oldViewOffset: viewOffset, 
-        newViewOffset,
-        panStart: panStartRef.current,
-        canvasPoint 
-      });
       onViewOffsetChange(newViewOffset);
       return;
     }
@@ -551,11 +556,10 @@ export function DrawingCanvas({
 
     const canvas = drawCanvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    if (tool === 'pen') {
+    if (tool === 'pen' || tool === 'highlighter') {
       // Always snap to ruler when ruler is visible and near it
       let drawPoint = canvasPoint;
       
@@ -567,100 +571,72 @@ export function DrawingCanvas({
         }
       }
 
-      ctx.lineTo(drawPoint.x, drawPoint.y);
-      ctx.stroke();
-      lastPointRef.current = drawPoint;
-    } else if (tool === 'highlighter') {
-      // Always snap to ruler when ruler is visible and near it
-      let drawPoint = canvasPoint;
-      
-      if (ruler.visible) {
-        const rulerSnapInfo = getRulerSnapInfo(canvasPoint);
-        // Snap when in sticky zone (within SNAP_DISTANCE of an edge)
-        if (rulerSnapInfo.inStickyZone) {
-          drawPoint = getSnappedPoint(canvasPoint, rulerSnapInfo.snapToFarSide, brush.size);
-        }
-      }
-
-      // Path-based marker: interpolate all points along the line and fill each grid cell only once
-      if (lastMarkerPointRef.current) {
-        // Slider controls height, width is 30% of height
-        const height = brush.size;
-        const width = brush.size * 0.3;
-        const halfWidth = width / 2;
-        const halfHeight = height / 2;
-        const borderRadius = brush.borderRadius || 0;
-        
-        // Get all points along the line from last to current
-        const lastPoint = lastMarkerPointRef.current;
-        const dx = drawPoint.x - lastPoint.x;
-        const dy = drawPoint.y - lastPoint.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        // Interpolate points at intervals of 2 pixels (or smaller for smoother coverage)
-        const stepSize = Math.min(2, width / 4);
-        const steps = Math.max(1, Math.ceil(distance / stepSize));
-        
-        for (let i = 0; i <= steps; i++) {
-          const t = i / steps;
-          const interpX = lastPoint.x + dx * t;
-          const interpY = lastPoint.y + dy * t;
+      if (tool === 'pen') {
+        // Draw pen stroke immediately for feedback
+        ctx.lineTo(drawPoint.x, drawPoint.y);
+        ctx.stroke();
+      } else if (tool === 'highlighter') {
+        // Draw marker stroke - check all pixels along the path
+        if (lastMarkerPointRef.current) {
+          const height = brush.size;
+          const width = brush.size * 0.3;
+          const halfWidth = width / 2;
+          const halfHeight = height / 2;
           
-          // Fill all grid cells within the marker rectangle at this point
-          // Round to integer pixel coordinates for the grid
-          const startGridX = Math.floor(interpX - halfWidth);
-          const endGridX = Math.ceil(interpX + halfWidth);
-          const startGridY = Math.floor(interpY - halfHeight);
-          const endGridY = Math.ceil(interpY + halfHeight);
+          const lastPoint = lastMarkerPointRef.current;
+          const dx = drawPoint.x - lastPoint.x;
+          const dy = drawPoint.y - lastPoint.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
           
-          for (let gridX = startGridX; gridX < endGridX; gridX++) {
-            for (let gridY = startGridY; gridY < endGridY; gridY++) {
-              // Check if pixel center is inside rounded rectangle
-              const pixelCenterX = gridX + 0.5;
-              const pixelCenterY = gridY + 0.5;
-              
-              const pdx = Math.abs(pixelCenterX - interpX);
-              const pdy = Math.abs(pixelCenterY - interpY);
-              
-              let inside = true;
-              if (borderRadius > 0) {
-                const cornerX = halfWidth - borderRadius;
-                const cornerY = halfHeight - borderRadius;
-                
-                if (pdx > cornerX && pdy > cornerY) {
-                  const cornerDx = pdx - cornerX;
-                  const cornerDy = pdy - cornerY;
-                  if (cornerDx * cornerDx + cornerDy * cornerDy > borderRadius * borderRadius) {
-                    inside = false;
-                  }
-                }
-              }
-              
-              if (inside && pdx <= halfWidth && pdy <= halfHeight) {
+          // Step size for interpolation
+          const stepSize = 2;
+          const steps = Math.max(1, Math.ceil(distance / stepSize));
+          
+          for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const interpX = lastPoint.x + dx * t;
+            const interpY = lastPoint.y + dy * t;
+            
+            // Check all pixels under the marker at this position
+            const startGridX = Math.floor(interpX - halfWidth);
+            const endGridX = Math.ceil(interpX + halfWidth);
+            const startGridY = Math.floor(interpY - halfHeight);
+            const endGridY = Math.ceil(interpY + halfHeight);
+            
+            for (let gridX = startGridX; gridX < endGridX; gridX++) {
+              for (let gridY = startGridY; gridY < endGridY; gridY++) {
                 const pixelKey = `${gridX},${gridY}`;
                 if (!coloredPixelsRef.current.has(pixelKey)) {
-                  coloredPixelsRef.current.add(pixelKey);
-                  ctx.fillRect(gridX, gridY, 1, 1);
+                  const pixelCenterX = gridX + 0.5;
+                  const pixelCenterY = gridY + 0.5;
+                  const pdx = Math.abs(pixelCenterX - interpX);
+                  const pdy = Math.abs(pixelCenterY - interpY);
+                  
+                  if (pdx <= halfWidth && pdy <= halfHeight) {
+                    coloredPixelsRef.current.add(pixelKey);
+                    // Draw smooth pixel with anti-aliasing (slightly larger than 1x1)
+                    ctx.fillRect(gridX - 0.5, gridY - 0.5, 2, 2);
+                  }
                 }
               }
             }
           }
         }
       }
-      
-      lastMarkerPointRef.current = drawPoint;
+
+      // Record stroke for history
+      onAddPointToStroke(drawPoint);
       lastPointRef.current = drawPoint;
+      lastMarkerPointRef.current = drawPoint;
     } else if (tool === 'area') {
       // Update current point for live preview
       setCurrentPoint(canvasPoint);
     }
-  }, [isDrawing, startPoint, tool, ruler, isPanning, onRulerDrag, screenToCanvas, isClickOnRuler, getRulerSnapInfo, getSnappedPoint, zoom, onViewOffsetChange, viewOffset, brush.size]);
+  }, [isDrawing, startPoint, tool, ruler, isPanning, onRulerDrag, screenToCanvas, isClickOnRuler, getRulerSnapInfo, getSnappedPoint, zoom, onViewOffsetChange, viewOffset, brush.size, onAddPointToStroke]);
 
   // Mouse up handler
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    console.log('[MouseUp] Event:', { button: e.button, isPanning, isDrawing });
     if (isPanning) {
-      console.log('[MouseUp] PAN END');
       setIsPanning(false);
       return;
     }
@@ -674,7 +650,6 @@ export function DrawingCanvas({
 
     const canvas = drawCanvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -691,29 +666,25 @@ export function DrawingCanvas({
         }
       }
 
+      // Draw area rectangle
       const x = Math.min(startPoint.x, endPoint.x);
       const y = Math.min(startPoint.y, endPoint.y);
       const width = Math.abs(endPoint.x - startPoint.x);
       const height = Math.abs(endPoint.y - startPoint.y);
-
-      // Area without border
-      ctx.globalAlpha = brush.opacity;
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.fillStyle = brush.color;
       ctx.fillRect(x, y, width, height);
+
+      // Record area as a stroke with top-left and bottom-right corners
+      onAddPointToStroke({ x: x, y: y });
+      onAddPointToStroke({ x: x + width, y: y + height });
     }
 
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
-    
     setIsDrawing(false);
     setStartPoint(null);
     setCurrentPoint(null);
     lastPointRef.current = null;
     lastMarkerPointRef.current = null;
-    onSaveState(canvas);
-    onStrokeEnd();
-  }, [isDrawing, startPoint, tool, brush, ruler, isPanning, ruler.isDragging, onRulerDragEnd, onSaveState, onStrokeEnd, screenToCanvas, getRulerSnapInfo, getSnappedPoint, zoom]);
+    onEndStrokeGroup();
+  }, [isDrawing, startPoint, tool, brush, ruler, isPanning, ruler.isDragging, onRulerDragEnd, onEndStrokeGroup, screenToCanvas, getRulerSnapInfo, getSnappedPoint, zoom, onAddPointToStroke]);
 
   // Mouse leave handler
   const handleMouseLeave = useCallback(() => {
@@ -728,58 +699,37 @@ export function DrawingCanvas({
       setCurrentPoint(null);
       lastPointRef.current = null;
       lastMarkerPointRef.current = null;
+      // End stroke group for pen/highlighter tools
       if (tool !== 'area') {
-        const canvas = drawCanvasRef.current;
-        if (canvas) {
-          onSaveState(canvas);
-        }
-        onStrokeEnd();
+        onEndStrokeGroup();
       }
     }
-  }, [ruler.isDragging, isDrawing, tool, onRulerDragEnd, onSaveState, onStrokeEnd]);
+  }, [ruler.isDragging, isDrawing, tool, onRulerDragEnd, onEndStrokeGroup]);
 
   // Window-level wheel handler for zoom and ruler rotation
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     
-    console.log('[Window Event Setup] Attaching wheel listener to container');
-    
     const handleWindowWheel = (e: WheelEvent) => {
-      console.log('[Window Wheel] Raw event:', { 
-        ctrlKey: e.ctrlKey, 
-        deltaY: e.deltaY, 
-        target: e.target,
-        currentTarget: e.currentTarget,
-        clientX: e.clientX,
-        clientY: e.clientY
-      });
-      
       // Check if event is within our container
       const rect = container.getBoundingClientRect();
       const isInContainer = e.clientX >= rect.left && e.clientX <= rect.right && 
                             e.clientY >= rect.top && e.clientY <= rect.bottom;
       
-      if (!isInContainer) {
-        console.log('[Window Wheel] Event outside container, ignoring');
-        return;
-      }
+      if (!isInContainer) return;
       
       if (e.ctrlKey) {
-        console.log('[Window Wheel] Zoom triggered!');
         e.preventDefault();
         e.stopPropagation();
         
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
         const currentZoom = zoomRef.current; // Use ref to avoid stale closure
         const newZoom = Math.max(0.1, Math.min(5, currentZoom * delta));
-        console.log('[Window Wheel] Zoom calculation:', { currentZoom, delta, newZoom });
-        console.log('[Window Wheel] Calling onZoomChange:', { newZoom, clientX: e.clientX, clientY: e.clientY });
         
         // Zoom towards mouse position
         onZoomChange(newZoom, e.clientX, e.clientY);
       } else if (ruler.visible && !e.shiftKey) {
-        console.log('[Window Wheel] Ruler rotate triggered');
         e.preventDefault();
         e.stopPropagation();
         const delta = e.deltaY > 0 ? 3 : -3;
@@ -791,14 +741,12 @@ export function DrawingCanvas({
     window.addEventListener('wheel', handleWindowWheel, { passive: false, capture: true });
     
     return () => {
-      console.log('[Window Event Cleanup] Removing wheel listener');
       window.removeEventListener('wheel', handleWindowWheel, { capture: true });
     };
   }, [ruler.visible, onZoomChange, onRulerRotate]); // Note: zoom removed - using zoomRef instead
 
   // React wheel handler (fallback, should not be needed now)
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    console.log('[React Wheel] event (fallback):', { ctrlKey: e.ctrlKey, deltaY: e.deltaY });
     // Window-level handler should catch this, but keep for safety
     if (e.ctrlKey) {
       e.preventDefault();

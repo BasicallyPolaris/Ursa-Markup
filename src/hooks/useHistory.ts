@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react'
 
-const MAX_HISTORY = 100
+const MAX_HISTORY = 20
 
 export function useHistory() {
   const historyRef = useRef<ImageData[]>([])
