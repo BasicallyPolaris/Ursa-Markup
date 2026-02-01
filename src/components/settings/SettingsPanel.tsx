@@ -1,200 +1,270 @@
-import { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../ui/dialog';
-import { Button } from '../ui/button';
-import { Slider } from '../ui/slider';
-import { Switch } from '../ui/switch';
-import { Label } from '../ui/label';
-import { Settings2, RotateCcw } from 'lucide-react';
-import type { AppSettings } from '../../hooks/useSettings';
+import { useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Slider } from "../ui/slider";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
+import { RotateCcw, Save, X } from "lucide-react";
+import type { AppSettings } from "../../hooks/useSettings";
 
 interface SettingsPanelProps {
   settings: AppSettings;
-  onUpdateSettings: (updates: Partial<AppSettings>) => void;
+  hasChanges: boolean;
+  onUpdateDraft: (updates: Partial<AppSettings>) => void;
   onUpdateColorPreset: (index: number, color: string) => void;
-  onResetSettings: () => void;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  standalone?: boolean;
+  onSave: () => Promise<boolean>;
+  onCancel: () => void;
+  onReset: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 export function SettingsPanel({
   settings,
-  onUpdateSettings,
+  hasChanges,
+  onUpdateDraft,
   onUpdateColorPreset,
-  onResetSettings,
-  open: controlledOpen,
+  onSave,
+  onCancel,
+  onReset,
+  open,
   onOpenChange,
-  standalone = false,
 }: SettingsPanelProps) {
-  const [internalOpen, setInternalOpen] = useState(false);
-  const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
-  const setIsOpen = onOpenChange || setInternalOpen;
+  const [isSaving, setIsSaving] = useState(false);
 
-  const content = (
-    <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto bg-[#1e1e1e] border-[#3d3d3d] text-white">
-      <DialogHeader>
-        <DialogTitle className="text-white flex items-center justify-between">
-          Settings
+  const handleSave = async () => {
+    setIsSaving(true);
+    const success = await onSave();
+    setIsSaving(false);
+    if (success) {
+      onOpenChange(false);
+    }
+  };
+
+  const handleCancel = () => {
+    onCancel();
+    onOpenChange(false);
+  };
+
+  const handleClose = () => {
+    if (hasChanges) {
+      onCancel();
+    }
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-lg max-h-[85vh] p-0 overflow-hidden flex flex-col">
+        {/* Header */}
+        <DialogHeader className="px-4 py-3 border-b border-toolbar-border flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-text-primary text-lg font-semibold flex-1 text-center pl-10">
+              Settings
+            </DialogTitle>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleClose}
+              className="h-9 w-9 rounded-full text-text-muted hover:text-panel-bg hover:bg-accent-hover transition-all"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
+        </DialogHeader>
+
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
+          {/* Auto-copy setting */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-text-primary text-sm">
+                Auto-copy to clipboard
+              </Label>
+              <Switch
+                checked={settings.autoCopyOnChange}
+                onCheckedChange={(checked: boolean) =>
+                  onUpdateDraft({ autoCopyOnChange: checked })
+                }
+              />
+            </div>
+            <p className="text-xs text-text-muted">
+              Automatically copy the image to clipboard after each stroke
+            </p>
+          </div>
+
+          {/* Color Presets */}
+          <div className="space-y-3">
+            <Label className="text-text-primary text-sm">
+              Color Presets (Ctrl+1 to Ctrl+7)
+            </Label>
+            <div className="grid grid-cols-7 gap-2">
+              {settings.colorPresets.map((color, index) => (
+                <div key={index} className="flex flex-col items-center gap-1">
+                  <input
+                    type="color"
+                    value={color}
+                    onChange={(e) => onUpdateColorPreset(index, e.target.value)}
+                    className="w-9 h-9 rounded cursor-pointer border-2 border-panel-border"
+                  />
+                  <span className="text-xs text-text-muted">{index + 1}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Default Tool Settings */}
+          <div className="space-y-4">
+            <Label className="text-text-primary text-sm font-medium">
+              Default Tool Settings
+            </Label>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-secondary text-sm">Pen Size</span>
+                <span className="text-text-muted text-sm">
+                  {settings.defaultPenSize}px
+                </span>
+              </div>
+              <Slider
+                value={[settings.defaultPenSize]}
+                onValueChange={([value]) =>
+                  onUpdateDraft({ defaultPenSize: value })
+                }
+                min={1}
+                max={20}
+                step={1}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-secondary text-sm">Marker Size</span>
+                <span className="text-text-muted text-sm">
+                  {settings.defaultMarkerSize}px
+                </span>
+              </div>
+              <Slider
+                value={[settings.defaultMarkerSize]}
+                onValueChange={([value]) =>
+                  onUpdateDraft({ defaultMarkerSize: value })
+                }
+                min={5}
+                max={50}
+                step={1}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-secondary text-sm">
+                  Marker Opacity
+                </span>
+                <span className="text-text-muted text-sm">
+                  {Math.round(settings.defaultMarkerOpacity * 100)}%
+                </span>
+              </div>
+              <Slider
+                value={[settings.defaultMarkerOpacity * 100]}
+                onValueChange={([value]) =>
+                  onUpdateDraft({ defaultMarkerOpacity: value / 100 })
+                }
+                min={10}
+                max={100}
+                step={5}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-secondary text-sm">
+                  Marker Corner Radius
+                </span>
+                <span className="text-text-muted text-sm">
+                  {settings.defaultMarkerBorderRadius}px
+                </span>
+              </div>
+              <Slider
+                value={[settings.defaultMarkerBorderRadius]}
+                onValueChange={([value]) =>
+                  onUpdateDraft({ defaultMarkerBorderRadius: value })
+                }
+                min={0}
+                max={20}
+                step={1}
+              />
+            </div>
+          </div>
+
+          {/* Keyboard Shortcuts Reference */}
+          <div className="space-y-2">
+            <Label className="text-text-primary text-sm font-medium">
+              Keyboard Shortcuts
+            </Label>
+            <div className="text-xs text-text-muted space-y-1 bg-surface-bg p-3 rounded-lg">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                <span>Ctrl+O</span>
+                <span>Open image</span>
+                <span>Ctrl+S</span>
+                <span>Save image</span>
+                <span>Ctrl+C</span>
+                <span>Copy to clipboard</span>
+                <span>Ctrl+Z</span>
+                <span>Undo</span>
+                <span>Ctrl+Shift+Z</span>
+                <span>Redo</span>
+                <span>Ctrl+R</span>
+                <span>Toggle ruler</span>
+                <span>1/2/3</span>
+                <span>Pen/Marker/Area</span>
+                <span>Ctrl+1-7</span>
+                <span>Colors 1-7</span>
+                <span>Ctrl+Scroll</span>
+                <span>Zoom</span>
+                <span>Ctrl+Click</span>
+                <span>Pan</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-toolbar-border flex items-center justify-between flex-shrink-0">
+          {/* Reset button on left */}
           <Button
             variant="ghost"
             size="sm"
-            onClick={onResetSettings}
-            className="text-gray-400 hover:text-white hover:bg-[#3d3d3d]"
+            onClick={onReset}
+            className="text-text-muted hover:text-text-primary hover:bg-surface-bg-hover h-8"
           >
-            <RotateCcw className="w-4 h-4 mr-1" />
+            <RotateCcw className="w-4 h-4 mr-1.5" />
             Reset
           </Button>
-        </DialogTitle>
-      </DialogHeader>
 
-      <div className="space-y-6 py-4">
-        {/* Auto-copy setting */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-white">Auto-copy to clipboard</Label>
-            <Switch
-              checked={settings.autoCopyOnChange}
-              onCheckedChange={(checked: boolean) =>
-                onUpdateSettings({ autoCopyOnChange: checked })
-              }
-            />
-          </div>
-          <p className="text-xs text-gray-400">
-            Automatically copy the image to clipboard after each stroke
-          </p>
-        </div>
-
-        {/* Color Presets */}
-        <div className="space-y-3">
-          <Label className="text-white">Color Presets (Ctrl+1 to Ctrl+7)</Label>
-          <div className="grid grid-cols-7 gap-2">
-            {settings.colorPresets.map((color, index) => (
-              <div key={index} className="flex flex-col items-center gap-1">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => onUpdateColorPreset(index, e.target.value)}
-                  className="w-10 h-10 rounded cursor-pointer border-2 border-[#3d3d3d]"
-                />
-                <span className="text-xs text-gray-400">{index + 1}</span>
-              </div>
-            ))}
+          {/* Cancel and Save on right */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancel}
+              className="text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover h-8"
+            >
+              <X className="w-4 h-4 mr-1.5" />
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleSave}
+              disabled={isSaving || !hasChanges}
+              className="h-8 bg-text-primary/15 text-text-primary hover:bg-text-primary/25 disabled:opacity-40"
+            >
+              <Save className="w-4 h-4 mr-1.5" />
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
           </div>
         </div>
-
-        {/* Default Tool Settings */}
-        <div className="space-y-4">
-          <Label className="text-white">Default Tool Settings</Label>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-300">Pen Size</span>
-              <span className="text-gray-400">{settings.defaultPenSize}px</span>
-            </div>
-            <Slider
-              value={[settings.defaultPenSize]}
-              onValueChange={([value]) =>
-                onUpdateSettings({ defaultPenSize: value })
-              }
-              min={1}
-              max={20}
-              step={1}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-300">Marker Size</span>
-              <span className="text-gray-400">{settings.defaultMarkerSize}px</span>
-            </div>
-            <Slider
-              value={[settings.defaultMarkerSize]}
-              onValueChange={([value]) =>
-                onUpdateSettings({ defaultMarkerSize: value })
-              }
-              min={5}
-              max={50}
-              step={1}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-300">Marker Opacity</span>
-              <span className="text-gray-400">{Math.round(settings.defaultMarkerOpacity * 100)}%</span>
-            </div>
-            <Slider
-              value={[settings.defaultMarkerOpacity * 100]}
-              onValueChange={([value]) =>
-                onUpdateSettings({ defaultMarkerOpacity: value / 100 })
-              }
-              min={10}
-              max={100}
-              step={5}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-300">Marker Corner Radius</span>
-              <span className="text-gray-400">{settings.defaultMarkerBorderRadius}px</span>
-            </div>
-            <Slider
-              value={[settings.defaultMarkerBorderRadius]}
-              onValueChange={([value]) =>
-                onUpdateSettings({ defaultMarkerBorderRadius: value })
-              }
-              min={0}
-              max={20}
-              step={1}
-            />
-          </div>
-        </div>
-
-        {/* Keyboard Shortcuts Reference */}
-        <div className="space-y-3">
-          <Label className="text-white">Keyboard Shortcuts</Label>
-          <div className="text-xs text-gray-400 space-y-1 bg-[#2a2a2a] p-3 rounded-lg">
-            <div className="grid grid-cols-2 gap-2">
-              <span>Ctrl+O</span><span>Open image</span>
-              <span>Ctrl+S</span><span>Save image</span>
-              <span>Ctrl+C</span><span>Copy to clipboard</span>
-              <span>Ctrl+Z</span><span>Undo</span>
-              <span>Ctrl+Shift+Z</span><span>Redo</span>
-              <span>Ctrl+R</span><span>Toggle ruler</span>
-              <span>1/2/3</span><span>Pen/Marker/Area</span>
-              <span>Ctrl+1-7</span><span>Colors 1-7</span>
-              <span>Ctrl+Scroll</span><span>Zoom</span>
-              <span>Ctrl+Click</span><span>Pan</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </DialogContent>
-  );
-
-  return standalone ? (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-9 h-9 text-gray-400 hover:text-white hover:bg-[#3d3d3d]"
-        >
-          <Settings2 className="w-5 h-5" />
-        </Button>
-      </DialogTrigger>
-      {content}
-    </Dialog>
-  ) : (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      {content}
+      </DialogContent>
     </Dialog>
   );
 }

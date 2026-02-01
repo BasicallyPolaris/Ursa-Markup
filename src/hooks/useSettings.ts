@@ -1,14 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Store } from '@tauri-apps/plugin-store';
 
 export interface AppSettings {
-  // Auto-copy settings
   autoCopyOnChange: boolean;
-  
-  // Color presets (7 colors)
   colorPresets: string[];
-  
-  // Tool defaults
   defaultTool: 'pen' | 'highlighter' | 'area';
   defaultPenSize: number;
   defaultMarkerSize: number;
@@ -20,13 +15,13 @@ export interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
   autoCopyOnChange: false,
   colorPresets: [
-    '#FF6B6B', // Coral Red
-    '#FF9F43', // Orange
-    '#FFE066', // Yellow
-    '#6BCB77', // Green
-    '#4D96FF', // Blue
-    '#9B59B6', // Purple
-    '#FF6B9D', // Pink
+    '#FF6B6B',
+    '#FF9F43',
+    '#FFE066',
+    '#6BCB77',
+    '#4D96FF',
+    '#9B59B6',
+    '#FF6B9D',
   ],
   defaultTool: 'pen',
   defaultPenSize: 3,
@@ -37,11 +32,12 @@ const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export function useSettings() {
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [savedSettings, setSavedSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const [draftSettings, setDraftSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [store, setStore] = useState<Store | null>(null);
+  const storeRef = useRef<Store | null>(null);
 
-  // Load store on mount
+  // Load settings on mount
   useEffect(() => {
     let mounted = true;
     
@@ -50,12 +46,13 @@ export function useSettings() {
         const storeInstance = await Store.load('settings.json');
         if (!mounted) return;
         
-        setStore(storeInstance);
+        storeRef.current = storeInstance;
         
-        // Load saved settings
         const saved = await storeInstance.get<AppSettings>('appSettings');
         if (saved && mounted) {
-          setSettings({ ...DEFAULT_SETTINGS, ...saved });
+          const merged = { ...DEFAULT_SETTINGS, ...saved };
+          setSavedSettings(merged);
+          setDraftSettings(merged);
         }
       } catch (error) {
         console.error('Failed to load settings:', error);
@@ -73,43 +70,64 @@ export function useSettings() {
     };
   }, []);
 
-  // Save settings whenever they change
-  useEffect(() => {
-    if (!isLoaded || !store) return;
-    
-    const saveSettings = async () => {
-      try {
-        await store.set('appSettings', settings);
-        await store.save();
-      } catch (error) {
-        console.error('Failed to save settings:', error);
-      }
-    };
-    
-    saveSettings();
-  }, [settings, isLoaded, store]);
-
-  const updateSettings = useCallback((updates: Partial<AppSettings>) => {
-    setSettings(prev => ({ ...prev, ...updates }));
+  // Update draft settings (doesn't save to disk)
+  const updateDraft = useCallback((updates: Partial<AppSettings>) => {
+    setDraftSettings(prev => ({ ...prev, ...updates }));
   }, []);
 
   const updateColorPreset = useCallback((index: number, color: string) => {
-    setSettings(prev => {
+    setDraftSettings(prev => {
       const newPresets = [...prev.colorPresets];
       newPresets[index] = color;
       return { ...prev, colorPresets: newPresets };
     });
   }, []);
 
-  const resetSettings = useCallback(() => {
-    setSettings(DEFAULT_SETTINGS);
+  // Save draft to disk
+  const saveSettings = useCallback(async () => {
+    if (!storeRef.current) return false;
+    
+    try {
+      await storeRef.current.set('appSettings', draftSettings);
+      await storeRef.current.save();
+      setSavedSettings(draftSettings);
+      return true;
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      return false;
+    }
+  }, [draftSettings]);
+
+  // Cancel changes - revert draft to saved
+  const cancelChanges = useCallback(() => {
+    setDraftSettings(savedSettings);
+  }, [savedSettings]);
+
+  // Reset to defaults
+  const resetToDefaults = useCallback(async () => {
+    setDraftSettings(DEFAULT_SETTINGS);
+    if (storeRef.current) {
+      try {
+        await storeRef.current.set('appSettings', DEFAULT_SETTINGS);
+        await storeRef.current.save();
+        setSavedSettings(DEFAULT_SETTINGS);
+      } catch (error) {
+        console.error('Failed to reset settings:', error);
+      }
+    }
   }, []);
 
+  const hasChanges = JSON.stringify(savedSettings) !== JSON.stringify(draftSettings);
+
   return {
-    settings,
+    settings: draftSettings,
+    savedSettings,
     isLoaded,
-    updateSettings,
+    hasChanges,
+    updateDraft,
     updateColorPreset,
-    resetSettings,
+    saveSettings,
+    cancelChanges,
+    resetToDefaults,
   };
 }

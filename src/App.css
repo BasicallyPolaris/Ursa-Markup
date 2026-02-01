@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 @theme {
+  /* ============================================
+     THEME VARIABLES - OmniSnip Color System
+     These map to CSS custom properties for dynamic theming
+     ============================================ */
+  
+  /* shadcn/ui compatibility - Core semantic colors */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -20,64 +26,171 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  
+  /* Application-specific theme variables with hsl() wrapper */
+  --color-app-bg: hsl(var(--app-bg));
+  --color-app-fg: hsl(var(--app-fg));
+  --color-toolbar-bg: hsl(var(--toolbar-bg));
+  --color-toolbar-bg-secondary: hsl(var(--toolbar-bg-secondary));
+  --color-toolbar-border: hsl(var(--toolbar-border));
+  --color-panel-bg: hsl(var(--panel-bg));
+  --color-panel-border: hsl(var(--panel-border));
+  --color-surface-bg: hsl(var(--surface-bg));
+  --color-surface-bg-hover: hsl(var(--surface-bg-hover));
+  --color-surface-bg-active: hsl(var(--surface-bg-active));
+  --color-text-primary: hsl(var(--text-primary));
+  --color-text-secondary: hsl(var(--text-secondary));
+  --color-text-muted: hsl(var(--text-muted));
+  --color-accent-primary: hsl(var(--accent-primary));
+  --color-accent-primary-fg: hsl(var(--accent-primary-fg));
+  --color-accent-hover: hsl(var(--accent-hover));
+  --color-toggle-checked: hsl(var(--toggle-checked));
+  --color-toggle-unchecked: hsl(var(--toggle-unchecked));
+  --color-canvas-bg: hsl(var(--canvas-bg));
+  --color-canvas-pattern: hsl(var(--canvas-pattern));
+  --color-ruler-bg: hsl(var(--ruler-bg));
+  --color-ruler-border: hsl(var(--ruler-border));
+  --color-ruler-tick: hsl(var(--ruler-tick));
+  --color-ruler-tick-major: hsl(var(--ruler-tick-major));
+  --color-ruler-text: hsl(var(--ruler-text));
+  --color-ruler-center-bg: hsl(var(--ruler-center-bg));
+  --color-ruler-center-border: hsl(var(--ruler-center-border));
+  --color-ruler-compass: hsl(var(--ruler-compass));
+  
+  /* Border radius */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ============================================
+   CSS CUSTOM PROPERTIES - Default Dark Theme
+   These are dynamically updated by the theme system
+   ============================================ */
+
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
-  --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 240 5.9% 10%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
-  --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 0 0% 98%;
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 5.9% 10%;
+  /* shadcn/ui base variables - HSL format for Tailwind v4 @theme */
+  --background: 0 0% 11.8%;              /* #1e1e1e - panel/dark bg */
+  --foreground: 0 0% 100%;               /* #ffffff - text */
+  --card: 0 0% 11.8%;                    /* #1e1e1e */
+  --card-foreground: 0 0% 100%;          /* #ffffff */
+  --popover: 0 0% 11.8%;                 /* #1e1e1e */
+  --popover-foreground: 0 0% 100%;       /* #ffffff */
+  --primary: 207 100% 31%;               /* #005a9e - blue accent */
+  --primary-foreground: 0 0% 100%;       /* #ffffff */
+  --secondary: 0 0% 14.5%;               /* #252525 - toolbar */
+  --secondary-foreground: 0 0% 100%;     /* #ffffff */
+  --muted: 0 0% 14.5%;                   /* #252525 */
+  --muted-foreground: 0 0% 64%;          /* #a3a3a3 - gray-400 */
+  --accent: 207 100% 31%;                /* #005a9e */
+  --accent-foreground: 0 0% 100%;        /* #ffffff */
+  --destructive: 0 62% 45%;              /* #b43232 - compass red */
+  --destructive-foreground: 0 0% 100%;   /* #ffffff */
+  --border: 0 0% 16.5%;                  /* #2a2a2a - borders */
+  --input: 0 0% 16.5%;                   /* #2a2a2a */
+  --ring: 207 100% 31%;                  /* #005a9e */
   --radius: 0.5rem;
+  
+  /* Application-specific variables - HSL format for Tailwind v4 @theme */
+  --app-bg: 0 0% 11.8%;                  /* #1e1e1e - main app background */
+  --app-fg: 0 0% 100%;                   /* #ffffff - main text */
+  --toolbar-bg: 0 0% 14.5%;              /* #252525 - top toolbar */
+  --toolbar-bg-secondary: 0 0% 11.8%;    /* #1e1e1e - tools bar */
+  --toolbar-border: 0 0% 16.5%;          /* #2a2a2a - toolbar borders */
+  --panel-bg: 0 0% 11.8%;                /* #1e1e1e - dialog/panel background */
+  --panel-border: 0 0% 24%;              /* #3d3d3d - panel borders */
+  --surface-bg: 0 0% 14.5%;              /* #252525 - button/tool backgrounds */
+  --surface-bg-hover: 0 0% 23%;          /* #3a3a3a - hover state */
+  --surface-bg-active: 0 0% 29%;         /* #4a4a4a - active/selected state */
+  --text-primary: 0 0% 100%;             /* #ffffff - primary text */
+  --text-secondary: 0 0% 82%;            /* #d1d5db - gray-300 secondary text */
+  --text-muted: 0 0% 64%;                /* #9ca3af - gray-400 muted text */
+  --accent-primary: 207 100% 31%;        /* #005a9e - blue accent */
+  --accent-primary-fg: 0 0% 100%;        /* #ffffff - accent text */
+  --accent-hover: 0 0% 100%;             /* white - hover overlay with opacity in class */
+  --toggle-checked: 207 100% 31%;        /* #005a9e - switch checked */
+  --toggle-unchecked: 0 0% 24%;          /* #3d3d3d - switch unchecked */
+  --canvas-bg: 0 0% 10%;                 /* #1a1a1a - canvas background */
+  --canvas-pattern: 0 0% 16.5%;          /* #2a2a2a - canvas grid pattern */
+  --ruler-bg: 0 0% 78%;                  /* #c8c8c8 - ruler background */
+  --ruler-border: 0 0% 39%;              /* #646464 - ruler border */
+  --ruler-tick: 0 0% 16%;                /* #282828 - ruler tick marks */
+  --ruler-tick-major: 0 0% 16%;          /* #282828 - major ticks */
+  --ruler-text: 0 0% 16%;                /* #282828 - ruler text */
+  --ruler-center-bg: 0 0% 86%;           /* #dcdcdc - ruler center circle */
+  --ruler-center-border: 0 0% 31%;       /* #505050 - ruler center border */
+  --ruler-compass: 0 62% 45%;            /* #b43232 - compass red */
 }
 
-.dark {
-  --background: 240 10% 3.9%;
-  --foreground: 0 0% 98%;
-  --card: 240 10% 3.9%;
-  --card-foreground: 0 0% 98%;
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --primary: 0 0% 98%;
-  --primary-foreground: 240 5.9% 10%;
-  --secondary: 240 3.7% 15.9%;
-  --secondary-foreground: 0 0% 98%;
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --accent: 240 3.7% 15.9%;
-  --accent-foreground: 0 0% 98%;
-  --destructive: 0 62.8% 30.6%;
+/* ============================================
+   LIGHT THEME - Alternative color scheme
+   ============================================ */
+
+.light {
+  /* shadcn/ui base variables */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 4%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 4%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 4%;
+  --primary: 240 6% 10%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 240 5% 96%;
+  --secondary-foreground: 240 6% 10%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 46%;
+  --accent: 240 5% 96%;
+  --accent-foreground: 240 6% 10%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 240 4.9% 83.9%;
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 240 6% 10%;
+  
+  /* Application-specific variables */
+  --app-bg: 0 0% 98%;
+  --app-fg: 240 10% 4%;
+  --toolbar-bg: 0 0% 96%;
+  --toolbar-bg-secondary: 0 0% 98%;
+  --toolbar-border: 240 6% 90%;
+  --panel-bg: 0 0% 100%;
+  --panel-border: 240 6% 90%;
+  --surface-bg: 0 0% 96%;
+  --surface-bg-hover: 0 0% 90%;
+  --surface-bg-active: 0 0% 85%;
+  --text-primary: 240 10% 4%;
+  --text-secondary: 240 4% 46%;
+  --text-muted: 240 4% 64%;
+  --accent-primary: 207 100% 31%;
+  --accent-primary-fg: 0 0% 100%;
+  --accent-hover: 240 10% 4% / 0.05;
+  --toggle-checked: 207 100% 31%;
+  --toggle-unchecked: 240 6% 70%;
+  --canvas-bg: 0 0% 94%;
+  --canvas-pattern: 0 0% 85%;
+  --ruler-bg: 0 0% 78%;
+  --ruler-border: 0 0% 39%;
+  --ruler-tick: 0 0% 16%;
+  --ruler-tick-major: 0 0% 16%;
+  --ruler-text: 0 0% 16%;
+  --ruler-center-bg: 0 0% 86%;
+  --ruler-center-border: 0 0% 31%;
+  --ruler-compass: 0 70% 45%;
 }
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
 
 * {
   border-color: hsl(var(--border));
 }
 
 body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color: hsl(var(--app-bg));
+  color: hsl(var(--app-fg));
 }
 
 html {

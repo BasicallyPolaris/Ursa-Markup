@@ -34,6 +34,31 @@ export interface ColorPalette {
   colors: string[]
 }
 
+// Tool configuration types for theme system
+export interface PenToolConfig {
+  minSize: number
+  maxSize: number
+  defaultSize: number
+}
+
+export interface HighlighterToolConfig {
+  opacity: number
+  minSize: number
+  maxSize: number
+  defaultSize: number
+}
+
+export interface AreaToolConfig {
+  opacity: number
+  defaultSize: number
+}
+
+export interface ToolConfig {
+  pen: PenToolConfig
+  highlighter: HighlighterToolConfig
+  area: AreaToolConfig
+}
+
 export const PASTEL_PALETTE: ColorPalette = {
   name: 'pastel',
   colors: [

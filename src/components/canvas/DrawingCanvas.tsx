@@ -1,6 +1,44 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import type { Tool, BrushSettings, RulerState, Point } from '../../types';
 import { cn } from '../../lib/utils';
+/**
+ * Helper to get a CSS custom property value
+ */
+function getCssVar(name: string): string {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || '0 0% 50%';
+}
+
+/**
+ * Convert HSL CSS variable to rgba string for canvas
+ */
+function getRulerColor(varName: string, alpha: number = 1): string {
+  const hslValue = getCssVar(varName);
+  const parts = hslValue.split(' ');
+  if (parts.length >= 3) {
+    const h = parseInt(parts[0]);
+    const s = parseInt(parts[1]);
+    const l = parseInt(parts[2]);
+    // Convert HSL to RGB
+    const sPercent = s / 100;
+    const lPercent = l / 100;
+    const c = (1 - Math.abs(2 * lPercent - 1)) * sPercent;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = lPercent - c / 2;
+    
+    let r = 0, g = 0, b = 0;
+    
+    if (h < 60) { r = c; g = x; }
+    else if (h < 120) { r = x; g = c; }
+    else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; }
+    else if (h < 300) { r = x; b = c; }
+    else { r = c; b = x; }
+    
+    return `rgba(${Math.round((r + m) * 255)}, ${Math.round((g + m) * 255)}, ${Math.round((b + m) * 255)}, ${alpha})`;
+  }
+  return `rgba(128, 128, 128, ${alpha})`;
+}
 
 interface DrawingCanvasProps {
   imageSrc: string | null;
@@ -151,6 +189,14 @@ export function DrawingCanvas({
     const currentZoom = zoomRef.current;
     const currentViewOffset = viewOffsetRef.current;
     
+    // Get ruler colors from CSS variables
+    const rulerBgColor = getRulerColor('--ruler-bg', 0.9);
+    const rulerBorderColor = getRulerColor('--ruler-border', 1);
+    const rulerTickColor = getRulerColor('--ruler-tick', 1);
+    const rulerCenterBg = getRulerColor('--ruler-center-bg', 1);
+    const rulerCenterBorder = getRulerColor('--ruler-center-border', 1);
+    const rulerCompassColor = getRulerColor('--ruler-compass', 1);
+    
     const baseCanvas = baseCanvasRef.current;
     const drawCanvas = drawCanvasRef.current;
     const displayCanvas = displayCanvasRef.current;
@@ -232,14 +278,14 @@ export function DrawingCanvas({
         
         // Ensure ruler dimensions are valid
         if (rulerLength > 0 && rulerHeight > 0) {
-          displayCtx.fillStyle = 'rgba(200, 200, 200, 0.9)';
+          displayCtx.fillStyle = rulerBgColor;
           displayCtx.fillRect(-rulerLength / 2, -rulerHeight / 2, rulerLength, rulerHeight);
           
-          displayCtx.strokeStyle = 'rgba(100, 100, 100, 1)';
+          displayCtx.strokeStyle = rulerBorderColor;
           displayCtx.lineWidth = 2 / currentZoom;
           displayCtx.strokeRect(-rulerLength / 2, -rulerHeight / 2, rulerLength, rulerHeight);
           
-          displayCtx.strokeStyle = 'rgba(40, 40, 40, 1)';
+          displayCtx.strokeStyle = rulerTickColor;
           displayCtx.lineWidth = 1.5 / currentZoom;
           displayCtx.beginPath();
           
@@ -259,7 +305,7 @@ export function DrawingCanvas({
             displayCtx.lineTo(x, rulerHeight / 2 - height);
             
             if (absI % 10 === 0 && i !== 0) {
-              displayCtx.fillStyle = 'rgba(40, 40, 40, 1)';
+              displayCtx.fillStyle = rulerTickColor;
               displayCtx.font = `bold ${11 / currentZoom}px sans-serif`;
               displayCtx.textAlign = 'center';
               displayCtx.textBaseline = 'middle';
@@ -272,13 +318,13 @@ export function DrawingCanvas({
           const centerRadius = 22;
           displayCtx.beginPath();
           displayCtx.arc(0, 0, centerRadius, 0, Math.PI * 2);
-          displayCtx.fillStyle = 'rgba(220, 220, 220, 1)';
+          displayCtx.fillStyle = rulerCenterBg;
           displayCtx.fill();
-          displayCtx.strokeStyle = 'rgba(80, 80, 80, 1)';
+          displayCtx.strokeStyle = rulerCenterBorder;
           displayCtx.lineWidth = 2 / currentZoom;
           displayCtx.stroke();
           
-          displayCtx.fillStyle = 'rgba(0, 0, 0, 1)';
+          displayCtx.fillStyle = rulerTickColor;
           displayCtx.font = `bold ${13 / currentZoom}px sans-serif`;
           displayCtx.textAlign = 'center';
           displayCtx.textBaseline = 'middle';
@@ -292,7 +338,7 @@ export function DrawingCanvas({
             displayCtx.moveTo(Math.cos(angle) * r1, Math.sin(angle) * r1);
             displayCtx.lineTo(Math.cos(angle) * r2, Math.sin(angle) * r2);
           }
-          displayCtx.strokeStyle = 'rgba(180, 50, 50, 1)';
+          displayCtx.strokeStyle = rulerCompassColor;
           displayCtx.lineWidth = 1.5 / currentZoom;
           displayCtx.stroke();
         }
@@ -767,20 +813,22 @@ export function DrawingCanvas({
     return (
       <div
         ref={containerRef}
-        className={cn('flex items-center justify-center select-none', className)}
+        className={cn('flex items-center justify-center select-none bg-canvas-bg', className)}
         style={{ 
           width: '100%', 
           height: '100%',
-          background: 'linear-gradient(45deg, #2a2a2a 25%, transparent 25%), linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #2a2a2a 75%), linear-gradient(-45deg, transparent 75%, #2a2a2a 75%)',
+          backgroundImage: `linear-gradient(45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%), 
+                           linear-gradient(-45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%), 
+                           linear-gradient(45deg, transparent 75%, hsl(var(--canvas-pattern)) 75%), 
+                           linear-gradient(-45deg, transparent 75%, hsl(var(--canvas-pattern)) 75%)`,
           backgroundSize: '20px 20px',
           backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-          backgroundColor: '#1a1a1a'
         }}
       >
         <div className="text-center pointer-events-none">
-          <p className="text-white/90 text-lg mb-2 font-medium">OmniSnip</p>
-          <p className="text-white/60 text-sm mb-1">Press Ctrl+O to open an image</p>
-          <p className="text-white/40 text-xs">Ctrl+Click to pan • Ctrl+Scroll to zoom</p>
+          <p className="text-text-primary/90 text-lg mb-2 font-medium">OmniSnip</p>
+          <p className="text-text-primary/60 text-sm mb-1">Press Ctrl+O to open an image</p>
+          <p className="text-text-primary/40 text-xs">Ctrl+Click to pan • Ctrl+Scroll to zoom</p>
         </div>
         
         <canvas ref={baseCanvasRef} style={{ display: 'none' }} />
@@ -792,15 +840,17 @@ export function DrawingCanvas({
   return (
     <div
       ref={containerRef}
-      className={cn('relative overflow-hidden', className)}
+      className={cn('relative overflow-hidden bg-canvas-bg', className)}
       style={{
         width: '100%',
         height: '100%',
         cursor: getCursor(),
-        background: 'linear-gradient(45deg, #2a2a2a 25%, transparent 25%), linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #2a2a2a 75%), linear-gradient(-45deg, transparent 75%, #2a2a2a 75%)',
+        backgroundImage: `linear-gradient(45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%), 
+                         linear-gradient(-45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%), 
+                         linear-gradient(45deg, transparent 75%, hsl(var(--canvas-pattern)) 75%), 
+                         linear-gradient(-45deg, transparent 75%, hsl(var(--canvas-pattern)) 75%)`,
         backgroundSize: '20px 20px',
         backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-        backgroundColor: '#1a1a1a'
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -818,10 +868,10 @@ export function DrawingCanvas({
       />
       
       {/* Status indicator */}
-      <div className="absolute bottom-4 right-4 bg-black/80 text-white px-3 py-2 rounded-lg text-xs font-mono pointer-events-none select-none flex flex-col gap-1">
+      <div className="absolute bottom-4 right-4 bg-surface-bg/95 text-text-primary px-3 py-2 rounded-lg text-xs font-mono pointer-events-none select-none flex flex-col gap-1 border border-toolbar-border">
         <div>Zoom: {Math.round(zoom * 100)}%</div>
-        {(viewOffset.x !== 0 || viewOffset.y !== 0) && <div className="text-gray-400">Panned</div>}
-        {ruler.visible && <div className="text-blue-400">Ruler: {Math.round(ruler.angle % 360)}°</div>}
+        {(viewOffset.x !== 0 || viewOffset.y !== 0) && <div className="text-text-muted">Panned</div>}
+        {ruler.visible && <div className="text-accent-primary">Ruler: {Math.round(ruler.angle % 360)}°</div>}
       </div>
     </div>
   );

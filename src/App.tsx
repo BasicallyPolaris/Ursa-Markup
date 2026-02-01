@@ -10,6 +10,7 @@ import { useStrokeHistory } from './hooks/useStrokeHistory';
 import { useRuler } from './hooks/useRuler';
 import { useClipboard } from './hooks/useClipboard';
 import { useSettings } from './hooks/useSettings';
+import { useTheme } from './hooks/useTheme';
 import type { Tool, BrushSettings, Point } from './types';
 import './App.css';
 
@@ -28,7 +29,8 @@ function App() {
   } = useStrokeHistory();
   const { ruler, toggleRuler, startDragging, drag, stopDragging, rotateRuler } = useRuler();
   const { copyToClipboard, saveImage } = useClipboard();
-  const { settings, updateSettings, updateColorPreset, resetSettings } = useSettings();
+  const { settings, updateDraft, updateColorPreset, saveSettings, cancelChanges, resetToDefaults, hasChanges } = useSettings();
+  const { getActivePalette } = useTheme();
 
   // State
   const [imageSrc, setImageSrc] = useState<string | null>(null);
@@ -196,7 +198,7 @@ function App() {
     } else if (newTool === 'area') {
       setBrush((prev) => ({ 
         ...prev, 
-        opacity: 0.3 
+        opacity: 0.1 
       }));
     }
   }, [settings]);
@@ -392,8 +394,11 @@ function App() {
     }
   }, [imageSrc]);
 
+  // Get the active color palette from theme
+  const activePalette = getActivePalette();
+
   return (
-    <div ref={containerRef} className="flex flex-col h-screen w-screen overflow-hidden bg-[#1e1e1e]">
+    <div ref={containerRef} className="flex flex-col h-screen w-screen overflow-hidden bg-app-bg">
       <Toolbar
         tool={tool}
         onToolChange={handleToolChange}
@@ -413,13 +418,17 @@ function App() {
         zoom={zoom}
         onZoomChange={handleZoomChange}
         onFitToWindow={handleFitToWindow}
+        palette={activePalette}
       />
 
       <SettingsPanel
         settings={settings}
-        onUpdateSettings={updateSettings}
+        hasChanges={hasChanges}
+        onUpdateDraft={updateDraft}
         onUpdateColorPreset={updateColorPreset}
-        onResetSettings={resetSettings}
+        onSave={saveSettings}
+        onCancel={cancelChanges}
+        onReset={resetToDefaults}
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
       />

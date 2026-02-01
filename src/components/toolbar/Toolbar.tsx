@@ -53,7 +53,7 @@ export function Toolbar({
     <TooltipProvider delayDuration={0}>
       <div className="flex flex-col select-none">
         {/* Top Bar */}
-        <div className="flex items-center justify-between px-3 py-2 bg-[#252525] border-b border-[#333]">
+        <div className="flex items-center justify-between px-3 py-2 bg-toolbar-bg border-b border-toolbar-border">
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -61,7 +61,7 @@ export function Toolbar({
                   variant="ghost" 
                   size="sm" 
                   onClick={onOpen}
-                  className="h-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a]"
+                  className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                 >
                   <FolderOpen className="h-4 w-4 mr-1.5" />
                   <span className="text-sm">Open</span>
@@ -77,7 +77,7 @@ export function Toolbar({
                   size="sm" 
                   onClick={onSave}
                   disabled={!hasImage}
-                  className="h-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a] disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Save className="h-4 w-4 mr-1.5" />
                   <span className="text-sm">Save</span>
@@ -93,7 +93,7 @@ export function Toolbar({
                   size="sm" 
                   onClick={onCopy}
                   disabled={!hasImage}
-                  className="h-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a] disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <Copy className="h-4 w-4 mr-1.5" />
                   <span className="text-sm">Copy</span>
@@ -112,7 +112,7 @@ export function Toolbar({
                   size="icon"
                   onClick={onUndo}
                   disabled={!canUndo}
-                  className="h-8 w-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a] disabled:opacity-40"
+                  className="h-8 w-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 border border-transparent hover:border-toolbar-border"
                 >
                   <Undo2 className="h-4 w-4" />
                 </Button>
@@ -127,7 +127,7 @@ export function Toolbar({
                   size="icon"
                   onClick={onRedo}
                   disabled={!canRedo}
-                  className="h-8 w-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a] disabled:opacity-40"
+                  className="h-8 w-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 border border-transparent hover:border-toolbar-border"
                 >
                   <Redo2 className="h-4 w-4" />
                 </Button>
@@ -136,7 +136,7 @@ export function Toolbar({
             </Tooltip>
 
             {/* Divider */}
-            <div className="w-px h-5 bg-[#444] mx-2" />
+            <div className="w-px h-5 bg-text-secondary/20 mx-2" />
 
             {/* Settings */}
             <Tooltip>
@@ -145,7 +145,7 @@ export function Toolbar({
                   variant="ghost"
                   size="icon"
                   onClick={onSettings}
-                  className="h-8 w-8 text-gray-300 hover:text-white hover:bg-[#3a3a3a]"
+                  className="h-8 w-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
                 >
                   <Settings className="h-4 w-4" />
                 </Button>
@@ -156,9 +156,9 @@ export function Toolbar({
         </div>
 
         {/* Tools Bar */}
-        <div className="flex items-center gap-3 px-3 py-2 bg-[#1e1e1e] border-b border-[#333]">
+        <div className="flex items-center gap-3 px-3 py-2 bg-toolbar-bg-secondary border-b border-toolbar-border">
           {/* Drawing Tools */}
-          <div className="flex items-center gap-1 bg-[#252525] rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-surface-bg rounded-lg p-1 border border-toolbar-border">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -166,17 +166,17 @@ export function Toolbar({
                   size="sm"
                   onClick={() => onToolChange('pen')}
                   className={cn(
-                    'h-8 px-3',
+                    'h-8 px-3 border',
                     tool === 'pen' 
-                      ? 'bg-white/15 text-white hover:bg-white/20' 
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                      ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm' 
+                      : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
                   )}
                 >
                   <Pencil className="h-4 w-4 mr-1.5" />
                   <span className="text-sm">Pen</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Pen Tool (1)</TooltipContent>
+              <TooltipContent>Pen (1)</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -186,17 +186,17 @@ export function Toolbar({
                   size="sm"
                   onClick={() => onToolChange('highlighter')}
                   className={cn(
-                    'h-8 px-3',
+                    'h-8 px-3 border',
                     tool === 'highlighter' 
-                      ? 'bg-white/15 text-white hover:bg-white/20' 
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                      ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm' 
+                      : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
                   )}
                 >
                   <Highlighter className="h-4 w-4 mr-1.5" />
                   <span className="text-sm">Marker</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Marker - Square highlighter (2)</TooltipContent>
+              <TooltipContent>Marker (2)</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -206,21 +206,21 @@ export function Toolbar({
                   size="sm"
                   onClick={() => onToolChange('area')}
                   className={cn(
-                    'h-8 px-3',
+                    'h-8 px-3 border',
                     tool === 'area' 
-                      ? 'bg-white/15 text-white hover:bg-white/20' 
-                      : 'text-gray-400 hover:text-white hover:bg-white/10'
+                      ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm' 
+                      : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
                   )}
                 >
                   <Square className="h-4 w-4 mr-1.5" />
                   <span className="text-sm">Area</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Area Highlight (3)</TooltipContent>
+              <TooltipContent>Area (3)</TooltipContent>
             </Tooltip>
           </div>
 
-          <div className="w-px h-8 bg-[#333]" />
+          <div className="w-px h-8 bg-text-secondary/20" />
 
           {/* Color Palette with smooth anti-aliased circles */}
           <div className="flex items-center gap-1.5">
@@ -232,8 +232,8 @@ export function Toolbar({
                     className={cn(
                       'w-6 h-6 rounded-full transition-all',
                       brush.color === color
-                        ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e1e1e] scale-110'
-                        : 'hover:scale-105 hover:ring-2 hover:ring-white/50'
+                        ? 'ring-2 ring-text-primary/60 ring-offset-2 ring-offset-toolbar-bg-secondary scale-110'
+                        : 'hover:scale-105 hover:ring-2 hover:ring-text-primary/30'
                     )}
                     style={{ 
                       backgroundColor: color,
@@ -246,30 +246,32 @@ export function Toolbar({
             ))}
           </div>
 
-          <div className="w-px h-8 bg-[#333]" />
+          <div className="w-px h-8 bg-surface-bg" />
 
           {/* Size & Opacity Controls */}
           <div className="flex items-center gap-4">
-            {/* Size Slider */}
-            <div className="flex flex-col gap-1 w-24">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Size</span>
-                <span className="text-xs text-gray-300 font-mono">{brush.size}px</span>
+            {/* Size Slider - hidden for area tool */}
+            {tool !== 'area' && (
+              <div className="flex flex-col gap-1 w-24">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-muted">Size</span>
+                  <span className="text-xs text-text-secondary font-mono">{brush.size}px</span>
+                </div>
+                <Slider
+                  value={[brush.size]}
+                  min={1}
+                  max={tool === 'highlighter' ? 40 : 20}
+                  step={1}
+                  onValueChange={([value]) => onBrushChange({ size: value })}
+                />
               </div>
-              <Slider
-                value={[brush.size]}
-                min={1}
-                max={tool === 'highlighter' ? 40 : 20}
-                step={1}
-                onValueChange={([value]) => onBrushChange({ size: value })}
-              />
-            </div>
+            )}
 
             {/* Opacity Slider */}
             <div className="flex flex-col gap-1 w-24">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">Opacity</span>
-                <span className="text-xs text-gray-300 font-mono">{Math.round(brush.opacity * 100)}%</span>
+                <span className="text-xs text-text-muted">Opacity</span>
+                <span className="text-xs text-text-secondary font-mono">{Math.round(brush.opacity * 100)}%</span>
               </div>
               <Slider
                 value={[brush.opacity * 100]}
@@ -284,8 +286,8 @@ export function Toolbar({
             {tool === 'highlighter' && (
               <div className="flex flex-col gap-1 w-24">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">Radius</span>
-                  <span className="text-xs text-gray-300 font-mono">{brush.borderRadius || 0}px</span>
+                  <span className="text-xs text-text-muted">Radius</span>
+                  <span className="text-xs text-text-secondary font-mono">{brush.borderRadius || 0}px</span>
                 </div>
                 <Slider
                   value={[brush.borderRadius || 0]}
@@ -298,7 +300,7 @@ export function Toolbar({
             )}
 
             {/* Brush Preview */}
-            <div className="flex items-center justify-center w-10 h-10 bg-[#252525] rounded-lg border border-[#333]">
+            <div className="flex items-center justify-center w-10 h-10 bg-surface-bg rounded-lg border border-toolbar-border">
               {tool === 'highlighter' ? (
                 <div
                   className="bg-current"
@@ -324,7 +326,7 @@ export function Toolbar({
             </div>
           </div>
 
-          <div className="w-px h-8 bg-[#333]" />
+          <div className="w-px h-8 bg-surface-bg" />
 
           {/* Ruler Toggle */}
           <Tooltip>
@@ -334,16 +336,16 @@ export function Toolbar({
                 size="sm"
                 onClick={onToggleRuler}
                 className={cn(
-                  'h-8 px-3',
+                  'h-8 px-3 border',
                   ruler.visible 
-                    ? 'bg-white/15 text-white hover:bg-white/20' 
-                    : 'text-gray-400 hover:text-white hover:bg-white/10'
+                    ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm' 
+                    : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
                 )}
               >
                 <Ruler className="h-4 w-4 mr-1.5" />
                 <span className="text-sm">Ruler</span>
                 {ruler.visible && (
-                  <span className="ml-1.5 text-xs text-gray-400">
+                  <span className="ml-1.5 text-xs text-text-secondary">
                     {Math.round(ruler.angle % 360)}°
                   </span>
                 )}
@@ -355,14 +357,14 @@ export function Toolbar({
           <div className="flex-1" />
 
           {/* Zoom Controls */}
-          <div className="flex items-center gap-1 bg-[#252525] rounded-lg p-1">
+          <div className="flex items-center gap-1 bg-surface-bg rounded-lg p-1 border border-toolbar-border">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => onZoomChange(Math.max(0.1, zoom / 1.2))}
-                  className="h-7 w-7 text-gray-400 hover:text-white hover:bg-white/10"
+                  className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
@@ -370,7 +372,7 @@ export function Toolbar({
               <TooltipContent>Zoom Out (Ctrl+-)</TooltipContent>
             </Tooltip>
 
-            <span className="text-xs text-gray-300 w-12 text-center font-mono">
+            <span className="text-xs text-text-secondary w-12 text-center font-mono">
               {Math.round(zoom * 100)}%
             </span>
 
@@ -380,7 +382,7 @@ export function Toolbar({
                   variant="ghost"
                   size="icon"
                   onClick={() => onZoomChange(Math.min(5, zoom * 1.2))}
-                  className="h-7 w-7 text-gray-400 hover:text-white hover:bg-white/10"
+                  className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
@@ -388,7 +390,7 @@ export function Toolbar({
               <TooltipContent>Zoom In (Ctrl++)</TooltipContent>
             </Tooltip>
 
-            <div className="w-px h-4 bg-[#444] mx-1" />
+            <div className="w-px h-4 bg-text-secondary/20 mx-1" />
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -396,7 +398,7 @@ export function Toolbar({
                   variant="ghost"
                   size="icon"
                   onClick={onFitToWindow}
-                  className="h-7 w-7 text-gray-400 hover:text-white hover:bg-white/10"
+                  className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
                 >
                   <Maximize className="h-3 w-3" />
                 </Button>
