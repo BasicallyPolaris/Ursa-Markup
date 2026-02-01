@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Store } from '@tauri-apps/plugin-store';
 
+export type CloseTabBehavior = 'prompt' | 'auto-save' | 'discard';
+
 export interface AppSettings {
   autoCopyOnChange: boolean;
   colorPresets: string[];
@@ -10,6 +12,7 @@ export interface AppSettings {
   defaultPenOpacity: number;
   defaultMarkerOpacity: number;
   defaultMarkerBorderRadius: number;
+  closeTabBehavior: CloseTabBehavior;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -29,6 +32,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultPenOpacity: 1,
   defaultMarkerOpacity: 0.1,
   defaultMarkerBorderRadius: 4,
+  closeTabBehavior: 'prompt',
 };
 
 export function useSettings() {

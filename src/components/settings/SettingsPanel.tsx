@@ -93,6 +93,56 @@ export function SettingsPanel({
             </p>
           </div>
 
+          {/* Close Tab Behavior */}
+          <div className="space-y-2">
+            <Label className="text-text-primary text-sm">
+              When closing a tab with unsaved changes:
+            </Label>
+            <div className="flex gap-2">
+              <Button
+                variant={settings.closeTabBehavior === 'prompt' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => onUpdateDraft({ closeTabBehavior: 'prompt' })}
+                className={`flex-1 h-8 text-xs ${
+                  settings.closeTabBehavior === 'prompt' 
+                    ? 'bg-text-primary/15 text-text-primary' 
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                }`}
+              >
+                Ask me
+              </Button>
+              <Button
+                variant={settings.closeTabBehavior === 'auto-save' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => onUpdateDraft({ closeTabBehavior: 'auto-save' })}
+                className={`flex-1 h-8 text-xs ${
+                  settings.closeTabBehavior === 'auto-save' 
+                    ? 'bg-text-primary/15 text-text-primary' 
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                }`}
+              >
+                Auto-save
+              </Button>
+              <Button
+                variant={settings.closeTabBehavior === 'discard' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => onUpdateDraft({ closeTabBehavior: 'discard' })}
+                className={`flex-1 h-8 text-xs ${
+                  settings.closeTabBehavior === 'discard' 
+                    ? 'bg-text-primary/15 text-text-primary' 
+                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                }`}
+              >
+                Discard
+              </Button>
+            </div>
+            <p className="text-xs text-text-muted">
+              {settings.closeTabBehavior === 'prompt' && 'Show a confirmation dialog before closing'}
+              {settings.closeTabBehavior === 'auto-save' && 'Automatically save changes when closing'}
+              {settings.closeTabBehavior === 'discard' && 'Close without saving changes'}
+            </p>
+          </div>
+
           {/* Color Presets */}
           <div className="space-y-3">
             <Label className="text-text-primary text-sm">
@@ -215,6 +265,14 @@ export function SettingsPanel({
                 <span>Redo</span>
                 <span>Ctrl+R</span>
                 <span>Toggle ruler</span>
+                <span>Ctrl+T</span>
+                <span>New tab</span>
+                <span>Ctrl+W</span>
+                <span>Close tab</span>
+                <span>Ctrl+Tab</span>
+                <span>Next tab</span>
+                <span>Ctrl+Shift+Tab</span>
+                <span>Previous tab</span>
                 <span>1/2/3</span>
                 <span>Pen/Marker/Area</span>
                 <span>Ctrl+1-7</span>

@@ -1,7 +1,7 @@
 {
-  "$schema": "../gen/schemas/desktop-schema.json",
-  "identifier": "default",
-  "description": "Capability for the main window",
+  "$schema": "../../../gen/schemas/desktop-schema.json",
+  "identifier": "omnimark:default",
+  "description": "Default permissions for OmniMark",
   "windows": ["main"],
   "permissions": [
     "core:default",
@@ -30,5 +30,11 @@
     "store:allow-entries",
     "store:allow-length",
     "store:allow-load"
-  ]
+  ],
+  "commands": {
+    "allow": [
+      "get_pending_file",
+      "copy_image_wayland"
+    ]
+  }
 }

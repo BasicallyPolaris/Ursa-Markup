@@ -24,9 +24,22 @@
       "csp": null
     }
   },
+  "plugins": {
+    "cli": {
+      "description": "OmniMark - Image annotation tool",
+      "args": [
+        {
+          "name": "file",
+          "index": 1,
+          "takesValue": true,
+          "description": "Image file path to open"
+        }
+      ]
+    }
+  },
   "bundle": {
     "active": true,
-    "targets": ["appimage", "deb"],
+    "targets": ["app"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

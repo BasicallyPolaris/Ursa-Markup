@@ -13,6 +13,20 @@ export interface RulerState {
   isDragging: boolean
 }
 
+// Tab state for multi-tab support
+export interface Tab {
+  id: string
+  filePath: string | null
+  fileName: string | null
+  imageSrc: string | null
+  canvasSize: { width: number; height: number }
+  zoom: number
+  viewOffset: { x: number; y: number }
+  rulerPosition: { x: number; y: number; angle: number }
+  hasChanges: boolean
+  recentDir: string | null
+}
+
 export interface BrushSettings {
   size: number
   color: string

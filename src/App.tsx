@@ -1,58 +1,125 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readFile } from '@tauri-apps/plugin-fs';
-
+import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow, PhysicalSize } from '@tauri-apps/api/window';
+
 import { DrawingCanvas } from './components/canvas/DrawingCanvas';
 import { Toolbar } from './components/toolbar/Toolbar';
 import { SettingsPanel } from './components/settings/SettingsPanel';
+import { TabBar } from './components/tabs/TabBar';
+import { CloseTabDialog } from './components/tabs/CloseTabDialog';
 import { useStrokeHistory } from './hooks/useStrokeHistory';
 import { useRuler } from './hooks/useRuler';
 import { useClipboard } from './hooks/useClipboard';
 import { useSettings } from './hooks/useSettings';
 import { useTheme } from './hooks/useTheme';
+import { useTabs } from './hooks/useTabs';
 import type { Tool, BrushSettings, Point } from './types';
 import './App.css';
 
 function App() {
-  // Hooks
-  const { 
-    canUndo, 
-    canRedo, 
-    startStrokeGroup, 
-    startStroke, 
-    addPointToStroke, 
-    endStrokeGroup,
-    undo, 
-    redo, 
-    clearHistory
-  } = useStrokeHistory();
-  const { ruler, toggleRuler, startDragging, drag, stopDragging, rotateRuler } = useRuler();
-  const { copyToClipboard, saveImage } = useClipboard();
-  const { settings, updateDraft, updateColorPreset, saveSettings, cancelChanges, resetToDefaults, hasChanges } = useSettings();
-  const { getActivePalette } = useTheme();
-
-  // State
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [recentDir, setRecentDir] = useState<string | null>(null);
-  const [currentFileName, setCurrentFileName] = useState<string | null>(null);
+  // Global toolbar settings (shared across tabs)
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [tool, setTool] = useState<Tool>('pen');
-  const [zoom, setZoom] = useState(1);
-  const [viewOffset, setViewOffset] = useState({ x: 0, y: 0 });
   const [brush, setBrush] = useState<BrushSettings>({
-    color: settings.colorPresets[0],
-    size: settings.defaultPenSize,
-    opacity: settings.defaultPenOpacity,
+    color: '#FFB3BA',
+    size: 3,
+    opacity: 1,
   });
-  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
+
+  // Hooks
+  const { settings, updateDraft, updateColorPreset, saveSettings, cancelChanges, resetToDefaults, hasChanges: settingsHasChanges } = useSettings();
+  const { getActivePalette } = useTheme();
+  const { ruler: globalRuler, toggleRuler, rotateRuler: rotateGlobalRuler, startDragging: startRulerDrag, drag: dragRuler, stopDragging: stopRulerDrag } = useRuler();
+  const { copyToClipboard, saveImage } = useClipboard();
+  
+  // Tab management
+  const { 
+    tabs, 
+    activeTab, 
+    activeTabId, 
+    pendingCloseTab,
+    addTab, 
+    closeTab, 
+    confirmCloseWithSave,
+    confirmCloseWithoutSave,
+    cancelClose,
+    switchTab, 
+    updateActiveTab,
+    markTabAsChanged,
+    switchToNextTab,
+    switchToPrevTab,
+  } = useTabs(settings.closeTabBehavior);
+
+  // Per-tab stroke history instances
+  const strokeHistoryInstances = useRef<Map<string, ReturnType<typeof useStrokeHistory>>>(new Map());
 
   // Refs
   const drawCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasCenteredRef = useRef(false);
 
-  // Handle open image
+  // Initialize stroke history for each tab
+  const strokeHistory = useStrokeHistory();
+  
+  // Keep stroke history in sync with active tab
+  useEffect(() => {
+    strokeHistoryInstances.current.set(activeTabId, strokeHistory);
+    return () => {
+      // Cleanup handled in closeTab
+    };
+  }, [activeTabId, strokeHistory]);
+
+  // Handle opening a file (for both CLI and dialog)
+  const openFile = useCallback(async (filePath: string, switchToTab: boolean = true) => {
+    try {
+      console.log('Opening file:', filePath);
+      const fileData = await readFile(filePath);
+      const blob = new Blob([fileData], { type: 'image/png' });
+      const url = URL.createObjectURL(blob);
+
+      const lastSlash = filePath.lastIndexOf('/');
+      const fileName = lastSlash > 0 ? filePath.substring(lastSlash + 1) : filePath;
+      const recentDir = lastSlash > 0 ? filePath.substring(0, lastSlash) : null;
+
+      // Add new tab with the file (reuse empty tab if current is empty)
+      const newTabId = addTab(filePath, fileName, url, true);
+      
+      // If we reused the current tab, update it directly
+      if (newTabId === activeTabId) {
+        updateActiveTab({
+          filePath,
+          fileName,
+          imageSrc: url,
+          recentDir,
+          zoom: 1,
+          viewOffset: { x: 0, y: 0 },
+          hasChanges: false,
+        });
+      } else {
+        // Update the new tab with additional info
+        updateActiveTab({
+          recentDir,
+          zoom: 1,
+          viewOffset: { x: 0, y: 0 },
+          hasChanges: false,
+        });
+      }
+
+      if (switchToTab) {
+        switchTab(newTabId);
+      }
+
+      return newTabId;
+    } catch (error) {
+      console.error('Failed to open image:', error);
+      return null;
+    }
+  }, [addTab, updateActiveTab, switchTab]);
+
+  // Handle open from dialog
   const handleOpen = useCallback(async () => {
     try {
       const filePath = await open({
@@ -64,37 +131,20 @@ function App() {
       });
 
       if (!filePath) return;
-
-      // Track directory and filename of opened file
-      const path = filePath as string;
-      const lastSlash = path.lastIndexOf('/');
-      const fileName = lastSlash > 0 ? path.substring(lastSlash + 1) : path;
-      console.log('Opening file:', path, 'Extracted filename:', fileName);
-      if (lastSlash > 0) {
-        setRecentDir(path.substring(0, lastSlash));
-      }
-      setCurrentFileName(fileName);
-
-      const fileData = await readFile(path);
-      const blob = new Blob([fileData], { type: 'image/png' });
-      const url = URL.createObjectURL(blob);
-
-      if (imageSrc) {
-        URL.revokeObjectURL(imageSrc);
-      }
-
-      setImageSrc(url);
-      setZoom(1);
-      setViewOffset({ x: 0, y: 0 });
-      clearHistory();
+      await openFile(filePath as string);
     } catch (error) {
       console.error('Failed to open image:', error);
     }
-  }, [imageSrc, clearHistory]);
+  }, [openFile]);
 
-  // Handle fit to window - zoom to fit and center the image
+  // Handle new empty tab
+  const handleNewTab = useCallback(() => {
+    addTab();
+  }, [addTab]);
+
+  // Handle fit to window
   const handleFitToWindow = useCallback(() => {
-    if (!containerRef.current || canvasSize.width === 0) return;
+    if (!containerRef.current || activeTab.canvasSize.width === 0) return;
     
     const container = containerRef.current;
     const rect = container.getBoundingClientRect();
@@ -103,42 +153,34 @@ function App() {
     const availableWidth = rect.width - padding * 2;
     const availableHeight = rect.height - padding * 2;
     
-    // Calculate zoom to fit
-    const scaleX = availableWidth / canvasSize.width;
-    const scaleY = availableHeight / canvasSize.height;
+    const scaleX = availableWidth / activeTab.canvasSize.width;
+    const scaleY = availableHeight / activeTab.canvasSize.height;
     const newZoom = Math.min(scaleX, scaleY, 1);
     const finalZoom = Math.max(0.1, newZoom);
     
-    // Calculate the image size in screen pixels at this zoom
-    const imageScreenWidth = canvasSize.width * finalZoom;
-    const imageScreenHeight = canvasSize.height * finalZoom;
+    const imageScreenWidth = activeTab.canvasSize.width * finalZoom;
+    const imageScreenHeight = activeTab.canvasSize.height * finalZoom;
     
-    // Calculate pan offset to center the image in the window
-    // This is a screen-space offset (in pixels), not a canvas offset
-    // Positive panX moves the image right, positive panY moves the image down
     const panX = (rect.width - imageScreenWidth) / 2;
     const panY = (rect.height - imageScreenHeight) / 2;
     
-    // Convert pan to viewOffset
-    // viewOffset = -pan / zoom (negative because pan moves image, viewOffset moves viewport)
     const viewOffsetX = -panX / finalZoom;
     const viewOffsetY = -panY / finalZoom;
     
-    setZoom(finalZoom);
-    setViewOffset({ x: viewOffsetX, y: viewOffsetY });
-  }, [canvasSize]);
+    updateActiveTab({
+      zoom: finalZoom,
+      viewOffset: { x: viewOffsetX, y: viewOffsetY },
+    });
+  }, [activeTab.canvasSize, updateActiveTab]);
 
-  // Ref to access handleFitToWindow in effects without circular dependencies
   const handleFitToWindowRef = useRef(handleFitToWindow);
-
-  // Keep ref in sync
   useEffect(() => {
     handleFitToWindowRef.current = handleFitToWindow;
   }, [handleFitToWindow]);
 
   // Handle save
   const handleSave = useCallback(async () => {
-    if (!drawCanvasRef.current) return;
+    if (!drawCanvasRef.current || !activeTab.imageSrc) return;
 
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
@@ -153,13 +195,18 @@ function App() {
     tempCtx.drawImage(baseCanvas, 0, 0);
     tempCtx.drawImage(drawCanvasRef.current, 0, 0);
 
-    const defaultPath = recentDir ? `${recentDir}/annotated-image.png` : 'annotated-image.png';
+    const defaultPath = activeTab.recentDir 
+      ? `${activeTab.recentDir}/${activeTab.fileName || 'annotated-image.png'}` 
+      : (activeTab.fileName || 'annotated-image.png');
     await saveImage(tempCanvas, defaultPath);
-  }, [saveImage, recentDir]);
+    
+    // Mark as saved
+    markTabAsChanged(false);
+  }, [saveImage, activeTab, markTabAsChanged]);
 
   // Handle copy to clipboard
   const handleCopy = useCallback(async () => {
-    if (!drawCanvasRef.current) return;
+    if (!drawCanvasRef.current || !activeTab.imageSrc) return;
 
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
@@ -175,7 +222,7 @@ function App() {
     tempCtx.drawImage(drawCanvasRef.current, 0, 0);
 
     await copyToClipboard(tempCanvas);
-  }, [copyToClipboard]);
+  }, [copyToClipboard, activeTab.imageSrc]);
 
   // Handle brush change
   const handleBrushChange = useCallback((changes: Partial<BrushSettings>) => {
@@ -185,7 +232,6 @@ function App() {
   // Handle tool change
   const handleToolChange = useCallback((newTool: Tool) => {
     setTool(newTool);
-    // Set default values based on tool
     if (newTool === 'pen') {
       setBrush((prev) => ({ 
         ...prev, 
@@ -207,57 +253,47 @@ function App() {
     }
   }, [settings]);
 
-  // Handle zoom change - zoom towards mouse position using viewOffset approach
-  // Using functional updates to avoid stale closure issues
+  // Handle zoom change
   const handleZoomChange = useCallback((newZoom: number, mouseX?: number, mouseY?: number) => {
     const container = containerRef.current;
     if (!container || mouseX === undefined || mouseY === undefined) {
-      setZoom(newZoom);
+      updateActiveTab({ zoom: newZoom });
       return;
     }
 
     const rect = container.getBoundingClientRect();
-    
-    // Get mouse position relative to container
     const mouseScreenX = mouseX - rect.left;
     const mouseScreenY = mouseY - rect.top;
     
-    // Use functional state updates to avoid stale closures
-    setZoom(prevZoom => {
-      // Calculate new viewOffset based on prevZoom (the zoom we're transitioning FROM)
-      setViewOffset(prevOffset => {
-        // Calculate the canvas point currently under the mouse using PREVIOUS state
-        // screenToCanvas: (screenX / prevZoom) + prevOffset.x
-        const canvasX = mouseScreenX / prevZoom + prevOffset.x;
-        const canvasY = mouseScreenY / prevZoom + prevOffset.y;
-        
-        // After zoom change, we want the same canvas point to be under the mouse
-        // newViewOffset.x = canvasX - mouseScreenX / newZoom
-        const newViewOffsetX = canvasX - mouseScreenX / newZoom;
-        const newViewOffsetY = canvasY - mouseScreenY / newZoom;
-        
-        return { x: newViewOffsetX, y: newViewOffsetY };
-      });
-      
-      return newZoom;
+    const prevZoom = activeTab.zoom;
+    const canvasX = mouseScreenX / prevZoom + activeTab.viewOffset.x;
+    const canvasY = mouseScreenY / prevZoom + activeTab.viewOffset.y;
+    
+    const newViewOffsetX = canvasX - mouseScreenX / newZoom;
+    const newViewOffsetY = canvasY - mouseScreenY / newZoom;
+    
+    updateActiveTab({
+      zoom: newZoom,
+      viewOffset: { x: newViewOffsetX, y: newViewOffsetY },
     });
-  }, []);
+  }, [activeTab.zoom, activeTab.viewOffset, updateActiveTab]);
 
-  // Handle undo
+  // Handle undo/redo
   const handleUndo = useCallback(() => {
     const canvas = drawCanvasRef.current;
     if (canvas) {
-      undo(canvas);
+      strokeHistory.undo(canvas);
+      markTabAsChanged(true);
     }
-  }, [undo]);
+  }, [strokeHistory, markTabAsChanged]);
 
-  // Handle redo
   const handleRedo = useCallback(() => {
     const canvas = drawCanvasRef.current;
     if (canvas) {
-      redo(canvas);
+      strokeHistory.redo(canvas);
+      markTabAsChanged(true);
     }
-  }, [redo]);
+  }, [strokeHistory, markTabAsChanged]);
 
   const handleSettings = useCallback(() => {
     setSettingsOpen(true);
@@ -265,20 +301,68 @@ function App() {
 
   // Handle ruler interactions
   const handleRulerDragStart = useCallback((point: Point) => {
-    startDragging(point);
-  }, [startDragging]);
+    startRulerDrag(point);
+  }, [startRulerDrag]);
 
   const handleRulerDrag = useCallback((point: Point) => {
-    drag(point);
-  }, [drag]);
+    dragRuler(point);
+  }, [dragRuler]);
 
   const handleRulerDragEnd = useCallback(() => {
-    stopDragging();
-  }, [stopDragging]);
+    stopRulerDrag();
+  }, [stopRulerDrag]);
 
   const handleRulerRotate = useCallback((delta: number) => {
-    rotateRuler(delta);
-  }, [rotateRuler]);
+    rotateGlobalRuler(delta);
+  }, [rotateGlobalRuler]);
+
+  // Handle stroke events
+  const handleStartStrokeGroup = useCallback(() => {
+    strokeHistory.startStrokeGroup();
+  }, [strokeHistory]);
+
+  const handleStartStroke = useCallback((tool: Tool, brush: BrushSettings, point: Point) => {
+    strokeHistory.startStroke(tool, brush, point);
+  }, [strokeHistory]);
+
+  const handleAddPointToStroke = useCallback((point: Point) => {
+    strokeHistory.addPointToStroke(point);
+  }, [strokeHistory]);
+
+  const handleEndStrokeGroup = useCallback(() => {
+    strokeHistory.endStrokeGroup();
+    markTabAsChanged(true);
+  }, [strokeHistory, markTabAsChanged]);
+
+  // Handle view offset change
+  const handleViewOffsetChange = useCallback((offset: { x: number; y: number }) => {
+    updateActiveTab({ viewOffset: offset });
+  }, [updateActiveTab]);
+
+  // Handle canvas size change
+  const handleCanvasSizeChange = useCallback((size: { width: number; height: number }) => {
+    updateActiveTab({ canvasSize: size });
+  }, [updateActiveTab]);
+
+  // Handle close tab confirmation
+  const handleCloseWithSave = useCallback(async () => {
+    // Save the pending tab
+    if (pendingCloseTab) {
+      await handleSave();
+      const tabId = confirmCloseWithSave();
+      if (tabId) {
+        // Close was handled by confirmCloseWithSave
+      }
+    }
+  }, [pendingCloseTab, handleSave, confirmCloseWithSave]);
+
+  const handleCloseWithoutSave = useCallback(() => {
+    confirmCloseWithoutSave();
+  }, [confirmCloseWithoutSave]);
+
+  const handleCancelClose = useCallback(() => {
+    cancelClose();
+  }, [cancelClose]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -312,15 +396,33 @@ function App() {
           case '=':
           case '+':
             e.preventDefault();
-            handleZoomChange(Math.min(5, zoom * 1.2));
+            handleZoomChange(Math.min(5, activeTab.zoom * 1.2));
             break;
           case '-':
             e.preventDefault();
-            handleZoomChange(Math.max(0.1, zoom / 1.2));
+            handleZoomChange(Math.max(0.1, activeTab.zoom / 1.2));
             break;
           case '0':
             e.preventDefault();
             handleFitToWindowRef.current();
+            break;
+          case 't':
+            e.preventDefault();
+            handleNewTab();
+            break;
+          case 'w':
+            if (tabs.length > 1) {
+              e.preventDefault();
+              closeTab(activeTabId);
+            }
+            break;
+          case 'tab':
+            e.preventDefault();
+            if (e.shiftKey) {
+              switchToPrevTab();
+            } else {
+              switchToNextTab();
+            }
             break;
           case '1':
           case '2':
@@ -353,38 +455,63 @@ function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleOpen, handleSave, handleCopy, handleUndo, handleRedo, toggleRuler, handleToolChange, handleZoomChange, zoom]);
+  }, [handleOpen, handleSave, handleCopy, handleUndo, handleRedo, toggleRuler, handleToolChange, handleZoomChange, handleNewTab, closeTab, activeTabId, tabs.length, switchToNextTab, switchToPrevTab, activeTab.zoom, settings.colorPresets, handleBrushChange]);
 
-  // Update window title when file changes
+  // CLI: single-instance (open-file event) + initial launch (get_pending_file from backend)
+  useEffect(() => {
+    const unlistenSingleInstance = listen('open-file', (event) => {
+      const payload = event.payload as { file_path: string };
+      if (payload?.file_path) {
+        openFile(payload.file_path);
+      }
+    });
+
+    const openPendingFile = async () => {
+      try {
+        await new Promise(resolve => setTimeout(resolve, 150));
+        const pendingFile = await invoke<string | null>('get_pending_file');
+        if (pendingFile) {
+          await openFile(pendingFile);
+        }
+      } catch {
+        // No pending file or backend not ready
+      }
+    };
+    openPendingFile();
+
+    return () => {
+      unlistenSingleInstance.then(fn => fn());
+    };
+  }, [openFile]);
+
+  // Update window title when active tab changes
   useEffect(() => {
     const updateTitle = async () => {
       const currentWindow = getCurrentWindow();
-      console.log('Setting window title:', currentFileName ? `${currentFileName} - OmniMark` : 'OmniMark');
-      if (currentFileName) {
-        await currentWindow.setTitle(`${currentFileName} - OmniMark`);
-      } else {
-        await currentWindow.setTitle('OmniMark');
-      }
+      const title = activeTab.fileName 
+        ? `${activeTab.fileName}${activeTab.hasChanges ? ' ●' : ''} - OmniMark` 
+        : 'OmniMark';
+      console.log('Setting window title:', title);
+      await currentWindow.setTitle(title);
     };
     updateTitle();
-  }, [currentFileName]);
+  }, [activeTab.fileName, activeTab.hasChanges]);
 
-  // Update window size when image changes
+  // Update window size when active tab image changes
   useEffect(() => {
-    if (!imageSrc) {
+    if (!activeTab.imageSrc) {
       hasCenteredRef.current = false;
-      setCurrentFileName(null);
-      // Clear history when image is removed
-      clearHistory();
+      strokeHistory.clearHistory();
       return;
     }
     
-    // Clear history when a new image is loaded
-    clearHistory();
+    strokeHistory.clearHistory();
 
     const img = new Image();
     img.onload = () => {
-      setCanvasSize({ width: img.width, height: img.height });
+      updateActiveTab({ 
+        canvasSize: { width: img.width, height: img.height },
+      });
       
       const padding = 80;
       const width = Math.min(img.width + padding, globalThis.window.screen.availWidth * 0.95);
@@ -394,7 +521,6 @@ function App() {
       const physicalSize = new PhysicalSize(Math.round(width), Math.round(height));
       currentWindow.setSize(physicalSize);
       
-      // Auto-center the image after window resize (only once per image)
       setTimeout(() => {
         if (!hasCenteredRef.current) {
           hasCenteredRef.current = true;
@@ -402,8 +528,15 @@ function App() {
         }
       }, 150);
     };
-    img.src = imageSrc;
-  }, [imageSrc]);
+    img.src = activeTab.imageSrc;
+  }, [activeTab.imageSrc, activeTabId]);
+
+  // Reset centering when switching tabs
+  useEffect(() => {
+    hasCenteredRef.current = false;
+    // Clear stroke history when switching tabs
+    strokeHistory.clearHistory();
+  }, [activeTabId, strokeHistory.clearHistory]);
 
   // Get canvas ref
   useEffect(() => {
@@ -411,10 +544,18 @@ function App() {
     if (canvas) {
       drawCanvasRef.current = canvas;
     }
-  }, [imageSrc]);
+  }, [activeTab.imageSrc]);
 
   // Get the active color palette from theme
   const activePalette = getActivePalette();
+
+  // Build ruler state for active tab
+  const activeRuler = {
+    ...globalRuler,
+    x: activeTab.rulerPosition.x,
+    y: activeTab.rulerPosition.y,
+    angle: activeTab.rulerPosition.angle,
+  };
 
   return (
     <div ref={containerRef} className="flex flex-col h-screen w-screen overflow-hidden bg-app-bg">
@@ -423,26 +564,34 @@ function App() {
         onToolChange={handleToolChange}
         brush={brush}
         onBrushChange={handleBrushChange}
-        ruler={ruler}
+        ruler={activeRuler}
         onToggleRuler={toggleRuler}
-        canUndo={canUndo}
-        canRedo={canRedo}
+        canUndo={strokeHistory.canUndo}
+        canRedo={strokeHistory.canRedo}
         onUndo={handleUndo}
         onRedo={handleRedo}
         onOpen={handleOpen}
         onSave={handleSave}
         onCopy={handleCopy}
         onSettings={handleSettings}
-        hasImage={!!imageSrc}
-        zoom={zoom}
+        hasImage={!!activeTab.imageSrc}
+        zoom={activeTab.zoom}
         onZoomChange={handleZoomChange}
         onFitToWindow={handleFitToWindow}
         palette={activePalette}
       />
 
+      <TabBar
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onSwitchTab={switchTab}
+        onCloseTab={closeTab}
+        onAddTab={handleNewTab}
+      />
+
       <SettingsPanel
         settings={settings}
-        hasChanges={hasChanges}
+        hasChanges={settingsHasChanges}
         onUpdateDraft={updateDraft}
         onUpdateColorPreset={updateColorPreset}
         onSave={saveSettings}
@@ -452,25 +601,33 @@ function App() {
         onOpenChange={setSettingsOpen}
       />
 
+      <CloseTabDialog
+        isOpen={!!pendingCloseTab}
+        fileName={pendingCloseTab?.tabName || null}
+        onSave={handleCloseWithSave}
+        onDiscard={handleCloseWithoutSave}
+        onCancel={handleCancelClose}
+      />
+
       <DrawingCanvas
-        imageSrc={imageSrc}
+        imageSrc={activeTab.imageSrc}
         tool={tool}
         brush={brush}
-        ruler={ruler}
-        zoom={zoom}
-        viewOffset={viewOffset}
-        canvasSize={canvasSize}
+        ruler={activeRuler}
+        zoom={activeTab.zoom}
+        viewOffset={activeTab.viewOffset}
+        canvasSize={activeTab.canvasSize}
         onZoomChange={handleZoomChange}
-        onViewOffsetChange={setViewOffset}
-        onCanvasSizeChange={setCanvasSize}
+        onViewOffsetChange={handleViewOffsetChange}
+        onCanvasSizeChange={handleCanvasSizeChange}
         onRulerDragStart={handleRulerDragStart}
         onRulerDrag={handleRulerDrag}
         onRulerDragEnd={handleRulerDragEnd}
         onRulerRotate={handleRulerRotate}
-        onStartStrokeGroup={startStrokeGroup}
-        onStartStroke={startStroke}
-        onAddPointToStroke={addPointToStroke}
-        onEndStrokeGroup={endStrokeGroup}
+        onStartStrokeGroup={handleStartStrokeGroup}
+        onStartStroke={handleStartStroke}
+        onAddPointToStroke={handleAddPointToStroke}
+        onEndStrokeGroup={handleEndStrokeGroup}
         className="flex-1"
       />
     </div>
