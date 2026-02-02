@@ -3,8 +3,9 @@
  * Connects Toolbar with CanvasContainer
  */
 
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
 import type { Tool, BrushSettings } from '../core'
+import { useSettings } from './SettingsContext'
 
 type BlendMode = 'normal' | 'multiply'
 
@@ -23,17 +24,32 @@ const DrawingContext = createContext<DrawingContextValue | null>(null)
 interface DrawingProviderProps {
   children: React.ReactNode
   initialTool?: Tool
-  initialBrush?: BrushSettings
 }
 
 export function DrawingProvider({ 
   children, 
   initialTool = 'pen',
-  initialBrush = { size: 3, color: '#FFB3BA', opacity: 1 }
 }: DrawingProviderProps) {
+  const { settings } = useSettings()
+  
+  // Initialize with first color from settings colorPresets
+  const initialColor = settings.colorPresets[0] || '#FF6B6B'
+  
   const [tool, setTool] = useState<Tool>(initialTool)
-  const [brush, setBrush] = useState<BrushSettings>(initialBrush)
+  const [brush, setBrush] = useState<BrushSettings>({ 
+    size: settings.defaultPenSize, 
+    color: initialColor, 
+    opacity: settings.defaultPenOpacity 
+  })
   const [blendMode, setBlendMode] = useState<BlendMode>('normal')
+  
+  // Sync brush color if it doesn't match any preset (e.g., on settings change)
+  useEffect(() => {
+    // If current brush color is not in presets, update to first preset
+    if (!settings.colorPresets.includes(brush.color)) {
+      setBrush(prev => ({ ...prev, color: settings.colorPresets[0] || prev.color }))
+    }
+  }, [settings.colorPresets, brush.color])
 
   const updateBrush = useCallback((changes: Partial<BrushSettings>) => {
     setBrush(prev => ({ ...prev, ...changes }))

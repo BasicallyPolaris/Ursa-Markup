@@ -5,30 +5,29 @@ import { Slider } from '../ui/slider';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useSettings } from '../../contexts/SettingsContext';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useTabManager } from '../../contexts/TabManagerContext';
 import { useDocument } from '../../contexts/DocumentContext';
 import { useCanvasEngine } from '../../contexts/CanvasEngineContext';
 import { useDrawing } from '../../contexts/DrawingContext';
-import { useHotkeys } from '../../hooks/useKeyboardShortcuts';
+import { useHotkeys, useFileActions } from '../../hooks/useKeyboardShortcuts';
 import { formatHotkey } from '../../services/types';
-import { services } from '../../services';
 import type { Tool, BrushSettings } from '../../core/types';
 import { cn } from '../../lib/utils';
 
 export function Toolbar() {
   // Get contexts
   const { settings, openSettings } = useSettings();
-  const { getActivePalette } = useTheme();
   const { activeDocument, documents: _documents } = useTabManager();
   const { strokeHistory, ruler, toggleRuler, undo, redo } = useDocument();
   const { zoom, setZoom, fitToWindow } = useCanvasEngine();
   const hotkeys = useHotkeys();
+  const { handleOpen, handleSave, handleCopy } = useFileActions();
   
   // Use shared drawing state from context
   const { tool, setTool, brush, blendMode, setBlendMode, updateBrush } = useDrawing();
   
-  const palette = getActivePalette();
+  // Use colorPresets from settings (consistent with hotkeys)
+  const colorPresets = settings.colorPresets;
   const hasImage = activeDocument?.hasImage() ?? false;
   const canUndo = strokeHistory.canUndo();
   const canRedo = strokeHistory.canRedo();
@@ -73,25 +72,6 @@ export function Toolbar() {
   const handleBrushChange = useCallback((changes: Partial<BrushSettings>) => {
     updateBrush(changes);
   }, [updateBrush]);
-  
-  const handleOpen = useCallback(async () => {
-    const result = await services.ioService.openFile();
-    if (result) {
-      const blob = new Blob([result.fileData]);
-      const url = URL.createObjectURL(blob);
-      services.tabManager.createDocument(result.filePath, undefined, url);
-    }
-  }, []);
-  
-  const handleSave = useCallback(async () => {
-    // This will be handled via context or callback
-    console.log('Save requested');
-  }, []);
-  
-  const handleCopy = useCallback(async () => {
-    // This will be handled via context or callback
-    console.log('Copy requested');
-  }, []);
   
   const handleSettings = useCallback(() => {
     openSettings();
@@ -325,8 +305,8 @@ export function Toolbar() {
 
           {/* Color Palette with smooth anti-aliased circles */}
           <div className="flex items-center gap-1.5">
-            {palette.colors.slice(0, 7).map((color) => (
-              <Tooltip key={color}>
+            {colorPresets.slice(0, 7).map((color: string, index: number) => (
+              <Tooltip key={`${color}-${index}`}>
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => handleBrushChange({ color })}
@@ -342,7 +322,7 @@ export function Toolbar() {
                     }}
                   />
                 </TooltipTrigger>
-                <TooltipContent>{color}</TooltipContent>
+                <TooltipContent>{color} ({formatHotkey(hotkeys[`color.${index + 1}` as keyof typeof hotkeys])})</TooltipContent>
               </Tooltip>
             ))}
           </div>
@@ -383,8 +363,8 @@ export function Toolbar() {
               />
             </div>
 
-            {/* Border Radius - for marker and area */}
-            {(tool === 'highlighter' || tool === 'area') && (
+            {/* Border Radius - for area only (marker uses smooth curves now) */}
+            {tool === 'area' && (
               <div className="flex flex-col gap-1 w-24">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Radius</span>
@@ -393,7 +373,7 @@ export function Toolbar() {
                 <Slider
                   value={[brush.borderRadius || 0]}
                   min={0}
-                  max={tool === 'highlighter' ? Math.floor(brush.size / 2) : 50}
+                  max={50}
                   step={1}
                   onValueChange={([value]) => handleBrushChange({ borderRadius: value })}
                 />
@@ -431,7 +411,6 @@ export function Toolbar() {
                     width: Math.min(20, brush.size * 0.3),
                     backgroundColor: brush.color,
                     opacity: brush.opacity,
-                    borderRadius: brush.borderRadius || 0,
                   }}
                 />
               ) : tool === 'area' ? (

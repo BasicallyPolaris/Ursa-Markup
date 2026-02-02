@@ -82,6 +82,11 @@ export const DEFAULT_HOTKEYS: HotkeySettings = {
 
 // Helper to format a hotkey for display
 export function formatHotkey(binding: HotkeyBinding): string {
+  // Handle unbound hotkeys
+  if (!binding.key || binding.key === '') {
+    return 'Unbound'
+  }
+  
   const parts: string[] = []
   if (binding.ctrl) parts.push('Ctrl')
   if (binding.shift) parts.push('Shift')

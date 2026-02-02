@@ -325,13 +325,22 @@ export class CanvasEngine {
       this.displayCtx.fill()
 
       // Draw border if borderWidth > 0
+      // Border is drawn OUTSIDE the fill area (outset) - matching BrushEngine.drawArea()
       if (borderWidth > 0) {
+        const halfBorder = borderWidth / 2
         this.displayCtx.globalAlpha = preview.brush.opacity
         this.displayCtx.strokeStyle = preview.brush.color
         this.displayCtx.lineWidth = borderWidth
         this.displayCtx.setLineDash([])
         this.displayCtx.beginPath()
-        this.displayCtx.roundRect(x, y, width, height, borderRadius)
+        // Offset outward by half the border width so the border is outside the fill
+        this.displayCtx.roundRect(
+          x - halfBorder,
+          y - halfBorder,
+          width + borderWidth,
+          height + borderWidth,
+          borderRadius + halfBorder
+        )
         this.displayCtx.stroke()
       }
 
@@ -353,55 +362,40 @@ export class CanvasEngine {
       this.displayCtx.stroke()
       this.displayCtx.restore()
     } else if (preview.tool === 'highlighter' && preview.points && preview.points.length > 0) {
-      // Draw highlighter preview with upright rectangles (not rotating with cursor direction)
-      // This matches the final stroke behavior in BrushEngine.drawHighlighterStroke()
+      // Draw highlighter preview with smooth anti-aliased strokes (butt lineCap)
+      // Uses quadratic curves for smoothness, matching BrushEngine.drawHighlighterStroke()
       this.displayCtx.save()
       
-      const height = preview.brush.size
-      const width = preview.brush.size * 0.3  // Same ratio as BrushEngine
-      const halfWidth = width / 2
-      const halfHeight = height / 2
-      
-      this.displayCtx.fillStyle = preview.brush.color
+      this.displayCtx.lineCap = 'butt'
+      this.displayCtx.lineJoin = 'bevel'
+      this.displayCtx.lineWidth = preview.brush.size
+      this.displayCtx.strokeStyle = preview.brush.color
       this.displayCtx.globalAlpha = preview.brush.opacity
       
-      // Track filled positions to avoid overdraw
-      const filledPositions = new Set<string>()
+      this.displayCtx.beginPath()
+      this.displayCtx.moveTo(preview.points[0].x, preview.points[0].y)
       
-      // Draw upright rectangles along the path
-      for (let i = 0; i < preview.points.length; i++) {
-        const p1 = preview.points[i]
-        const p2 = preview.points[i + 1] || p1
-        
-        const dx = p2.x - p1.x
-        const dy = p2.y - p1.y
-        const distance = Math.sqrt(dx * dx + dy * dy)
-        const stepSize = Math.max(1, width / 2)  // Step based on marker width for smooth coverage
-        const steps = Math.max(1, Math.ceil(distance / stepSize))
-        
-        for (let j = 0; j <= steps; j++) {
-          const t = steps > 0 ? j / steps : 0
-          const interpX = p1.x + dx * t
-          const interpY = p1.y + dy * t
-          
-          // Round to create consistent grid positions
-          const gridX = Math.round(interpX)
-          const gridY = Math.round(interpY)
-          const posKey = `${gridX},${gridY}`
-          
-          if (filledPositions.has(posKey)) continue
-          filledPositions.add(posKey)
-          
-          // Draw upright rectangle centered at this position
-          this.displayCtx.fillRect(
-            interpX - halfWidth,
-            interpY - halfHeight,
-            width,
-            height
-          )
+      if (preview.points.length === 1) {
+        // Single point - draw a short line
+        this.displayCtx.lineTo(preview.points[0].x + 0.1, preview.points[0].y)
+      } else if (preview.points.length === 2) {
+        // Two points - draw a straight line
+        this.displayCtx.lineTo(preview.points[1].x, preview.points[1].y)
+      } else {
+        // Multiple points - use quadratic curves for smoothness
+        for (let i = 1; i < preview.points.length - 1; i++) {
+          const curr = preview.points[i]
+          const next = preview.points[i + 1]
+          const midX = (curr.x + next.x) / 2
+          const midY = (curr.y + next.y) / 2
+          this.displayCtx.quadraticCurveTo(curr.x, curr.y, midX, midY)
         }
+        // Last point - draw directly to it
+        const last = preview.points[preview.points.length - 1]
+        this.displayCtx.lineTo(last.x, last.y)
       }
       
+      this.displayCtx.stroke()
       this.displayCtx.restore()
     }
 

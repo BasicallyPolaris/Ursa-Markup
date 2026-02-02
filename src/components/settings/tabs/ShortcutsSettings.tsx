@@ -7,6 +7,7 @@ import {
   Layers,
   RotateCcw,
   Info,
+  X,
 } from "lucide-react";
 import { SettingsSection } from "../components/SettingsSection";
 import { Button } from "../../ui/button";
@@ -130,6 +131,17 @@ export function ShortcutsSettings({
     updateDraft({ hotkeys: DEFAULT_HOTKEYS });
   }, [updateDraft]);
 
+  const handleClearHotkey = useCallback(
+    (action: HotkeyAction) => {
+      const newHotkeys: HotkeySettings = {
+        ...hotkeys,
+        [action]: { key: '' }, // Empty key = unbound
+      };
+      updateDraft({ hotkeys: newHotkeys });
+    },
+    [hotkeys, updateDraft],
+  );
+
   // Listen for key press while recording
   useEffect(() => {
     if (!recordingAction) return;
@@ -146,6 +158,18 @@ export function ShortcutsSettings({
       // Handle escape to cancel
       if (e.key === "Escape") {
         handleCancelRecording();
+        return;
+      }
+
+      // Handle Backspace/Delete to clear/unbind the hotkey
+      if (e.key === "Backspace" || e.key === "Delete") {
+        const newHotkeys: HotkeySettings = {
+          ...hotkeys,
+          [recordingAction]: { key: '' }, // Empty key = unbound
+        };
+        updateDraft({ hotkeys: newHotkeys });
+        setRecordingAction(null);
+        setPendingBinding(null);
         return;
       }
 
@@ -186,6 +210,11 @@ export function ShortcutsSettings({
     return JSON.stringify(current) !== JSON.stringify(defaultBinding);
   };
 
+  // Check if a hotkey is unbound (empty key)
+  const isUnbound = (binding: HotkeyBinding): boolean => {
+    return !binding.key || binding.key === '';
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex justify-between gap-2 items-center">
@@ -201,7 +230,11 @@ export function ShortcutsSettings({
             <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface-bg rounded border border-toolbar-border">
               Esc
             </kbd>{" "}
-            to cancel.
+            to cancel or{" "}
+            <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface-bg rounded border border-toolbar-border">
+              Backspace
+            </kbd>{" "}
+            to unbind.
           </p>
         </div>
         {/* Reset All Button */}
@@ -247,6 +280,7 @@ export function ShortcutsSettings({
                     {description}
                   </span>
                   <div className="flex items-center gap-2">
+                    {/* Reset button - show when modified */}
                     {modified && !isRecording && (
                       <Button
                         variant="ghost"
@@ -261,15 +295,32 @@ export function ShortcutsSettings({
                         <RotateCcw className="w-3 h-3" />
                       </Button>
                     )}
+                    {/* Clear button - show when bound and not modified (to allow unbinding defaults) */}
+                    {!isUnbound(binding) && !modified && !isRecording && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClearHotkey(action);
+                        }}
+                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-text-muted hover:text-destructive"
+                        title="Unbind hotkey"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    )}
                     <button
                       onClick={() => handleStartRecording(action)}
                       className={cn(
                         "px-2.5 py-1 text-xs font-mono rounded-md border transition-all min-w-[80px] text-center",
                         isRecording
                           ? "bg-accent-primary text-accent-primary-fg border-accent-primary animate-pulse"
-                          : modified
-                            ? "bg-accent-primary/20 text-text-primary border-accent-primary/40 hover:border-accent-primary"
-                            : "bg-surface-bg text-text-primary border-toolbar-border shadow-sm hover:border-accent-primary/50",
+                          : isUnbound(binding)
+                            ? "bg-surface-bg text-text-muted border-toolbar-border/50 hover:border-accent-primary/50 italic"
+                            : modified
+                              ? "bg-accent-primary/20 text-text-primary border-accent-primary/40 hover:border-accent-primary"
+                              : "bg-surface-bg text-text-primary border-toolbar-border shadow-sm hover:border-accent-primary/50",
                       )}
                     >
                       {isRecording

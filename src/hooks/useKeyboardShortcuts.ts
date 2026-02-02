@@ -7,7 +7,7 @@ import { useDrawing } from '../contexts/DrawingContext';
 import { services } from '../services';
 import type { Tool } from '../core/types';
 import { matchesHotkey, formatHotkey, DEFAULT_HOTKEYS } from '../services/types';
-import type { HotkeyAction, HotkeySettings } from '../services/types';
+import type { HotkeyAction, HotkeySettings, HotkeyBinding } from '../services/types';
 
 /**
  * Hook to get a formatted hotkey string for a specific action
@@ -28,38 +28,11 @@ export function useHotkeys(): HotkeySettings {
 }
 
 /**
- * useKeyboardShortcuts consolidates all keyboard shortcuts
- * Provides global keyboard handling for the application
- * Now uses customizable hotkeys from settings
+ * Hook to get file action handlers (save, copy, open)
+ * These can be used by both keyboard shortcuts and UI buttons
  */
-export function useKeyboardShortcuts() {
-  const { settings } = useSettings();
-  const { 
-    addTab, 
-    closeTab, 
-    activeDocumentId, 
-    documents,
-    switchToNextTab,
-    switchToPreviousTab
-  } = useTabManager();
-  
-  const {
-    undo,
-    redo,
-    toggleRuler,
-  } = useDocument();
-
-  const { setTool, updateBrush } = useDrawing();
-
-  const {
-    engine,
-    zoom,
-    setZoom,
-    fitToWindow
-  } = useCanvasEngine();
-
-  // Get hotkeys from settings, fallback to defaults
-  const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
+export function useFileActions() {
+  const { engine } = useCanvasEngine();
 
   const handleOpen = useCallback(async () => {
     const result = await services.ioService.openFile();
@@ -91,6 +64,45 @@ export function useKeyboardShortcuts() {
       await services.ioService.copyToClipboard(canvas);
     }
   }, [engine]);
+
+  return { handleOpen, handleSave, handleCopy };
+}
+
+/**
+ * useKeyboardShortcuts consolidates all keyboard shortcuts
+ * Provides global keyboard handling for the application
+ * Now uses customizable hotkeys from settings
+ */
+export function useKeyboardShortcuts() {
+  const { settings } = useSettings();
+  const { 
+    addTab, 
+    closeTab, 
+    activeDocumentId, 
+    documents,
+    switchToNextTab,
+    switchToPreviousTab
+  } = useTabManager();
+  
+  const {
+    undo,
+    redo,
+    toggleRuler,
+  } = useDocument();
+
+  const { setTool, updateBrush } = useDrawing();
+
+  const {
+    zoom,
+    setZoom,
+    fitToWindow
+  } = useCanvasEngine();
+
+  // Get file action handlers
+  const { handleOpen, handleSave, handleCopy } = useFileActions();
+
+  // Get hotkeys from settings, fallback to defaults
+  const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
 
   const handleUndo = useCallback(() => {
     undo();
@@ -158,7 +170,10 @@ export function useKeyboardShortcuts() {
       };
 
       // Check each hotkey action
-      for (const [action, binding] of Object.entries(hotkeys) as [HotkeyAction, typeof hotkeys[HotkeyAction]][]) {
+      for (const [action, binding] of Object.entries(hotkeys) as [HotkeyAction, HotkeyBinding][]) {
+        // Skip unbound hotkeys (empty key)
+        if (!binding.key || binding.key === '') continue;
+        
         if (matchesHotkey(e, binding)) {
           const handler = actionHandlers[action];
           if (handler) {
