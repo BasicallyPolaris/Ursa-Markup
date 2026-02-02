@@ -3,13 +3,16 @@ import type { Point, BrushSettings, BlendMode } from './types'
 /**
  * BrushEngine handles all brush rendering operations
  * Supports multiple tools (pen, highlighter, area) and blend modes (normal, multiply)
- * All drawing is pixel-based to avoid anti-aliasing artifacts with blend modes
+ * 
+ * Rendering approach (inspired by KSnip):
+ * - Use smooth Canvas API paths with anti-aliasing for high-quality strokes
+ * - For multiply blend mode (highlighter): draw to temp canvas first, then composite
+ *   with multiply blend mode to avoid anti-aliasing artifacts at edges
  */
 export class BrushEngine {
   /**
-   * Draw a pen stroke (pixel-based for crisp edges, no anti-aliasing)
-   * Supports normal and multiply blend modes
-   * For multiply: handled at composite time by the caller
+   * Draw a pen stroke using smooth Canvas paths
+   * Uses round caps and joins for natural-looking strokes
    */
   drawPenStroke(
     ctx: CanvasRenderingContext2D,
@@ -19,26 +22,115 @@ export class BrushEngine {
   ): void {
     if (points.length === 0) return
 
-    // Preserve caller's composite operation (important for multiply preview)
-    const savedCompositeOp = ctx.globalCompositeOperation
+    ctx.save()
+    
+    // Set up stroke style
+    ctx.lineCap = 'round'
+    ctx.lineJoin = 'round'
+    ctx.lineWidth = brush.size
+    ctx.strokeStyle = brush.color
+    ctx.globalAlpha = brush.opacity
 
-    const radius = brush.size / 2
+    // Draw the path
+    ctx.beginPath()
+    ctx.moveTo(points[0].x, points[0].y)
     
-    // Track filled pixels to avoid over-drawing (prevents opacity stacking)
-    const filledPixels = new Set<string>()
+    if (points.length === 1) {
+      // Single point - draw a dot
+      ctx.lineTo(points[0].x + 0.1, points[0].y + 0.1)
+    } else {
+      // Multiple points - use quadratic curves for smoothness
+      for (let i = 1; i < points.length; i++) {
+        const curr = points[i]
+        
+        // For smoother curves, use the midpoint between points
+        if (i < points.length - 1) {
+          const next = points[i + 1]
+          const midX = (curr.x + next.x) / 2
+          const midY = (curr.y + next.y) / 2
+          ctx.quadraticCurveTo(curr.x, curr.y, midX, midY)
+        } else {
+          // Last point - draw directly to it
+          ctx.lineTo(curr.x, curr.y)
+        }
+      }
+    }
     
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  /**
+   * Draw a highlighter stroke with upright rectangular marks
+   * Uses temp canvas approach for multiply blend mode to avoid edge artifacts
+   * 
+   * The highlighter maintains an upright orientation (doesn't rotate with cursor direction)
+   */
+  drawHighlighterStroke(
+    ctx: CanvasRenderingContext2D,
+    points: Point[],
+    brush: BrushSettings,
+    _blendMode: BlendMode,
+    canvas?: HTMLCanvasElement
+  ): void {
+    if (points.length === 0) return
+
+    const height = brush.size
+    const width = brush.size * 0.3  // Rectangular tip: 30% of height
+    const halfWidth = width / 2
+    const halfHeight = height / 2
+
+    // For multiply mode with a canvas provided, use temp canvas approach
+    // This prevents anti-aliasing artifacts when using multiply blend mode
+    if (canvas) {
+      const tempCanvas = document.createElement('canvas')
+      tempCanvas.width = canvas.width
+      tempCanvas.height = canvas.height
+      const tempCtx = tempCanvas.getContext('2d')
+      
+      if (tempCtx) {
+        // Draw to temp canvas with source-over (normal blend)
+        this.drawHighlighterToContext(tempCtx, points, brush, halfWidth, halfHeight, width, height)
+        
+        // Composite temp canvas to main context
+        // The caller's globalCompositeOperation is preserved (multiply is applied at composition time)
+        ctx.drawImage(tempCanvas, 0, 0)
+        return
+      }
+    }
+
+    // Fallback: draw directly to context
+    this.drawHighlighterToContext(ctx, points, brush, halfWidth, halfHeight, width, height)
+  }
+
+  /**
+   * Internal helper to draw highlighter rectangles to a context
+   */
+  private drawHighlighterToContext(
+    ctx: CanvasRenderingContext2D,
+    points: Point[],
+    brush: BrushSettings,
+    halfWidth: number,
+    halfHeight: number,
+    width: number,
+    height: number
+  ): void {
+    ctx.save()
     ctx.fillStyle = brush.color
     ctx.globalAlpha = brush.opacity
 
-    // Draw circular brush at each point, interpolating between points
+    // Track filled positions to avoid overdraw (prevents opacity stacking)
+    const filledPositions = new Set<string>()
+
+    // Draw upright rectangles along the path
     for (let i = 0; i < points.length; i++) {
       const p1 = points[i]
       const p2 = points[i + 1] || p1
-      
+
       const dx = p2.x - p1.x
       const dy = p2.y - p1.y
       const distance = Math.sqrt(dx * dx + dy * dy)
-      const stepSize = 1 // Small steps for smooth lines
+      const stepSize = Math.max(1, width / 2)  // Step based on marker width
       const steps = Math.max(1, Math.ceil(distance / stepSize))
 
       for (let j = 0; j <= steps; j++) {
@@ -46,139 +138,41 @@ export class BrushEngine {
         const interpX = p1.x + dx * t
         const interpY = p1.y + dy * t
 
-        // Fill circular area around this point
-        const startGridX = Math.floor(interpX - radius)
-        const endGridX = Math.ceil(interpX + radius)
-        const startGridY = Math.floor(interpY - radius)
-        const endGridY = Math.ceil(interpY + radius)
+        // Round to create consistent grid positions
+        const gridX = Math.round(interpX)
+        const gridY = Math.round(interpY)
+        const posKey = `${gridX},${gridY}`
 
-        for (let gridX = startGridX; gridX < endGridX; gridX++) {
-          for (let gridY = startGridY; gridY < endGridY; gridY++) {
-            const pixelCenterX = gridX + 0.5
-            const pixelCenterY = gridY + 0.5
-            const distSq = (pixelCenterX - interpX) ** 2 + (pixelCenterY - interpY) ** 2
-            
-            // Check if pixel center is within brush radius
-            if (distSq <= radius * radius) {
-              const pixelKey = `${gridX},${gridY}`
-              if (filledPixels.has(pixelKey)) continue
-              filledPixels.add(pixelKey)
-              ctx.fillRect(gridX, gridY, 1, 1)
-            }
-          }
-        }
-      }
-    }
+        if (filledPositions.has(posKey)) continue
+        filledPositions.add(posKey)
 
-    // Reset alpha but restore composite operation
-    ctx.globalAlpha = 1
-    ctx.globalCompositeOperation = savedCompositeOp
-  }
-
-  /**
-   * Draw a highlighter stroke (pixel-based rectangular marker)
-   * Supports normal and multiply blend modes
-   * Note: Multiply blend mode is handled at composite time by the caller
-   * This method preserves the caller's globalCompositeOperation setting
-   */
-  drawHighlighterStroke(
-    ctx: CanvasRenderingContext2D,
-    points: Point[],
-    brush: BrushSettings,
-    _blendMode: BlendMode
-  ): void {
-    if (points.length === 0) return
-
-    // Preserve caller's composite operation (important for multiply preview)
-    const savedCompositeOp = ctx.globalCompositeOperation
-
-    const height = brush.size
-    const width = brush.size * 0.3
-    const halfWidth = width / 2
-    const halfHeight = height / 2
-
-    // Track filled pixels to avoid over-drawing (prevents opacity stacking)
-    const filledPixels = new Set<string>()
-
-    // Set up context for drawing - don't override globalCompositeOperation
-    ctx.fillStyle = brush.color
-    ctx.globalAlpha = brush.opacity
-
-    // Interpolate points along the path
-    for (let i = 0; i < points.length - 1; i++) {
-      const p1 = points[i]
-      const p2 = points[i + 1]
-      const dx = p2.x - p1.x
-      const dy = p2.y - p1.y
-      const distance = Math.sqrt(dx * dx + dy * dy)
-      const stepSize = 2
-      const steps = Math.max(1, Math.ceil(distance / stepSize))
-
-      for (let j = 0; j <= steps; j++) {
-        const t = j / steps
-        const interpX = p1.x + dx * t
-        const interpY = p1.y + dy * t
-
-        // Check all pixels under the marker at this position
-        const startGridX = Math.floor(interpX - halfWidth)
-        const endGridX = Math.ceil(interpX + halfWidth)
-        const startGridY = Math.floor(interpY - halfHeight)
-        const endGridY = Math.ceil(interpY + halfHeight)
-
-        for (let gridX = startGridX; gridX < endGridX; gridX++) {
-          for (let gridY = startGridY; gridY < endGridY; gridY++) {
-            const pixelCenterX = gridX + 0.5
-            const pixelCenterY = gridY + 0.5
-            const pdx = Math.abs(pixelCenterX - interpX)
-            const pdy = Math.abs(pixelCenterY - interpY)
-
-            if (pdx <= halfWidth && pdy <= halfHeight) {
-              const pixelKey = `${gridX},${gridY}`
-              if (filledPixels.has(pixelKey)) continue
-              filledPixels.add(pixelKey)
-              // Draw exact 1x1 pixel - no overlap, no anti-aliasing artifacts
-              ctx.fillRect(gridX, gridY, 1, 1)
-            }
-          }
-        }
+        // Draw upright rectangle centered at this position
+        ctx.fillRect(
+          interpX - halfWidth,
+          interpY - halfHeight,
+          width,
+          height
+        )
       }
     }
 
     // Handle single point (click without drag)
     if (points.length === 1) {
       const point = points[0]
-      const startGridX = Math.floor(point.x - halfWidth)
-      const endGridX = Math.ceil(point.x + halfWidth)
-      const startGridY = Math.floor(point.y - halfHeight)
-      const endGridY = Math.ceil(point.y + halfHeight)
-
-      for (let gridX = startGridX; gridX < endGridX; gridX++) {
-        for (let gridY = startGridY; gridY < endGridY; gridY++) {
-          const pixelCenterX = gridX + 0.5
-          const pixelCenterY = gridY + 0.5
-          const pdx = Math.abs(pixelCenterX - point.x)
-          const pdy = Math.abs(pixelCenterY - point.y)
-
-          if (pdx <= halfWidth && pdy <= halfHeight) {
-            const pixelKey = `${gridX},${gridY}`
-            if (filledPixels.has(pixelKey)) continue
-            filledPixels.add(pixelKey)
-            ctx.fillRect(gridX, gridY, 1, 1)
-          }
-        }
-      }
+      ctx.fillRect(
+        point.x - halfWidth,
+        point.y - halfHeight,
+        width,
+        height
+      )
     }
 
-    // Reset alpha and restore composite operation
-    ctx.globalAlpha = 1
-    ctx.globalCompositeOperation = savedCompositeOp
+    ctx.restore()
   }
 
   /**
    * Draw an area rectangle with optional border and rounded corners
-   * Fill is pixel-based (no anti-aliasing) unless border radius is used
-   * Note: Multiply blend mode is handled at composite time by the caller
-   * This method preserves the caller's globalCompositeOperation setting
+   * Uses smooth Canvas paths for high-quality rendering
    */
   drawArea(
     ctx: CanvasRenderingContext2D,
@@ -187,8 +181,7 @@ export class BrushEngine {
     brush: BrushSettings,
     _blendMode: BlendMode
   ): void {
-    // Preserve caller's composite operation (important for multiply preview)
-    const savedCompositeOp = ctx.globalCompositeOperation
+    ctx.save()
 
     const x = Math.min(start.x, end.x)
     const y = Math.min(start.y, end.y)
@@ -197,34 +190,15 @@ export class BrushEngine {
     const borderRadius = brush.borderRadius || 0
     const borderWidth = brush.borderWidth || 0
 
-    if (borderRadius > 0) {
-      // Rounded corners - use canvas path (allows anti-aliasing on curves only)
-      ctx.globalAlpha = brush.opacity
-      ctx.fillStyle = brush.color
+    // Draw fill
+    ctx.globalAlpha = brush.opacity
+    ctx.fillStyle = brush.color
+    ctx.beginPath()
+    ctx.roundRect(x, y, width, height, borderRadius)
+    ctx.fill()
 
-      ctx.beginPath()
-      ctx.roundRect(x, y, width, height, borderRadius)
-      ctx.fill()
-    } else {
-      // No border radius - pixel-based fill (no anti-aliasing)
-      ctx.globalAlpha = brush.opacity
-      ctx.fillStyle = brush.color
-
-      const startX = Math.floor(x)
-      const endX = Math.ceil(x + width)
-      const startY = Math.floor(y)
-      const endY = Math.ceil(y + height)
-
-      for (let gridX = startX; gridX < endX; gridX++) {
-        for (let gridY = startY; gridY < endY; gridY++) {
-          ctx.fillRect(gridX, gridY, 1, 1)
-        }
-      }
-    }
-
-    // Draw border if width > 0 (keeps the same composite operation for proper blending)
+    // Draw border if width > 0
     if (borderWidth > 0) {
-      ctx.globalAlpha = brush.opacity
       ctx.strokeStyle = brush.color
       ctx.lineWidth = borderWidth
       ctx.beginPath()
@@ -232,8 +206,6 @@ export class BrushEngine {
       ctx.stroke()
     }
 
-    // Reset alpha and restore composite operation
-    ctx.globalAlpha = 1
-    ctx.globalCompositeOperation = savedCompositeOp
+    ctx.restore()
   }
 }

@@ -353,25 +353,55 @@ export class CanvasEngine {
       this.displayCtx.stroke()
       this.displayCtx.restore()
     } else if (preview.tool === 'highlighter' && preview.points && preview.points.length > 0) {
-      // Use full opacity for highlighter preview to match the final applied result
+      // Draw highlighter preview with upright rectangles (not rotating with cursor direction)
+      // This matches the final stroke behavior in BrushEngine.drawHighlighterStroke()
       this.displayCtx.save()
       
-      const markerHeight = preview.brush.size
+      const height = preview.brush.size
+      const width = preview.brush.size * 0.3  // Same ratio as BrushEngine
+      const halfWidth = width / 2
+      const halfHeight = height / 2
       
-      // Use rectangular line caps for highlighter look
-      this.displayCtx.lineCap = 'butt'
-      this.displayCtx.lineJoin = 'miter'
-      this.displayCtx.lineWidth = markerHeight
-      this.displayCtx.strokeStyle = preview.brush.color
+      this.displayCtx.fillStyle = preview.brush.color
       this.displayCtx.globalAlpha = preview.brush.opacity
       
-      // Draw the stroke path
-      this.displayCtx.beginPath()
-      this.displayCtx.moveTo(preview.points[0].x, preview.points[0].y)
-      for (let i = 1; i < preview.points.length; i++) {
-        this.displayCtx.lineTo(preview.points[i].x, preview.points[i].y)
+      // Track filled positions to avoid overdraw
+      const filledPositions = new Set<string>()
+      
+      // Draw upright rectangles along the path
+      for (let i = 0; i < preview.points.length; i++) {
+        const p1 = preview.points[i]
+        const p2 = preview.points[i + 1] || p1
+        
+        const dx = p2.x - p1.x
+        const dy = p2.y - p1.y
+        const distance = Math.sqrt(dx * dx + dy * dy)
+        const stepSize = Math.max(1, width / 2)  // Step based on marker width for smooth coverage
+        const steps = Math.max(1, Math.ceil(distance / stepSize))
+        
+        for (let j = 0; j <= steps; j++) {
+          const t = steps > 0 ? j / steps : 0
+          const interpX = p1.x + dx * t
+          const interpY = p1.y + dy * t
+          
+          // Round to create consistent grid positions
+          const gridX = Math.round(interpX)
+          const gridY = Math.round(interpY)
+          const posKey = `${gridX},${gridY}`
+          
+          if (filledPositions.has(posKey)) continue
+          filledPositions.add(posKey)
+          
+          // Draw upright rectangle centered at this position
+          this.displayCtx.fillRect(
+            interpX - halfWidth,
+            interpY - halfHeight,
+            width,
+            height
+          )
+        }
       }
-      this.displayCtx.stroke()
+      
       this.displayCtx.restore()
     }
 
@@ -402,7 +432,8 @@ export class CanvasEngine {
   }
 
   /**
-   * Get a combined canvas (base + draw) for saving/copying
+   * Get a combined canvas (base + multiply + draw) for saving/copying
+   * Properly composites multiply layer with multiply blend mode
    */
   getCombinedCanvas(): HTMLCanvasElement | null {
     if (!this.baseCanvas || !this.drawCanvas) return null
@@ -414,10 +445,17 @@ export class CanvasEngine {
     const tempCtx = tempCanvas.getContext('2d')
     if (!tempCtx) return null
 
-    // Draw base canvas
+    // Draw base canvas (the original image)
     tempCtx.drawImage(this.baseCanvas, 0, 0)
 
-    // Draw draw canvas (strokes)
+    // Draw multiply canvas with multiply blend mode
+    if (this.multiplyCanvas) {
+      tempCtx.globalCompositeOperation = 'multiply'
+      tempCtx.drawImage(this.multiplyCanvas, 0, 0)
+      tempCtx.globalCompositeOperation = 'source-over'
+    }
+
+    // Draw normal strokes canvas
     tempCtx.drawImage(this.drawCanvas, 0, 0)
 
     return tempCanvas

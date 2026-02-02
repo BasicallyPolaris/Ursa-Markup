@@ -3,6 +3,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { listen } from '@tauri-apps/api/event'
 import type { AppSettings } from '../services'
 import { settingsManager, windowManager } from '../services'
 
@@ -66,6 +67,29 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       if (unsubscribeRef.current) {
         unsubscribeRef.current()
         unsubscribeRef.current = null
+      }
+    }
+  }, [])
+
+  // Listen for settings-saved event from settings window (cross-window communication)
+  // This ensures settings are applied immediately without requiring a restart
+  useEffect(() => {
+    let unlisten: (() => void) | null = null
+
+    const setupListener = async () => {
+      unlisten = await listen<AppSettings>('settings-saved', async () => {
+        // Reload settings from disk to get the latest saved values
+        await settingsManager.load()
+        setSettings({ ...settingsManager.settings })
+        setHasChanges(settingsManager.hasChanges)
+      })
+    }
+
+    setupListener()
+
+    return () => {
+      if (unlisten) {
+        unlisten()
       }
     }
   }, [])

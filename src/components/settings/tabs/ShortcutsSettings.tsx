@@ -1,15 +1,28 @@
-import { useState, useEffect, useCallback } from "react"
-import { Keyboard, FileInput, Brush, MousePointer, Layers, RotateCcw, Info } from "lucide-react"
-import { SettingsSection } from "../components/SettingsSection"
-import { Button } from "../../ui/button"
-import type { AppSettings, HotkeyAction, HotkeyBinding, HotkeySettings } from "../../../services/types"
-import { formatHotkey, DEFAULT_HOTKEYS } from "../../../services/types"
-import { cn } from "../../../lib/utils"
+import { useState, useEffect, useCallback } from "react";
+import {
+  Keyboard,
+  FileInput,
+  Brush,
+  MousePointer,
+  Layers,
+  RotateCcw,
+  Info,
+} from "lucide-react";
+import { SettingsSection } from "../components/SettingsSection";
+import { Button } from "../../ui/button";
+import type {
+  AppSettings,
+  HotkeyAction,
+  HotkeyBinding,
+  HotkeySettings,
+} from "../../../services/types";
+import { formatHotkey, DEFAULT_HOTKEYS } from "../../../services/types";
+import { cn } from "../../../lib/utils";
 
 interface ShortcutGroup {
-  title: string
-  icon: React.ReactNode
-  shortcuts: { action: HotkeyAction; description: string }[]
+  title: string;
+  icon: React.ReactNode;
+  shortcuts: { action: HotkeyAction; description: string }[];
 }
 
 const shortcutGroups: ShortcutGroup[] = [
@@ -72,58 +85,68 @@ const shortcutGroups: ShortcutGroup[] = [
       { action: "tab.previous", description: "Previous tab" },
     ],
   },
-]
+];
 
 interface ShortcutsSettingsProps {
-  settings: AppSettings
-  updateDraft: (updates: Partial<AppSettings>) => void
+  settings: AppSettings;
+  updateDraft: (updates: Partial<AppSettings>) => void;
 }
 
-export function ShortcutsSettings({ settings, updateDraft }: ShortcutsSettingsProps) {
-  const [recordingAction, setRecordingAction] = useState<HotkeyAction | null>(null)
-  const [pendingBinding, setPendingBinding] = useState<HotkeyBinding | null>(null)
+export function ShortcutsSettings({
+  settings,
+  updateDraft,
+}: ShortcutsSettingsProps) {
+  const [recordingAction, setRecordingAction] = useState<HotkeyAction | null>(
+    null,
+  );
+  const [pendingBinding, setPendingBinding] = useState<HotkeyBinding | null>(
+    null,
+  );
 
-  const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS
+  const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
 
   const handleStartRecording = useCallback((action: HotkeyAction) => {
-    setRecordingAction(action)
-    setPendingBinding(null)
-  }, [])
+    setRecordingAction(action);
+    setPendingBinding(null);
+  }, []);
 
   const handleCancelRecording = useCallback(() => {
-    setRecordingAction(null)
-    setPendingBinding(null)
-  }, [])
+    setRecordingAction(null);
+    setPendingBinding(null);
+  }, []);
 
-  const handleResetHotkey = useCallback((action: HotkeyAction) => {
-    const newHotkeys: HotkeySettings = {
-      ...hotkeys,
-      [action]: DEFAULT_HOTKEYS[action],
-    }
-    updateDraft({ hotkeys: newHotkeys })
-  }, [hotkeys, updateDraft])
+  const handleResetHotkey = useCallback(
+    (action: HotkeyAction) => {
+      const newHotkeys: HotkeySettings = {
+        ...hotkeys,
+        [action]: DEFAULT_HOTKEYS[action],
+      };
+      updateDraft({ hotkeys: newHotkeys });
+    },
+    [hotkeys, updateDraft],
+  );
 
   const handleResetAll = useCallback(() => {
-    updateDraft({ hotkeys: DEFAULT_HOTKEYS })
-  }, [updateDraft])
+    updateDraft({ hotkeys: DEFAULT_HOTKEYS });
+  }, [updateDraft]);
 
   // Listen for key press while recording
   useEffect(() => {
-    if (!recordingAction) return
+    if (!recordingAction) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
+      e.preventDefault();
+      e.stopPropagation();
 
       // Ignore modifier-only presses
-      if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) {
-        return
+      if (["Control", "Shift", "Alt", "Meta"].includes(e.key)) {
+        return;
       }
 
       // Handle escape to cancel
-      if (e.key === 'Escape') {
-        handleCancelRecording()
-        return
+      if (e.key === "Escape") {
+        handleCancelRecording();
+        return;
       }
 
       const binding: HotkeyBinding = {
@@ -131,60 +154,68 @@ export function ShortcutsSettings({ settings, updateDraft }: ShortcutsSettingsPr
         ctrl: e.ctrlKey || e.metaKey,
         shift: e.shiftKey,
         alt: e.altKey,
-      }
+      };
 
       // Remove false modifiers for cleaner storage
-      if (!binding.ctrl) delete binding.ctrl
-      if (!binding.shift) delete binding.shift
-      if (!binding.alt) delete binding.alt
+      if (!binding.ctrl) delete binding.ctrl;
+      if (!binding.shift) delete binding.shift;
+      if (!binding.alt) delete binding.alt;
 
-      setPendingBinding(binding)
+      setPendingBinding(binding);
 
       // Save after a brief moment to show the user what was recorded
       setTimeout(() => {
         const newHotkeys: HotkeySettings = {
           ...hotkeys,
           [recordingAction]: binding,
-        }
-        updateDraft({ hotkeys: newHotkeys })
-        setRecordingAction(null)
-        setPendingBinding(null)
-      }, 200)
-    }
+        };
+        updateDraft({ hotkeys: newHotkeys });
+        setRecordingAction(null);
+        setPendingBinding(null);
+      }, 200);
+    };
 
-    window.addEventListener('keydown', handleKeyDown, true)
-    return () => window.removeEventListener('keydown', handleKeyDown, true)
-  }, [recordingAction, hotkeys, updateDraft, handleCancelRecording])
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [recordingAction, hotkeys, updateDraft, handleCancelRecording]);
 
   // Check if a hotkey differs from default
   const isModified = (action: HotkeyAction): boolean => {
-    const current = hotkeys[action]
-    const defaultBinding = DEFAULT_HOTKEYS[action]
-    return JSON.stringify(current) !== JSON.stringify(defaultBinding)
-  }
+    const current = hotkeys[action];
+    const defaultBinding = DEFAULT_HOTKEYS[action];
+    return JSON.stringify(current) !== JSON.stringify(defaultBinding);
+  };
 
   return (
     <div className="space-y-5">
-      {/* Info Banner */}
-      <div className="flex items-start gap-3 p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-        <Info className="w-4 h-4 text-accent-primary mt-0.5 flex-shrink-0" />
-        <p className="text-sm text-text-secondary">
-          Click on any shortcut to <span className="text-text-primary font-medium">record a new key combination</span>. 
-          Press <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface-bg rounded border border-toolbar-border">Esc</kbd> to cancel.
-        </p>
-      </div>
-
-      {/* Reset All Button */}
-      <div className="flex justify-end">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleResetAll}
-          className="text-text-muted hover:text-text-primary"
-        >
-          <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
-          Reset All to Defaults
-        </Button>
+      <div className="flex justify-between gap-2 items-center">
+        {/* Info Banner */}
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
+          <Info className="w-4 h-4 text-accent-primary mt-0.5 shrink-0" />
+          <p className="text-sm text-text-secondary">
+            Click on any shortcut to{" "}
+            <span className="text-text-primary font-medium">
+              record a new key combination
+            </span>
+            . Press{" "}
+            <kbd className="px-1.5 py-0.5 text-xs font-mono bg-surface-bg rounded border border-toolbar-border">
+              Esc
+            </kbd>{" "}
+            to cancel.
+          </p>
+        </div>
+        {/* Reset All Button */}
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleResetAll}
+            className="text-text-muted hover:text-text-primary"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+            Reset All to Defaults
+          </Button>
+        </div>
       </div>
 
       {shortcutGroups.map((group) => (
@@ -195,29 +226,34 @@ export function ShortcutsSettings({ settings, updateDraft }: ShortcutsSettingsPr
         >
           <div className="space-y-1">
             {group.shortcuts.map(({ action, description }) => {
-              const isRecording = recordingAction === action
-              const binding = pendingBinding && isRecording ? pendingBinding : hotkeys[action]
-              const modified = isModified(action)
+              const isRecording = recordingAction === action;
+              const binding =
+                pendingBinding && isRecording
+                  ? pendingBinding
+                  : hotkeys[action];
+              const modified = isModified(action);
 
               return (
                 <div
                   key={action}
                   className={cn(
                     "flex items-center justify-between py-2 px-2 rounded transition-colors group",
-                    isRecording 
-                      ? "bg-accent-primary/20 ring-2 ring-accent-primary" 
-                      : "hover:bg-surface-bg-hover/50"
+                    isRecording
+                      ? "bg-accent-primary/20 ring-2 ring-accent-primary"
+                      : "hover:bg-surface-bg-hover/50",
                   )}
                 >
-                  <span className="text-text-secondary text-sm">{description}</span>
+                  <span className="text-text-secondary text-sm">
+                    {description}
+                  </span>
                   <div className="flex items-center gap-2">
                     {modified && !isRecording && (
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={(e) => {
-                          e.stopPropagation()
-                          handleResetHotkey(action)
+                          e.stopPropagation();
+                          handleResetHotkey(action);
                         }}
                         className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary"
                         title="Reset to default"
@@ -233,21 +269,22 @@ export function ShortcutsSettings({ settings, updateDraft }: ShortcutsSettingsPr
                           ? "bg-accent-primary text-accent-primary-fg border-accent-primary animate-pulse"
                           : modified
                             ? "bg-accent-primary/20 text-text-primary border-accent-primary/40 hover:border-accent-primary"
-                            : "bg-surface-bg text-text-primary border-toolbar-border shadow-sm hover:border-accent-primary/50"
+                            : "bg-surface-bg text-text-primary border-toolbar-border shadow-sm hover:border-accent-primary/50",
                       )}
                     >
-                      {isRecording 
-                        ? (pendingBinding ? formatHotkey(pendingBinding) : "Press keys...")
-                        : formatHotkey(binding)
-                      }
+                      {isRecording
+                        ? pendingBinding
+                          ? formatHotkey(pendingBinding)
+                          : "Press keys..."
+                        : formatHotkey(binding)}
                     </button>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         </SettingsSection>
       ))}
     </div>
-  )
+  );
 }
