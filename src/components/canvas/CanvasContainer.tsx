@@ -4,6 +4,9 @@ import { useDocument } from '../../contexts/DocumentContext';
 import { useCanvasEngine } from '../../contexts/CanvasEngineContext';
 import { useTabManager } from '../../contexts/TabManagerContext';
 import { useDrawing } from '../../contexts/DrawingContext';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useHotkeys } from '../../hooks/useKeyboardShortcuts';
+import { formatHotkey } from '../../services/types';
 import { cn } from '../../lib/utils';
 import type { Point, ViewState } from '../../core/types';
 
@@ -46,6 +49,12 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
   
   // Get drawing state from shared context
   const { tool, brush, blendMode } = useDrawing();
+  
+  // Get settings for debug info display
+  const { settings } = useSettings();
+  
+  // Get hotkeys for dynamic display
+  const hotkeys = useHotkeys();
   
   // Local state for drawing
   const [isDrawing, setIsDrawing] = useState(false);
@@ -365,7 +374,7 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
               OmniMark
             </p>
             <p className="text-text-primary/60 text-sm mb-1">
-              Press Ctrl+O to open an image
+              Press {formatHotkey(hotkeys['file.open'])} to open an image
             </p>
             <p className="text-text-primary/40 text-xs">
               Ctrl+Click to pan • Ctrl+Scroll to zoom
@@ -396,18 +405,20 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
     >
-      {/* Status indicator */}
-      <div className="absolute bottom-4 right-4 bg-surface-bg/95 text-text-primary px-3 py-2 rounded-lg text-xs font-mono pointer-events-none select-none flex flex-col gap-1 border border-toolbar-border">
-        <div>Zoom: {Math.round(zoom * 100)}%</div>
-        {(viewOffset.x !== 0 || viewOffset.y !== 0) && (
-          <div className="text-text-muted">Panned</div>
-        )}
-        {ruler.visible && (
-          <div className="text-accent-primary">
-            Ruler: {Math.round(ruler.angle % 360)}°
-          </div>
-        )}
-      </div>
+      {/* Status indicator - conditional based on settings */}
+      {settings.showDebugInfo && (
+        <div className="absolute bottom-4 right-4 bg-surface-bg/95 text-text-primary px-3 py-2 rounded-lg text-xs font-mono pointer-events-none select-none flex flex-col gap-1 border border-toolbar-border">
+          <div>Zoom: {Math.round(zoom * 100)}%</div>
+          {(viewOffset.x !== 0 || viewOffset.y !== 0) && (
+            <div className="text-text-muted">Panned</div>
+          )}
+          {ruler.visible && (
+            <div className="text-accent-primary">
+              Ruler: {Math.round(ruler.angle % 360)}°
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Pencil, Highlighter, Square, Info } from "lucide-react"
+import { Pencil, Highlighter, Square } from "lucide-react"
 import { Slider } from "../../ui/slider"
 import { ToggleButtonGroup } from "../components/ToggleButtonGroup"
 import { SettingsSection, SettingsSliderRow, SettingsRow, SettingsGroup } from "../components/SettingsSection"
@@ -18,19 +18,10 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
   const blendModeOptions = [
     { value: "normal" as const, label: "Normal" },
     { value: "multiply" as const, label: "Multiply" },
-    { value: "color" as const, label: "Color" },
   ]
 
   return (
     <div className="space-y-5">
-      {/* Info Banner */}
-      <div className="flex items-start gap-3 p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-        <Info className="w-4 h-4 text-accent-primary mt-0.5 flex-shrink-0" />
-        <p className="text-sm text-text-secondary">
-          These settings define the <span className="text-text-primary font-medium">default values</span> for new strokes. 
-          You can still adjust tools in the toolbar while working.
-        </p>
-      </div>
 
       {/* Pen Settings */}
       <SettingsSection 
@@ -117,7 +108,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
                 options={blendModeOptions}
                 value={settings.defaultMarkerBlendMode}
                 onChange={(value) => updateDraft({ defaultMarkerBlendMode: value })}
-                className="w-48"
+                className="w-40"
               />
             </SettingsRow>
           </SettingsGroup>
@@ -162,35 +153,20 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
 
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Border">
-            <SettingsRow label="Show Border">
-              <ToggleButtonGroup
-                options={[
-                  { value: "enabled" as const, label: "Enabled" },
-                  { value: "disabled" as const, label: "Disabled" },
-                ]}
-                value={settings.defaultAreaBorderEnabled ? "enabled" : "disabled"}
-                onChange={(value) =>
-                  updateDraft({ defaultAreaBorderEnabled: value === "enabled" })
-                }
-                className="w-40"
+            <SettingsSliderRow
+              label="Border Width"
+              value={settings.defaultAreaBorderWidth}
+              unit={settings.defaultAreaBorderWidth === 0 ? '' : 'px'}
+            >
+              <Slider
+                value={[settings.defaultAreaBorderWidth]}
+                onValueChange={([value]) => updateDraft({ defaultAreaBorderWidth: value })}
+                min={0}
+                max={10}
+                step={1}
               />
-            </SettingsRow>
-
-            {settings.defaultAreaBorderEnabled && (
-              <SettingsSliderRow
-                label="Border Width"
-                value={settings.defaultAreaBorderWidth}
-                unit="px"
-              >
-                <Slider
-                  value={[settings.defaultAreaBorderWidth]}
-                  onValueChange={([value]) => updateDraft({ defaultAreaBorderWidth: value })}
-                  min={1}
-                  max={10}
-                  step={1}
-                />
-              </SettingsSliderRow>
-            )}
+            </SettingsSliderRow>
+            <p className="text-xs text-text-muted -mt-1">Set to 0 for no border</p>
           </SettingsGroup>
         </div>
 
@@ -216,7 +192,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
                 options={blendModeOptions}
                 value={settings.defaultAreaBlendMode}
                 onChange={(value) => updateDraft({ defaultAreaBlendMode: value })}
-                className="w-48"
+                className="w-40"
               />
             </SettingsRow>
           </SettingsGroup>

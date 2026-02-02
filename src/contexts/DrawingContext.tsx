@@ -6,7 +6,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react'
 import type { Tool, BrushSettings } from '../core'
 
-type BlendMode = 'normal' | 'multiply' | 'color'
+type BlendMode = 'normal' | 'multiply'
 
 interface DrawingContextValue {
   tool: Tool

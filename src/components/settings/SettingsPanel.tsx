@@ -306,22 +306,10 @@ export function SettingsPanel() {
                   >
                     Multiply
                   </Button>
-                  <Button
-                    variant={settings.defaultMarkerBlendMode === 'color' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => updateDraft({ defaultMarkerBlendMode: 'color' })}
-                    className={`h-7 text-xs ${
-                      settings.defaultMarkerBlendMode === 'color'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
-                    }`}
-                  >
-                    Color
-                  </Button>
                 </div>
               </div>
               <p className="text-xs text-text-muted">
-                Multiply darkens underlying colors, Color applies hue/saturation
+                Multiply darkens underlying colors
               </p>
             </div>
 
@@ -372,51 +360,26 @@ export function SettingsPanel() {
               />
             </div>
 
-            {/* Area Border Toggle */}
+            {/* Area Border Width - 0 = no border */}
             <div className="space-y-2">
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between text-sm">
                 <span className="text-text-secondary text-sm">
-                  Default Area Border
+                  Area Border Width
                 </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant={settings.defaultAreaBorderEnabled ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => updateDraft({ defaultAreaBorderEnabled: !settings.defaultAreaBorderEnabled })}
-                    className={`h-7 text-xs ${
-                      settings.defaultAreaBorderEnabled
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
-                    }`}
-                  >
-                    {settings.defaultAreaBorderEnabled ? 'Enabled' : 'Disabled'}
-                  </Button>
-                </div>
+                <span className="text-text-muted text-sm">
+                  {settings.defaultAreaBorderWidth === 0 ? 'Off' : `${settings.defaultAreaBorderWidth}px`}
+                </span>
               </div>
+              <Slider
+                value={[settings.defaultAreaBorderWidth]}
+                onValueChange={([value]) =>
+                  updateDraft({ defaultAreaBorderWidth: value })
+                }
+                min={0}
+                max={10}
+                step={1}
+              />
             </div>
-
-            {/* Area Border Width - only when enabled */}
-            {settings.defaultAreaBorderEnabled && (
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-text-secondary text-sm">
-                    Area Border Width
-                  </span>
-                  <span className="text-text-muted text-sm">
-                    {settings.defaultAreaBorderWidth}px
-                  </span>
-                </div>
-                <Slider
-                  value={[settings.defaultAreaBorderWidth]}
-                  onValueChange={([value]) =>
-                    updateDraft({ defaultAreaBorderWidth: value })
-                  }
-                  min={1}
-                  max={10}
-                  step={1}
-                />
-              </div>
-            )}
 
             {/* Area Mode Toggle */}
             <div className="space-y-2">
@@ -484,22 +447,10 @@ export function SettingsPanel() {
                   >
                     Multiply
                   </Button>
-                  <Button
-                    variant={settings.defaultAreaBlendMode === 'color' ? 'secondary' : 'ghost'}
-                    size="sm"
-                    onClick={() => updateDraft({ defaultAreaBlendMode: 'color' })}
-                    className={`h-7 text-xs ${
-                      settings.defaultAreaBlendMode === 'color'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
-                    }`}
-                  >
-                    Color
-                  </Button>
                 </div>
               </div>
               <p className="text-xs text-text-muted">
-                Multiply darkens underlying colors, Color applies hue/saturation
+                Multiply darkens underlying colors
               </p>
             </div>
           </div>

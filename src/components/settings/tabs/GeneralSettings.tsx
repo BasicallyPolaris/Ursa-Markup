@@ -1,4 +1,4 @@
-import { Clipboard, FolderClosed, Palette } from "lucide-react"
+import { Clipboard, FolderClosed, Palette, Eye } from "lucide-react"
 import { Switch } from "../../ui/switch"
 import { ToggleButtonGroup } from "../components/ToggleButtonGroup"
 import { SettingsSection, SettingsRow } from "../components/SettingsSection"
@@ -23,6 +23,25 @@ export function GeneralSettings({
 
   return (
     <div className="space-y-5">
+      {/* Display settings */}
+      <SettingsSection
+        title="Display"
+        description="Canvas and interface display options"
+        icon={<Eye className="w-4 h-4" />}
+      >
+        <SettingsRow 
+          label="Show debug info"
+          description="Display zoom level and ruler angle on canvas"
+        >
+          <Switch
+            checked={settings.showDebugInfo}
+            onCheckedChange={(checked: boolean) =>
+              updateDraft({ showDebugInfo: checked })
+            }
+          />
+        </SettingsRow>
+      </SettingsSection>
+
       {/* Auto-copy setting */}
       <SettingsSection
         title="Clipboard"

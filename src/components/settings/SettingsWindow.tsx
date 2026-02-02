@@ -90,7 +90,7 @@ export function SettingsWindow({
           {activeTab === "tools" && (
             <ToolsSettings settings={settings} updateDraft={updateDraft} />
           )}
-          {activeTab === "shortcuts" && <ShortcutsSettings />}
+          {activeTab === "shortcuts" && <ShortcutsSettings settings={settings} updateDraft={updateDraft} />}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import { useTabManager } from '../contexts/TabManagerContext';
 import { useDocument } from '../contexts/DocumentContext';
@@ -6,10 +6,31 @@ import { useCanvasEngine } from '../contexts/CanvasEngineContext';
 import { useDrawing } from '../contexts/DrawingContext';
 import { services } from '../services';
 import type { Tool } from '../core/types';
+import { matchesHotkey, formatHotkey, DEFAULT_HOTKEYS } from '../services/types';
+import type { HotkeyAction, HotkeySettings } from '../services/types';
+
+/**
+ * Hook to get a formatted hotkey string for a specific action
+ * Use this in UI components to display the current hotkey binding
+ */
+export function useHotkeyDisplay(action: HotkeyAction): string {
+  const { settings } = useSettings();
+  const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
+  return useMemo(() => formatHotkey(hotkeys[action]), [hotkeys, action]);
+}
+
+/**
+ * Hook to get all hotkey bindings for display purposes
+ */
+export function useHotkeys(): HotkeySettings {
+  const { settings } = useSettings();
+  return settings.hotkeys || DEFAULT_HOTKEYS;
+}
 
 /**
  * useKeyboardShortcuts consolidates all keyboard shortcuts
  * Provides global keyboard handling for the application
+ * Now uses customizable hotkeys from settings
  */
 export function useKeyboardShortcuts() {
   const { settings } = useSettings();
@@ -36,6 +57,9 @@ export function useKeyboardShortcuts() {
     setZoom,
     fitToWindow
   } = useCanvasEngine();
+
+  // Get hotkeys from settings, fallback to defaults
+  const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
 
   const handleOpen = useCallback(async () => {
     const result = await services.ioService.openFile();
@@ -98,89 +122,50 @@ export function useKeyboardShortcuts() {
     }
   }, [settings.colorPresets, updateBrush]);
 
+  const handleCloseTab = useCallback(() => {
+    if (documents.length > 1 && activeDocumentId) {
+      closeTab(activeDocumentId);
+    }
+  }, [documents.length, activeDocumentId, closeTab]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        switch (e.key.toLowerCase()) {
-          case 'o':
+      // Map hotkey actions to handlers - defined inside effect to capture current values
+      const actionHandlers: Record<HotkeyAction, (() => void) | null> = {
+        'file.open': handleOpen,
+        'file.save': handleSave,
+        'file.copy': handleCopy,
+        'edit.undo': handleUndo,
+        'edit.redo': handleRedo,
+        'tool.pen': () => handleToolChange('pen'),
+        'tool.marker': () => handleToolChange('highlighter'),
+        'tool.area': () => handleToolChange('area'),
+        'color.1': () => handleColorChange(0),
+        'color.2': () => handleColorChange(1),
+        'color.3': () => handleColorChange(2),
+        'color.4': () => handleColorChange(3),
+        'color.5': () => handleColorChange(4),
+        'color.6': () => handleColorChange(5),
+        'color.7': () => handleColorChange(6),
+        'nav.ruler': handleToggleRuler,
+        'nav.zoomIn': handleZoomIn,
+        'nav.zoomOut': handleZoomOut,
+        'nav.fitToWindow': fitToWindow,
+        'tab.new': addTab,
+        'tab.close': documents.length > 1 && activeDocumentId ? handleCloseTab : null,
+        'tab.next': switchToNextTab,
+        'tab.previous': switchToPreviousTab,
+      };
+
+      // Check each hotkey action
+      for (const [action, binding] of Object.entries(hotkeys) as [HotkeyAction, typeof hotkeys[HotkeyAction]][]) {
+        if (matchesHotkey(e, binding)) {
+          const handler = actionHandlers[action];
+          if (handler) {
             e.preventDefault();
-            handleOpen();
-            break;
-          case 's':
-            e.preventDefault();
-            handleSave();
-            break;
-          case 'c':
-            e.preventDefault();
-            handleCopy();
-            break;
-          case 'z':
-            e.preventDefault();
-            if (e.shiftKey) {
-              handleRedo();
-            } else {
-              handleUndo();
-            }
-            break;
-          case 'r':
-            e.preventDefault();
-            handleToggleRuler();
-            break;
-          case '=':
-          case '+':
-            e.preventDefault();
-            handleZoomIn();
-            break;
-          case '-':
-            e.preventDefault();
-            handleZoomOut();
-            break;
-          case '0':
-            e.preventDefault();
-            // fitToWindow requires container dimensions, handled by component
-            console.log('Fit to window shortcut');
-            break;
-          case 't':
-            e.preventDefault();
-            addTab();
-            break;
-          case 'w':
-            if (documents.length > 1 && activeDocumentId) {
-              e.preventDefault();
-              closeTab(activeDocumentId);
-            }
-            break;
-          case 'tab':
-            e.preventDefault();
-            if (e.shiftKey) {
-              switchToPreviousTab();
-            } else {
-              switchToNextTab();
-            }
-            break;
-          case '1':
-          case '2':
-          case '3':
-          case '4':
-          case '5':
-          case '6':
-          case '7':
-            e.preventDefault();
-            const colorIndex = parseInt(e.key) - 1;
-            handleColorChange(colorIndex);
-            break;
-        }
-      } else {
-        switch (e.key) {
-          case '1':
-            handleToolChange('pen');
-            break;
-          case '2':
-            handleToolChange('highlighter');
-            break;
-          case '3':
-            handleToolChange('area');
-            break;
+            handler();
+            return;
+          }
         }
       }
     };
@@ -188,6 +173,7 @@ export function useKeyboardShortcuts() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+    hotkeys,
     handleOpen,
     handleSave,
     handleCopy,
@@ -198,7 +184,7 @@ export function useKeyboardShortcuts() {
     handleZoomOut,
     fitToWindow,
     addTab,
-    closeTab,
+    handleCloseTab,
     activeDocumentId,
     documents.length,
     switchToNextTab,

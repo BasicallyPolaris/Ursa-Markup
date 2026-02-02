@@ -1,4 +1,4 @@
-import type { Point, Size, ViewState, PreviewState } from './types'
+import type { Point, Size, ViewState, PreviewState, BlendMode } from './types'
 import { BrushEngine } from './BrushEngine'
 import { Ruler } from './Ruler'
 
@@ -265,9 +265,7 @@ export class CanvasEngine {
           ctx,
           stroke.points,
           stroke.brush,
-          isMultiply ? 'normal' : stroke.blendMode as any,  // Color blend still applies per-pixel
-          this.baseImageData,
-          canvas.width
+          stroke.blendMode as BlendMode
         )
         break
       case 'highlighter':
@@ -275,9 +273,7 @@ export class CanvasEngine {
           ctx,
           stroke.points,
           stroke.brush,
-          isMultiply ? 'normal' : stroke.blendMode as any,  // Color blend still applies per-pixel
-          this.baseImageData,
-          canvas.width
+          stroke.blendMode as BlendMode
         )
         break
       case 'area':
@@ -289,9 +285,7 @@ export class CanvasEngine {
             start,
             end,
             stroke.brush,
-            isMultiply ? 'normal' : stroke.blendMode as any,
-            this.baseImageData,
-            canvas.width
+            stroke.blendMode as BlendMode
           )
         }
         break
@@ -321,8 +315,7 @@ export class CanvasEngine {
       const height = Math.abs(preview.currentPoint.y - preview.startPoint.y)
 
       const borderRadius = preview.brush.borderRadius || 0
-      const borderWidth = preview.brush.borderWidth || 2
-      const borderEnabled = preview.brush.borderEnabled !== false
+      const borderWidth = preview.brush.borderWidth || 0
 
       // Use full opacity for preview to match the final applied result
       this.displayCtx.globalAlpha = preview.brush.opacity
@@ -331,9 +324,8 @@ export class CanvasEngine {
       this.displayCtx.roundRect(x, y, width, height, borderRadius)
       this.displayCtx.fill()
 
-      // Draw border if enabled (reset to source-over for border)
-      if (borderEnabled) {
-        this.displayCtx.globalCompositeOperation = 'source-over'
+      // Draw border if borderWidth > 0
+      if (borderWidth > 0) {
         this.displayCtx.globalAlpha = preview.brush.opacity
         this.displayCtx.strokeStyle = preview.brush.color
         this.displayCtx.lineWidth = borderWidth

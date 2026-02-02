@@ -4,7 +4,7 @@
  */
 
 export type Tool = 'pen' | 'highlighter' | 'area'
-export type BlendMode = 'normal' | 'color' | 'multiply'
+export type BlendMode = 'normal' | 'multiply'
 
 export interface Point {
   x: number
@@ -22,7 +22,6 @@ export interface BrushSettings {
   opacity: number
   borderRadius?: number
   borderWidth?: number
-  borderEnabled?: boolean
   blendMode?: BlendMode  // Per-brush blend mode for future extensibility
   penMode?: 'line' | 'marker'  // For pen tool variations
 }

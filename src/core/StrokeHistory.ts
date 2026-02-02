@@ -179,8 +179,8 @@ export class StrokeHistory {
   replayStroke(
     ctx: CanvasRenderingContext2D,
     stroke: Stroke,
-    baseImageData: ImageData | null,
-    canvasWidth: number
+    _baseImageData: ImageData | null,
+    _canvasWidth: number
   ): void {
     if (stroke.points.length === 0) return
 
@@ -193,9 +193,7 @@ export class StrokeHistory {
           ctx,
           stroke.points,
           stroke.brush,
-          stroke.blendMode,
-          baseImageData,
-          canvasWidth
+          stroke.blendMode
         )
         break
       case 'area':
@@ -207,9 +205,7 @@ export class StrokeHistory {
             start,
             end,
             stroke.brush,
-            stroke.blendMode,
-            baseImageData,
-            canvasWidth
+            stroke.blendMode
           )
         }
         break
