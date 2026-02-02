@@ -362,11 +362,11 @@ export class CanvasEngine {
       this.displayCtx.stroke()
       this.displayCtx.restore()
     } else if (preview.tool === 'highlighter' && preview.points && preview.points.length > 0) {
-      // Draw highlighter preview with smooth anti-aliased strokes (butt lineCap)
-      // Uses quadratic curves for smoothness, matching BrushEngine.drawHighlighterStroke()
+      // Draw highlighter preview with smooth anti-aliased strokes
+      // Uses square caps for flat ends, quadratic curves for smoothness
       this.displayCtx.save()
       
-      this.displayCtx.lineCap = 'butt'
+      this.displayCtx.lineCap = 'square'
       this.displayCtx.lineJoin = 'bevel'
       this.displayCtx.lineWidth = preview.brush.size
       this.displayCtx.strokeStyle = preview.brush.color
@@ -376,8 +376,8 @@ export class CanvasEngine {
       this.displayCtx.moveTo(preview.points[0].x, preview.points[0].y)
       
       if (preview.points.length === 1) {
-        // Single point - draw a short line
-        this.displayCtx.lineTo(preview.points[0].x + 0.1, preview.points[0].y)
+        // Single point - draw a short horizontal line
+        this.displayCtx.lineTo(preview.points[0].x + 1, preview.points[0].y)
       } else if (preview.points.length === 2) {
         // Two points - draw a straight line
         this.displayCtx.lineTo(preview.points[1].x, preview.points[1].y)

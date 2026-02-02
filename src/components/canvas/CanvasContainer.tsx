@@ -180,6 +180,7 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
 
     // Get screen size for ruler hit detection
     const screenSize = getScreenSize();
+    const viewState = getViewState();
 
     // Check if clicking on ruler (using screen coordinates)
     if (ruler.visible && ruler.isPointOnRuler(screenPoint, screenSize)) {
@@ -188,17 +189,30 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
       return;
     }
 
+    // Snap start point to ruler if in sticky zone
+    let startDrawPoint = canvasPoint;
+    if (ruler.visible) {
+      const snapInfo = ruler.getSnapInfo(canvasPoint, viewState);
+      if (snapInfo.inStickyZone) {
+        if (tool === 'area') {
+          startDrawPoint = ruler.snapPointToEdge(canvasPoint, snapInfo.snapToFarSide, viewState);
+        } else {
+          startDrawPoint = ruler.snapPoint(canvasPoint, brush.size, snapInfo.snapToFarSide, viewState);
+        }
+      }
+    }
+
     // Start drawing (using canvas coordinates)
     isDrawingRef.current = true;
-    startPointRef.current = canvasPoint;
-    lastPointRef.current = canvasPoint;
+    startPointRef.current = startDrawPoint;
+    lastPointRef.current = startDrawPoint;
     setIsDrawing(true);
-    _setStartPoint(canvasPoint);
-    previewPointsRef.current = [canvasPoint];
+    _setStartPoint(startDrawPoint);
+    previewPointsRef.current = [startDrawPoint];
 
     startStrokeGroup();
-    startStroke(tool, brush, canvasPoint, blendMode);
-  }, [screenToCanvas, getScreenPoint, getScreenSize, ruler, tool, brush, blendMode, startStrokeGroup, startStroke, startDragRuler]);
+    startStroke(tool, brush, startDrawPoint, blendMode);
+  }, [screenToCanvas, getScreenPoint, getScreenSize, getViewState, ruler, tool, brush, blendMode, startStrokeGroup, startStroke, startDragRuler]);
 
   // Mouse move handler
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
@@ -240,7 +254,14 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
     if (ruler.visible) {
       const snapInfo = ruler.getSnapInfo(canvasPoint, viewState);
       if (snapInfo.inStickyZone) {
-        drawPoint = ruler.snapPoint(canvasPoint, brush.size, snapInfo.snapToFarSide, viewState);
+        // Use different snap methods for area tool vs pen/highlighter
+        if (tool === 'area') {
+          // Area tool: snap point directly to ruler edge (no brush offset)
+          drawPoint = ruler.snapPointToEdge(canvasPoint, snapInfo.snapToFarSide, viewState);
+        } else {
+          // Pen/highlighter: snap with brush size offset
+          drawPoint = ruler.snapPoint(canvasPoint, brush.size, snapInfo.snapToFarSide, viewState);
+        }
       }
     }
 

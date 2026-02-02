@@ -62,7 +62,7 @@ export class BrushEngine {
 
   /**
    * Draw a highlighter stroke using smooth Canvas paths
-   * Uses square (butt) line caps for the typical highlighter look
+   * Uses square line caps for flat highlighter ends
    * Uses quadratic curves for smooth path interpolation
    */
   drawHighlighterStroke(
@@ -76,8 +76,8 @@ export class BrushEngine {
 
     ctx.save()
     
-    // Set up stroke style - use butt cap for flat highlighter look, bevel for smoother joints
-    ctx.lineCap = 'butt'
+    // Set up stroke style - square cap gives flat ends, bevel for smoother joints
+    ctx.lineCap = 'square'
     ctx.lineJoin = 'bevel'
     ctx.lineWidth = brush.size
     ctx.strokeStyle = brush.color
@@ -88,8 +88,8 @@ export class BrushEngine {
     ctx.moveTo(points[0].x, points[0].y)
     
     if (points.length === 1) {
-      // Single point - draw a short line to create a visible mark
-      ctx.lineTo(points[0].x + 0.1, points[0].y)
+      // Single point - draw a short horizontal line to create a visible mark
+      ctx.lineTo(points[0].x + 1, points[0].y)
     } else if (points.length === 2) {
       // Two points - draw a straight line
       ctx.lineTo(points[1].x, points[1].y)

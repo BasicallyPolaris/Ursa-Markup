@@ -254,6 +254,46 @@ export class Ruler {
   }
 
   /**
+   * Snap a point directly to the ruler edge (for area tool rectangles)
+   * Unlike snapPoint(), this doesn't apply brush size offset - it snaps the point itself to the edge
+   * @param canvasPoint - Point in canvas coordinates
+   * @param snapToFarSide - Which side of the ruler to snap to
+   * @param viewState - Current view state for coordinate conversion
+   */
+  snapPointToEdge(canvasPoint: Point, snapToFarSide: boolean, viewState: ViewState): Point {
+    if (!this.visible) return canvasPoint
+
+    // Get ruler position in canvas coordinates
+    const rulerCanvasPos = this.getCanvasPosition(viewState)
+    
+    // Calculate ruler height in canvas coordinates
+    const rulerHeightCanvas = RULER_HEIGHT / viewState.zoom
+
+    const angleRad = (this.angle * Math.PI) / 180
+    const dx = canvasPoint.x - rulerCanvasPos.x
+    const dy = canvasPoint.y - rulerCanvasPos.y
+
+    // Distance along the ruler (parallel to ruler)
+    const distAlong = dx * Math.cos(angleRad) + dy * Math.sin(angleRad)
+
+    // Snap directly to the ruler edge (no brush offset)
+    const edgeOffset = snapToFarSide
+      ? -rulerHeightCanvas / 2
+      : rulerHeightCanvas / 2
+
+    return {
+      x:
+        rulerCanvasPos.x +
+        distAlong * Math.cos(angleRad) +
+        edgeOffset * Math.sin(angleRad),
+      y:
+        rulerCanvasPos.y +
+        distAlong * Math.sin(angleRad) -
+        edgeOffset * Math.cos(angleRad),
+    }
+  }
+
+  /**
    * Render the ruler to a canvas context
    * Ruler is rendered in screen space (constant size regardless of zoom)
    * @param ctx - Display canvas context (after view transform is removed)
