@@ -1,59 +1,95 @@
 "use client"
 
 import * as React from "react"
-import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-
+import { Tooltip as BaseTooltip } from "@base-ui-components/react/tooltip"
 import { cn } from "../../lib/utils"
 
-function TooltipProvider({
-  delayDuration = 0,
-  ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Provider>) {
+function TooltipProvider({ 
+  children,
+  delayDuration = 0
+}: { 
+  children: React.ReactNode 
+  delayDuration?: number
+}) {
+  // Map Radix API to Base UI API
   return (
-    <TooltipPrimitive.Provider
-      data-slot="tooltip-provider"
-      delayDuration={delayDuration}
-      {...props}
-    />
+    <BaseTooltip.Provider delay={delayDuration} closeDelay={0}>
+      {children}
+    </BaseTooltip.Provider>
   )
 }
 
 function Tooltip({
+  children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Root>) {
+}: BaseTooltip.Root.Props & { children: React.ReactNode }) {
   return (
-    <TooltipProvider>
-      <TooltipPrimitive.Root data-slot="tooltip" {...props} />
-    </TooltipProvider>
+    <BaseTooltip.Provider delay={0} closeDelay={0}>
+      <BaseTooltip.Root {...props}>{children}</BaseTooltip.Root>
+    </BaseTooltip.Provider>
   )
 }
 
 function TooltipTrigger({
+  className,
+  asChild,
+  children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+}: React.ComponentProps<typeof BaseTooltip.Trigger> & { asChild?: boolean }) {
+  // When asChild is true, wrap children in an inline-flex span
+  // This preserves the child's event handlers while providing a proper anchor for positioning
+  if (asChild) {
+    return (
+      <BaseTooltip.Trigger
+        data-slot="tooltip-trigger"
+        className={cn("inline-flex", className)}
+        {...props}
+      >
+        {children}
+      </BaseTooltip.Trigger>
+    )
+  }
+
+  return (
+    <BaseTooltip.Trigger
+      data-slot="tooltip-trigger"
+      className={cn("outline-none", className)}
+      {...props}
+    >
+      {children}
+    </BaseTooltip.Trigger>
+  )
 }
 
 function TooltipContent({
   className,
   sideOffset = 4,
+  side = "top",
   children,
   ...props
-}: React.ComponentProps<typeof TooltipPrimitive.Content>) {
+}: Omit<React.ComponentProps<typeof BaseTooltip.Popup>, 'children'> & { 
+  sideOffset?: number 
+  side?: "top" | "bottom" | "left" | "right"
+  children?: React.ReactNode
+}) {
   return (
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        data-slot="tooltip-content"
-        sideOffset={sideOffset}
-        className={cn(
-          "z-50 overflow-hidden rounded-md bg-panel-bg border border-panel-border px-3 py-1.5 text-xs text-text-primary shadow-lg animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
+    <BaseTooltip.Portal>
+      <BaseTooltip.Positioner sideOffset={sideOffset} side={side}>
+        <BaseTooltip.Popup
+          data-slot="tooltip-content"
+          className={cn(
+            "z-50 overflow-hidden rounded-md bg-panel-bg border border-panel-border px-3 py-1.5 text-xs text-text-primary shadow-lg",
+            "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
+            "data-[ending-style]:opacity-0 data-[ending-style]:scale-95",
+            "origin-[var(--transform-origin)] transition-[opacity,transform] duration-150",
+            className
+          )}
+          {...props}
+        >
+          {children}
+        </BaseTooltip.Popup>
+      </BaseTooltip.Positioner>
+    </BaseTooltip.Portal>
   )
 }
 

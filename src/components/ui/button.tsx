@@ -1,7 +1,5 @@
 import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
-
 import { cn } from "../../lib/utils"
 
 const buttonVariants = cva(
@@ -33,6 +31,27 @@ const buttonVariants = cva(
     },
   }
 )
+
+// Simple Slot implementation for asChild pattern (replaces @radix-ui/react-slot)
+function Slot({
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLElement> & { children?: React.ReactNode }) {
+  if (React.isValidElement(children)) {
+    const childProps = children.props as Record<string, unknown>
+    return React.cloneElement(children, {
+      ...props,
+      ...childProps,
+      className: cn((props as Record<string, unknown>).className as string | undefined, childProps.className as string | undefined),
+    } as React.Attributes)
+  }
+
+  if (React.Children.count(children) > 1) {
+    React.Children.only(null)
+  }
+
+  return null
+}
 
 function Button({
   className,

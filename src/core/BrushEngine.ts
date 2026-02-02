@@ -3,44 +3,104 @@ import type { Point, BrushSettings, BlendMode, HSL, RGB } from './types'
 /**
  * BrushEngine handles all brush rendering operations
  * Supports multiple tools (pen, highlighter, area) and blend modes (normal, multiply, color)
+ * All drawing is pixel-based to avoid anti-aliasing artifacts with blend modes
  */
 export class BrushEngine {
   /**
-   * Draw a pen stroke (line-based)
-   * Note: Multiply blend mode is handled at composite time, not here
+   * Draw a pen stroke (pixel-based for crisp edges, no anti-aliasing)
+   * Supports normal, multiply, and color blend modes
+   * For multiply: handled at composite time by the caller
+   * For color: pixel-by-pixel HSL blending with base image
    */
   drawPenStroke(
     ctx: CanvasRenderingContext2D,
     points: Point[],
     brush: BrushSettings,
-    _blendMode: BlendMode
+    blendMode: BlendMode,
+    baseImageData?: ImageData | null,
+    canvasWidth?: number
   ): void {
     if (points.length === 0) return
 
-    ctx.lineCap = 'round'
-    ctx.lineJoin = 'round'
-    ctx.lineWidth = brush.size
-    ctx.globalAlpha = brush.opacity
-    ctx.strokeStyle = brush.color
-    ctx.globalCompositeOperation = 'source-over'
+    // Preserve caller's composite operation (important for multiply preview)
+    const savedCompositeOp = ctx.globalCompositeOperation
 
-    ctx.beginPath()
-    ctx.moveTo(points[0].x, points[0].y)
+    const radius = brush.size / 2
     
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y)
+    // Track filled pixels to avoid over-drawing (prevents opacity stacking)
+    const filledPixels = new Set<string>()
+    
+    // Check if color blend mode should be used
+    const isColorBlend = blendMode === 'color' && baseImageData && canvasWidth
+
+    if (!isColorBlend) {
+      ctx.fillStyle = brush.color
+      ctx.globalAlpha = brush.opacity
     }
-    
-    ctx.stroke()
 
-    // Reset
+    // Draw circular brush at each point, interpolating between points
+    for (let i = 0; i < points.length; i++) {
+      const p1 = points[i]
+      const p2 = points[i + 1] || p1
+      
+      const dx = p2.x - p1.x
+      const dy = p2.y - p1.y
+      const distance = Math.sqrt(dx * dx + dy * dy)
+      const stepSize = 1 // Small steps for smooth lines
+      const steps = Math.max(1, Math.ceil(distance / stepSize))
+
+      for (let j = 0; j <= steps; j++) {
+        const t = steps > 0 ? j / steps : 0
+        const interpX = p1.x + dx * t
+        const interpY = p1.y + dy * t
+
+        // Fill circular area around this point
+        const startGridX = Math.floor(interpX - radius)
+        const endGridX = Math.ceil(interpX + radius)
+        const startGridY = Math.floor(interpY - radius)
+        const endGridY = Math.ceil(interpY + radius)
+
+        for (let gridX = startGridX; gridX < endGridX; gridX++) {
+          for (let gridY = startGridY; gridY < endGridY; gridY++) {
+            const pixelCenterX = gridX + 0.5
+            const pixelCenterY = gridY + 0.5
+            const distSq = (pixelCenterX - interpX) ** 2 + (pixelCenterY - interpY) ** 2
+            
+            // Check if pixel center is within brush radius
+            if (distSq <= radius * radius) {
+              const pixelKey = `${gridX},${gridY}`
+              if (filledPixels.has(pixelKey)) continue
+              filledPixels.add(pixelKey)
+              
+              if (isColorBlend) {
+                this.drawPixelWithColorBlend(
+                  ctx,
+                  gridX,
+                  gridY,
+                  brush.color,
+                  brush.opacity,
+                  baseImageData!,
+                  canvasWidth!
+                )
+              } else {
+                ctx.fillRect(gridX, gridY, 1, 1)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Reset alpha but restore composite operation
     ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = savedCompositeOp
   }
 
   /**
    * Draw a highlighter stroke (pixel-based rectangular marker)
    * Supports normal and color blend modes
-   * Note: Multiply blend mode is handled at composite time
+   * Note: Multiply blend mode is handled at composite time by the caller
+   * This method preserves the caller's globalCompositeOperation setting
    */
   drawHighlighterStroke(
     ctx: CanvasRenderingContext2D,
@@ -52,6 +112,9 @@ export class BrushEngine {
   ): void {
     if (points.length === 0) return
 
+    // Preserve caller's composite operation (important for multiply preview)
+    const savedCompositeOp = ctx.globalCompositeOperation
+
     const height = brush.size
     const width = brush.size * 0.3
     const halfWidth = width / 2
@@ -60,8 +123,7 @@ export class BrushEngine {
     // Track filled pixels to avoid over-drawing (prevents opacity stacking)
     const filledPixels = new Set<string>()
 
-    // Set up context for drawing
-    ctx.globalCompositeOperation = 'source-over'
+    // Set up context for drawing - don't override globalCompositeOperation
     ctx.fillStyle = brush.color
     ctx.globalAlpha = brush.opacity
 
@@ -156,14 +218,16 @@ export class BrushEngine {
       }
     }
 
-    // Reset context
-    ctx.globalCompositeOperation = 'source-over'
+    // Reset alpha and restore composite operation
     ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = savedCompositeOp
   }
 
   /**
    * Draw an area rectangle with optional border and rounded corners
-   * Note: Multiply blend mode is handled at composite time
+   * Fill is pixel-based (no anti-aliasing) unless border radius is used
+   * Note: Multiply blend mode is handled at composite time by the caller
+   * This method preserves the caller's globalCompositeOperation setting
    */
   drawArea(
     ctx: CanvasRenderingContext2D,
@@ -174,6 +238,9 @@ export class BrushEngine {
     baseImageData?: ImageData | null,
     canvasWidth?: number
   ): void {
+    // Preserve caller's composite operation (important for multiply preview)
+    const savedCompositeOp = ctx.globalCompositeOperation
+
     const x = Math.min(start.x, end.x)
     const y = Math.min(start.y, end.y)
     const width = Math.abs(end.x - start.x)
@@ -183,18 +250,28 @@ export class BrushEngine {
     const borderEnabled = brush.borderEnabled !== false
 
     if (blendMode === 'color' && baseImageData && canvasWidth) {
+      // Color blend mode - pixel by pixel
       const startX = Math.floor(x)
       const endX = Math.ceil(x + width)
       const startY = Math.floor(y)
       const endY = Math.ceil(y + height)
 
-      ctx.save()
-      ctx.beginPath()
-      ctx.roundRect(x, y, width, height, borderRadius)
-      ctx.clip()
+      if (borderRadius > 0) {
+        // Use clipping for rounded corners
+        ctx.save()
+        ctx.beginPath()
+        ctx.roundRect(x, y, width, height, borderRadius)
+        ctx.clip()
+      }
 
       for (let gridX = startX; gridX < endX; gridX++) {
         for (let gridY = startY; gridY < endY; gridY++) {
+          // For non-rounded, check if pixel is inside rectangle
+          if (borderRadius === 0) {
+            if (gridX < x || gridX >= x + width || gridY < y || gridY >= y + height) {
+              continue
+            }
+          }
           this.drawPixelWithColorBlend(
             ctx,
             gridX,
@@ -207,20 +284,35 @@ export class BrushEngine {
         }
       }
 
-      ctx.restore()
-    } else {
-      // Normal drawing (multiply is applied at composite time)
-      ctx.globalCompositeOperation = 'source-over'
+      if (borderRadius > 0) {
+        ctx.restore()
+      }
+    } else if (borderRadius > 0) {
+      // Rounded corners - use canvas path (allows anti-aliasing on curves only)
       ctx.globalAlpha = brush.opacity
       ctx.fillStyle = brush.color
 
-      // Draw rounded rectangle fill
       ctx.beginPath()
       ctx.roundRect(x, y, width, height, borderRadius)
       ctx.fill()
+    } else {
+      // No border radius - pixel-based fill (no anti-aliasing)
+      ctx.globalAlpha = brush.opacity
+      ctx.fillStyle = brush.color
+
+      const startX = Math.floor(x)
+      const endX = Math.ceil(x + width)
+      const startY = Math.floor(y)
+      const endY = Math.ceil(y + height)
+
+      for (let gridX = startX; gridX < endX; gridX++) {
+        for (let gridY = startY; gridY < endY; gridY++) {
+          ctx.fillRect(gridX, gridY, 1, 1)
+        }
+      }
     }
 
-    // Draw border if enabled
+    // Draw border if enabled (border always uses source-over for visibility)
     if (borderEnabled) {
       ctx.globalCompositeOperation = 'source-over'
       ctx.globalAlpha = brush.opacity
@@ -231,9 +323,24 @@ export class BrushEngine {
       ctx.stroke()
     }
 
-    // Reset
-    ctx.globalCompositeOperation = 'source-over'
+    // Reset alpha and restore composite operation
     ctx.globalAlpha = 1
+    ctx.globalCompositeOperation = savedCompositeOp
+  }
+
+  /**
+   * Public wrapper for drawPixelWithColorBlend for preview rendering
+   */
+  drawPixelWithColorBlendPublic(
+    ctx: CanvasRenderingContext2D,
+    gridX: number,
+    gridY: number,
+    brushColor: string,
+    brushOpacity: number,
+    baseImageData: ImageData,
+    canvasWidth: number
+  ): void {
+    this.drawPixelWithColorBlend(ctx, gridX, gridY, brushColor, brushOpacity, baseImageData, canvasWidth)
   }
 
   /**

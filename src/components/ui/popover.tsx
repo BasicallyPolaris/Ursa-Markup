@@ -1,48 +1,88 @@
 "use client"
 
 import * as React from "react"
-import * as PopoverPrimitive from "@radix-ui/react-popover"
-
+import { Popover as BasePopover } from "@base-ui-components/react/popover"
 import { cn } from "../../lib/utils"
 
 function Popover({
+  children,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Root>) {
-  return <PopoverPrimitive.Root data-slot="popover" {...props} />
+}: BasePopover.Root.Props & { children?: React.ReactNode }) {
+  return <BasePopover.Root data-slot="popover" {...props}>{children}</BasePopover.Root>
 }
 
 function PopoverTrigger({
+  className,
+  asChild,
+  children,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
-  return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
+}: React.ComponentProps<typeof BasePopover.Trigger> & { asChild?: boolean }) {
+  // Base UI uses render prop instead of asChild
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <BasePopover.Trigger
+        data-slot="popover-trigger"
+        render={(triggerProps) => 
+          React.cloneElement(children as React.ReactElement, triggerProps as React.Attributes)
+        }
+        {...props}
+      />
+    )
+  }
+
+  return (
+    <BasePopover.Trigger 
+      data-slot="popover-trigger" 
+      className={className}
+      {...props}
+    >
+      {children}
+    </BasePopover.Trigger>
+  )
 }
 
 function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  side = "bottom",
+  children,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: Omit<React.ComponentProps<typeof BasePopover.Popup>, 'children'> & { 
+  align?: "start" | "center" | "end"
+  sideOffset?: number
+  side?: "top" | "bottom" | "left" | "right"
+  children?: React.ReactNode
+}) {
   return (
-    <PopoverPrimitive.Portal>
-      <PopoverPrimitive.Content
-        data-slot="popover-content"
-        align={align}
-        sideOffset={sideOffset}
-        className={cn(
-          "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
-          className
-        )}
-        {...props}
-      />
-    </PopoverPrimitive.Portal>
+    <BasePopover.Portal>
+      <BasePopover.Positioner sideOffset={sideOffset} side={side} align={align}>
+        <BasePopover.Popup
+          data-slot="popover-content"
+          className={cn(
+            "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none",
+            "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
+            "data-[ending-style]:opacity-0 data-[ending-style]:scale-95",
+            "origin-[var(--transform-origin)] transition-[opacity,transform] duration-150",
+            className
+          )}
+          {...props}
+        >
+          {children}
+        </BasePopover.Popup>
+      </BasePopover.Positioner>
+    </BasePopover.Portal>
   )
 }
 
+// Note: Base UI doesn't have a direct Anchor equivalent
+// The anchor functionality is handled by the Trigger or through positioning
 function PopoverAnchor({
+  className,
+  children,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
-  return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return <div data-slot="popover-anchor" className={className} {...props}>{children}</div>
 }
 
 export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }

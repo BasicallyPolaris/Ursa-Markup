@@ -215,8 +215,10 @@ export class CanvasEngine {
 
     this.displayCtx.restore()
 
-    // Draw ruler (not affected by view transform)
-    ruler.render(this.displayCtx, viewState.canvasSize, viewState.zoom)
+    // Draw ruler in screen space (not affected by view transform)
+    // Pass display canvas size for ruler length calculation
+    const screenSize = { width: this.displayCanvas.width, height: this.displayCanvas.height }
+    ruler.render(this.displayCtx, screenSize)
   }
 
   /**
@@ -263,7 +265,9 @@ export class CanvasEngine {
           ctx,
           stroke.points,
           stroke.brush,
-          'normal'  // Always draw normally, multiply is applied at composite time
+          isMultiply ? 'normal' : stroke.blendMode as any,  // Color blend still applies per-pixel
+          this.baseImageData,
+          canvas.width
         )
         break
       case 'highlighter':
@@ -295,13 +299,16 @@ export class CanvasEngine {
   }
 
   /**
-   * Render a preview of the current stroke (for area tool)
+   * Render a preview of the current stroke
    * For multiply mode, we apply the multiply composite operation
+   * For color mode, we use simplified semi-transparent preview (smooth, not pixel-by-pixel)
+   * The final committed stroke will have accurate color blending
    */
   private renderPreview(preview: PreviewState): void {
     if (!this.displayCtx) return
 
     const isMultiply = preview.blendMode === 'multiply'
+    const isColor = preview.blendMode === 'color'
     
     // Apply multiply composite if needed
     if (isMultiply) {
@@ -318,8 +325,8 @@ export class CanvasEngine {
       const borderWidth = preview.brush.borderWidth || 2
       const borderEnabled = preview.brush.borderEnabled !== false
 
-      // Draw fill with lower opacity for preview
-      this.displayCtx.globalAlpha = preview.brush.opacity * 0.7
+      // All modes use smooth preview (color mode gets slightly lower opacity to indicate preview)
+      this.displayCtx.globalAlpha = isColor ? preview.brush.opacity * 0.6 : preview.brush.opacity * 0.7
       this.displayCtx.fillStyle = preview.brush.color
       this.displayCtx.beginPath()
       this.displayCtx.roundRect(x, y, width, height, borderRadius)
@@ -331,6 +338,7 @@ export class CanvasEngine {
         this.displayCtx.globalAlpha = preview.brush.opacity
         this.displayCtx.strokeStyle = preview.brush.color
         this.displayCtx.lineWidth = borderWidth
+        this.displayCtx.setLineDash([])
         this.displayCtx.beginPath()
         this.displayCtx.roundRect(x, y, width, height, borderRadius)
         this.displayCtx.stroke()
@@ -338,21 +346,44 @@ export class CanvasEngine {
 
       this.displayCtx.globalAlpha = 1
     } else if (preview.tool === 'pen' && preview.points && preview.points.length > 0) {
-      this.brushEngine.drawPenStroke(
-        this.displayCtx,
-        preview.points,
-        preview.brush,
-        'normal'  // Draw normally, multiply is already set as composite op
-      )
+      // All modes use smooth stroke rendering for preview
+      // Color mode gets slightly lower opacity to indicate it's a preview
+      this.displayCtx.save()
+      this.displayCtx.lineCap = 'round'
+      this.displayCtx.lineJoin = 'round'
+      this.displayCtx.lineWidth = preview.brush.size
+      this.displayCtx.strokeStyle = preview.brush.color
+      this.displayCtx.globalAlpha = isColor ? preview.brush.opacity * 0.7 : preview.brush.opacity
+      
+      this.displayCtx.beginPath()
+      this.displayCtx.moveTo(preview.points[0].x, preview.points[0].y)
+      for (let i = 1; i < preview.points.length; i++) {
+        this.displayCtx.lineTo(preview.points[i].x, preview.points[i].y)
+      }
+      this.displayCtx.stroke()
+      this.displayCtx.restore()
     } else if (preview.tool === 'highlighter' && preview.points && preview.points.length > 0) {
-      this.brushEngine.drawHighlighterStroke(
-        this.displayCtx,
-        preview.points,
-        preview.brush,
-        isMultiply ? 'normal' : (preview.blendMode || 'normal'),
-        this.baseImageData,
-        this.canvasSize.width
-      )
+      // Use smooth stroke rendering for highlighter preview (rectangular marker shape)
+      // Color mode gets slightly lower opacity to indicate it's a preview
+      this.displayCtx.save()
+      
+      const markerHeight = preview.brush.size
+      
+      // Use rectangular line caps for highlighter look
+      this.displayCtx.lineCap = 'butt'
+      this.displayCtx.lineJoin = 'miter'
+      this.displayCtx.lineWidth = markerHeight
+      this.displayCtx.strokeStyle = preview.brush.color
+      this.displayCtx.globalAlpha = isColor ? preview.brush.opacity * 0.7 : preview.brush.opacity
+      
+      // Draw the stroke path
+      this.displayCtx.beginPath()
+      this.displayCtx.moveTo(preview.points[0].x, preview.points[0].y)
+      for (let i = 1; i < preview.points.length; i++) {
+        this.displayCtx.lineTo(preview.points[i].x, preview.points[i].y)
+      }
+      this.displayCtx.stroke()
+      this.displayCtx.restore()
     }
 
     // Reset composite operation

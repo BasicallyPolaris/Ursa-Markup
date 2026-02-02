@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
-import { Pencil, Highlighter, Square, Ruler, Undo2, Redo2, FolderOpen, Save, Copy, Maximize, Minus, Plus, Settings } from 'lucide-react';
+import { Pencil, Highlighter, Square, Ruler, Undo2, Redo2, FolderOpen, Save, Copy, Maximize, Minus, Plus, Settings, Layers, Blend } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Slider } from '../ui/slider';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { useSettings } from '../../contexts/SettingsContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -19,7 +20,7 @@ export function Toolbar() {
   const { getActivePalette } = useTheme();
   const { activeDocument, documents: _documents } = useTabManager();
   const { strokeHistory, ruler, toggleRuler, undo, redo } = useDocument();
-  const { zoom, setZoom, fitToWindow: _fitToWindow } = useCanvasEngine();
+  const { zoom, setZoom, fitToWindow } = useCanvasEngine();
   
   // Use shared drawing state from context
   const { tool, setTool, brush, blendMode, setBlendMode, updateBrush } = useDrawing();
@@ -87,9 +88,8 @@ export function Toolbar() {
   }, [setZoom]);
   
   const handleFitToWindow = useCallback(() => {
-    // This needs container dimensions, handled by CanvasContainer
-    console.log('Fit to window requested');
-  }, []);
+    fitToWindow();
+  }, [fitToWindow]);
   
   const handleBlendModeChange = useCallback((mode: 'normal' | 'color' | 'multiply') => {
     setBlendMode(mode);
@@ -469,48 +469,46 @@ export function Toolbar() {
 
           <div className="w-px h-8 bg-surface-bg" />
 
-          {/* Blend Mode Toggle - shown for drawing tools */}
+          {/* Blend Mode Select - shown for drawing tools */}
           {(tool === 'pen' || tool === 'highlighter' || tool === 'area') && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={blendMode !== 'normal' ? 'secondary' : 'ghost'}
-                size="sm"
-                onClick={() => handleBlendModeChange(blendMode === 'normal' ? 'multiply' : blendMode === 'multiply' ? 'color' : 'normal')}
-                className={cn(
-                  'h-8 px-3 border',
-                  blendMode !== 'normal'
-                    ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm'
-                    : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
-                )}
-              >
-                <span className="text-xs">{blendMode === 'normal' ? 'Normal' : blendMode === 'multiply' ? 'Mult' : 'Color'}</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Blend Mode: {blendMode === 'normal' ? 'Normal' : blendMode === 'multiply' ? 'Multiply' : 'Color'}</TooltipContent>
-          </Tooltip>
-          )}
-
-          {/* Pen Mode Toggle - only when pen tool is active */}
-          {tool === 'pen' && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant={brush.penMode === 'marker' ? 'secondary' : 'ghost'}
-                  size="sm"
-                  onClick={() => handleBrushChange({ penMode: brush.penMode === 'marker' ? 'line' : 'marker' })}
-                  className={cn(
-                    'h-8 px-3 border',
-                    brush.penMode === 'marker'
-                      ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm'
-                      : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
-                  )}
-                >
-                  <span className="text-xs">{brush.penMode === 'marker' ? 'Marker' : 'Line'}</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Pen Mode: Line/Marker</TooltipContent>
-            </Tooltip>
+            <Select 
+              value={blendMode} 
+              onValueChange={(value) => handleBlendModeChange(value as 'normal' | 'multiply')}
+            >
+              <SelectTrigger className="w-[110px]">
+                <SelectValue>
+                  <span className="flex items-center gap-1.5">
+                    {blendMode === 'normal' ? (
+                      <>
+                        <Layers className="h-3 w-3" />
+                        Normal
+                      </>
+                    ) : (
+                      <>
+                        <Blend className="h-3 w-3" />
+                        Multiply
+                      </>
+                    )}
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="normal">
+                  <span className="flex items-center gap-1.5">
+                    <Layers className="h-3 w-3" />
+                    Normal
+                  </span>
+                </SelectItem>
+                <SelectItem value="multiply">
+                  <span className="flex items-center gap-1.5">
+                    <Blend className="h-3 w-3" />
+                    Multiply
+                  </span>
+                </SelectItem>
+                {/* Color mode disabled - preview rendering not yet accurate */}
+                {/* <SelectItem value="color">Color</SelectItem> */}
+              </SelectContent>
+            </Select>
           )}
 
           <div className="flex-1" />

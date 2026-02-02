@@ -5,7 +5,7 @@ import { useCanvasEngine } from '../../contexts/CanvasEngineContext';
 import { useTabManager } from '../../contexts/TabManagerContext';
 import { useDrawing } from '../../contexts/DrawingContext';
 import { cn } from '../../lib/utils';
-import type { Point } from '../../core/types';
+import type { Point, ViewState } from '../../core/types';
 
 interface CanvasContainerProps {
   className?: string;
@@ -63,7 +63,7 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
   const lastPointRef = useRef<Point | null>(null);
   const previewPointsRef = useRef<Point[]>([]);
 
-  // Load image when document changes
+  // Load image when document changes, then replay strokes
   useEffect(() => {
     if (!document?.imageSrc || !engine) return;
     
@@ -71,19 +71,27 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
       if (engine.canvasSize.width > 0 && engine.canvasSize.height > 0) {
         setCanvasSize(engine.canvasSize);
         document.setCanvasSize(engine.canvasSize);
+        
+        // Replay strokes after image is loaded (important for tab switching)
+        engine.replayStrokes({
+          groups: strokeHistory.groups,
+          currentIndex: strokeHistory.currentIndex
+        });
       }
     });
   }, [document?.imageSrc, engine]);
 
-  // Replay strokes when history changes
+  // Replay strokes when history changes (undo/redo or new strokes)
   useEffect(() => {
     if (!engine || !document) return;
+    // Only replay if image is already loaded (canvas size > 0)
+    if (engine.canvasSize.width === 0 || engine.canvasSize.height === 0) return;
     
     engine.replayStrokes({
       groups: strokeHistory.groups,
       currentIndex: strokeHistory.currentIndex
     });
-  }, [strokeHistory.currentIndex, engine, document]);
+  }, [strokeHistory.currentIndex, strokeHistory.groups, engine, document]);
 
   // Animation loop for rendering
   useEffect(() => {
@@ -112,7 +120,7 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
     return () => cancelAnimationFrame(animationId);
   }, [engine, zoom, viewOffset, canvasSize, ruler, tool, brush, blendMode, currentPoint]);
 
-  // Screen to canvas coordinate conversion
+  // Screen to canvas coordinate conversion (for drawing strokes)
   const screenToCanvas = useCallback((screenX: number, screenY: number): Point | null => {
     if (!containerRef.current) return null;
     
@@ -123,62 +131,85 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
     };
   }, [zoom, viewOffset]);
 
+  // Get screen point relative to container (for ruler operations)
+  const getScreenPoint = useCallback((e: React.MouseEvent): Point | null => {
+    if (!containerRef.current) return null;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    return {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    };
+  }, []);
+
+  // Get current view state for ruler coordinate conversions
+  const getViewState = useCallback((): ViewState => {
+    return { zoom, viewOffset, canvasSize };
+  }, [zoom, viewOffset, canvasSize]);
+
+  // Get screen size of container
+  const getScreenSize = useCallback(() => {
+    if (!containerRef.current) return { width: 1920, height: 1080 };
+    const rect = containerRef.current.getBoundingClientRect();
+    return { width: rect.width, height: rect.height };
+  }, []);
+
   // Mouse down handler
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    const point = screenToCanvas(e.clientX, e.clientY);
-    if (!point) return;
+    const canvasPoint = screenToCanvas(e.clientX, e.clientY);
+    const screenPoint = getScreenPoint(e);
+    if (!canvasPoint || !screenPoint) return;
 
     // Pan with middle mouse or Ctrl+left click
     if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
       isPanningRef.current = true;
-      panStartRef.current = point;
+      panStartRef.current = canvasPoint;
       setIsPanning(true);
       return;
     }
 
-    // Use a fallback canvas size if the actual size is not available yet
-    const effectiveCanvasSize = canvasSize.width > 0 && canvasSize.height > 0 
-      ? canvasSize 
-      : { width: 1920, height: 1080 };
+    // Get screen size for ruler hit detection
+    const screenSize = getScreenSize();
 
-    // Check if clicking on ruler
-    if (ruler.visible && ruler.isPointOnRuler(point, effectiveCanvasSize)) {
-      startDragRuler(point);
+    // Check if clicking on ruler (using screen coordinates)
+    if (ruler.visible && ruler.isPointOnRuler(screenPoint, screenSize)) {
+      startDragRuler(screenPoint);
       setIsRulerDragging(true);
       return;
     }
 
-    // Start drawing
+    // Start drawing (using canvas coordinates)
     isDrawingRef.current = true;
-    startPointRef.current = point;
-    lastPointRef.current = point;
+    startPointRef.current = canvasPoint;
+    lastPointRef.current = canvasPoint;
     setIsDrawing(true);
-    _setStartPoint(point);
-    previewPointsRef.current = [point];
+    _setStartPoint(canvasPoint);
+    previewPointsRef.current = [canvasPoint];
 
     startStrokeGroup();
-    startStroke(tool, brush, point, blendMode);
-  }, [screenToCanvas, ruler, canvasSize, tool, brush, blendMode, startStrokeGroup, startStroke, startDragRuler]);
+    startStroke(tool, brush, canvasPoint, blendMode);
+  }, [screenToCanvas, getScreenPoint, getScreenSize, ruler, tool, brush, blendMode, startStrokeGroup, startStroke, startDragRuler]);
 
   // Mouse move handler
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const point = screenToCanvas(e.clientX, e.clientY);
-    if (!point) return;
+    const canvasPoint = screenToCanvas(e.clientX, e.clientY);
+    const screenPoint = getScreenPoint(e);
+    if (!canvasPoint || !screenPoint) return;
 
-    // Use a fallback canvas size if the actual size is not available yet
-    const effectiveCanvasSize = canvasSize.width > 0 && canvasSize.height > 0 
-      ? canvasSize 
-      : { width: 1920, height: 1080 };
+    // Get screen size for ruler hit detection
+    const screenSize = getScreenSize();
+    const viewState = getViewState();
 
+    // Check ruler hover (using screen coordinates)
     if (!isDrawingRef.current && !isPanningRef.current && !ruler.isDragging && !isRulerDragging) {
-      setIsRulerHover(ruler.visible && ruler.isPointOnRuler(point, effectiveCanvasSize));
+      setIsRulerHover(ruler.visible && ruler.isPointOnRuler(screenPoint, screenSize));
     }
 
     // Handle panning
     if (isPanningRef.current && panStartRef.current) {
-      const deltaX = panStartRef.current.x - point.x;
-      const deltaY = panStartRef.current.y - point.y;
+      const deltaX = panStartRef.current.x - canvasPoint.x;
+      const deltaY = panStartRef.current.y - canvasPoint.y;
       setViewOffset({
         x: viewOffset.x + deltaX,
         y: viewOffset.y + deltaY
@@ -186,29 +217,29 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
       return;
     }
 
-    // Handle ruler dragging
+    // Handle ruler dragging (using screen coordinates)
     if (ruler.isDragging || isRulerDragging) {
-      dragRuler(point);
+      dragRuler(screenPoint);
       return;
     }
 
     // Handle drawing
     if (!isDrawingRef.current || !startPointRef.current) return;
 
-    // Snap to ruler if near
-    let drawPoint = point;
+    // Snap to ruler if near (using canvas coordinates for stroke, viewState for ruler conversion)
+    let drawPoint = canvasPoint;
     if (ruler.visible) {
-      const snapInfo = ruler.getSnapInfo(point, effectiveCanvasSize);
+      const snapInfo = ruler.getSnapInfo(canvasPoint, viewState);
       if (snapInfo.inStickyZone) {
-        drawPoint = ruler.snapPoint(point, brush.size, snapInfo.snapToFarSide);
+        drawPoint = ruler.snapPoint(canvasPoint, brush.size, snapInfo.snapToFarSide, viewState);
       }
     }
 
-    setCurrentPoint(point);
+    setCurrentPoint(canvasPoint);
     addPointToStroke(drawPoint);
     previewPointsRef.current = [...previewPointsRef.current, drawPoint];
     lastPointRef.current = drawPoint;
-  }, [screenToCanvas, isPanning, ruler, canvasSize, brush.size, viewOffset, setViewOffset, dragRuler, addPointToStroke, isRulerDragging]);
+  }, [screenToCanvas, getScreenPoint, getScreenSize, getViewState, isPanning, ruler, brush.size, viewOffset, setViewOffset, dragRuler, addPointToStroke, isRulerDragging]);
 
   // Mouse up handler
   const handleMouseUp = useCallback(() => {

@@ -1,50 +1,120 @@
-import * as React from "react"
-import * as DialogPrimitive from "@radix-ui/react-dialog"
+"use client"
 
+import * as React from "react"
+import { Dialog as BaseDialog } from "@base-ui-components/react/dialog"
 import { cn } from "../../lib/utils"
 
-const Dialog = DialogPrimitive.Root
-
-const DialogTrigger = DialogPrimitive.Trigger
-
-const DialogPortal = DialogPrimitive.Portal
-
-const DialogClose = DialogPrimitive.Close
-
-const DialogOverlay = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Overlay
-    ref={ref}
-    className={cn(
-      "fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-      className
-    )}
-    {...props}
-  />
-))
-DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
-
-const DialogContent = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-panel-border bg-panel-bg text-text-primary p-6 shadow-xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
-        className
-      )}
+function Dialog({
+  children,
+  open,
+  onOpenChange,
+  ...props
+}: BaseDialog.Root.Props & { 
+  children?: React.ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}) {
+  return (
+    <BaseDialog.Root 
+      open={open} 
+      onOpenChange={(open) => onOpenChange?.(open)}
       {...props}
     >
       {children}
-    </DialogPrimitive.Content>
-  </DialogPortal>
-))
-DialogContent.displayName = DialogPrimitive.Content.displayName
+    </BaseDialog.Root>
+  )
+}
+
+function DialogTrigger({
+  className,
+  asChild,
+  children,
+  ...props
+}: React.ComponentProps<typeof BaseDialog.Trigger> & { asChild?: boolean }) {
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <BaseDialog.Trigger
+        render={(triggerProps) => 
+          React.cloneElement(children as React.ReactElement, triggerProps as React.Attributes)
+        }
+        {...props}
+      />
+    )
+  }
+
+  return (
+    <BaseDialog.Trigger className={className} {...props}>
+      {children}
+    </BaseDialog.Trigger>
+  )
+}
+
+const DialogPortal = BaseDialog.Portal
+
+function DialogClose({
+  className,
+  asChild,
+  children,
+  ...props
+}: React.ComponentProps<typeof BaseDialog.Close> & { asChild?: boolean }) {
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <BaseDialog.Close
+        render={(closeProps) => 
+          React.cloneElement(children as React.ReactElement, closeProps as React.Attributes)
+        }
+        {...props}
+      />
+    )
+  }
+
+  return (
+    <BaseDialog.Close className={className} {...props}>
+      {children}
+    </BaseDialog.Close>
+  )
+}
+
+function DialogOverlay({
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseDialog.Backdrop>) {
+  return (
+    <BaseDialog.Backdrop
+      className={cn(
+        "fixed inset-0 z-50 bg-black/60",
+        "data-[starting-style]:opacity-0 data-[ending-style]:opacity-0",
+        "transition-opacity duration-150",
+        className
+      )}
+      {...props}
+    />
+  )
+}
+
+function DialogContent({
+  className,
+  children,
+  ...props
+}: Omit<React.ComponentProps<typeof BaseDialog.Popup>, 'children'> & { children?: React.ReactNode }) {
+  return (
+    <BaseDialog.Portal>
+      <DialogOverlay />
+      <BaseDialog.Popup
+        className={cn(
+          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-panel-border bg-panel-bg text-text-primary p-6 shadow-xl sm:rounded-lg",
+          "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
+          "data-[ending-style]:opacity-0 data-[ending-style]:scale-95",
+          "origin-center transition-[opacity,transform] duration-150",
+          className
+        )}
+        {...props}
+      >
+        {children}
+      </BaseDialog.Popup>
+    </BaseDialog.Portal>
+  )
+}
 
 const DialogHeader = ({
   className,
@@ -74,32 +144,32 @@ const DialogFooter = ({
 )
 DialogFooter.displayName = "DialogFooter"
 
-const DialogTitle = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Title
-    ref={ref}
-    className={cn(
-      "text-lg font-semibold leading-none tracking-tight",
-      className
-    )}
-    {...props}
-  />
-))
-DialogTitle.displayName = DialogPrimitive.Title.displayName
+function DialogTitle({
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseDialog.Title>) {
+  return (
+    <BaseDialog.Title
+      className={cn(
+        "text-lg font-semibold leading-none tracking-tight",
+        className
+      )}
+      {...props}
+    />
+  )
+}
 
-const DialogDescription = React.forwardRef<
-  React.ElementRef<typeof DialogPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
->(({ className, ...props }, ref) => (
-  <DialogPrimitive.Description
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-DialogDescription.displayName = DialogPrimitive.Description.displayName
+function DialogDescription({
+  className,
+  ...props
+}: React.ComponentProps<typeof BaseDialog.Description>) {
+  return (
+    <BaseDialog.Description
+      className={cn("text-sm text-muted-foreground", className)}
+      {...props}
+    />
+  )
+}
 
 export {
   Dialog,

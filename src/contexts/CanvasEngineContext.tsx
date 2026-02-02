@@ -15,7 +15,7 @@ interface CanvasEngineContextValue {
   setZoom: (zoom: number) => void
   setViewOffset: (offset: Point) => void
   setCanvasSize: (size: Size) => void
-  fitToWindow: (containerWidth: number, containerHeight: number, padding?: number) => void
+  fitToWindow: () => void
   zoomAroundPoint: (newZoom: number, screenX: number, screenY: number, containerRect: DOMRect) => void
 }
 
@@ -62,12 +62,15 @@ export function CanvasEngineProvider({ containerRef, children }: CanvasEnginePro
     setCanvasSize(size)
   }, [])
 
-  const fitToWindow = useCallback((
-    containerWidth: number,
-    containerHeight: number,
-    padding: number = 40
-  ) => {
+  const fitToWindow = useCallback(() => {
+    const container = containerRef.current
+    if (!container) return
     if (canvasSize.width === 0 || canvasSize.height === 0) return
+
+    const rect = container.getBoundingClientRect()
+    const containerWidth = rect.width
+    const containerHeight = rect.height
+    const padding = 40
 
     const availableWidth = containerWidth - padding * 2
     const availableHeight = containerHeight - padding * 2
@@ -85,7 +88,7 @@ export function CanvasEngineProvider({ containerRef, children }: CanvasEnginePro
 
     setZoomState(finalZoom)
     setViewOffsetState({ x: -panX / finalZoom, y: -panY / finalZoom })
-  }, [canvasSize])
+  }, [containerRef, canvasSize])
 
   const zoomAroundPoint = useCallback((
     newZoom: number,
