@@ -10,15 +10,17 @@ export { SettingsManager } from './SettingsManager'
 export { ThemeManager } from './ThemeManager'
 export { IOService } from './IOService'
 export { TabManager } from './TabManager'
+export { WindowManager } from './WindowManager'
 
 // Import singleton instances
 import { settingsManager } from './SettingsManager'
 import { themeManager } from './ThemeManager'
 import { ioService } from './IOService'
 import { tabManager } from './TabManager'
+import { windowManager } from './WindowManager'
 
 // Re-export singleton instances
-export { settingsManager, themeManager, ioService, tabManager }
+export { settingsManager, themeManager, ioService, tabManager, windowManager }
 
 // Convenience object for accessing all services
 export const services = {
@@ -26,4 +28,5 @@ export const services = {
   themeManager,
   ioService,
   tabManager,
+  windowManager,
 } as const

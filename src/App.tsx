@@ -12,7 +12,6 @@ import { useKeyboardShortcuts, useWindowTitle } from './hooks';
 import { services } from './services';
 import { Toolbar } from './components/toolbar/Toolbar';
 import { TabBar } from './components/tabs/TabBar';
-import { SettingsPanel } from './components/settings/SettingsPanel';
 import { CloseTabDialog } from './components/tabs/CloseTabDialog';
 import { CanvasContainer } from './components/canvas/CanvasContainer';
 
@@ -33,7 +32,6 @@ function DocumentContentInner({ canvasContainerRef }: { canvasContainerRef: RefO
     <>
       <Toolbar />
       <TabBar />
-      <SettingsPanel />
       <CloseTabDialog />
       <CanvasContainer className="flex-1" containerRef={canvasContainerRef} />
     </>
@@ -101,7 +99,6 @@ function EmptyStateContentInner({ canvasContainerRef }: { canvasContainerRef: Re
       <GlobalKeyboardShortcuts />
       <Toolbar />
       <TabBar />
-      <SettingsPanel />
       <CloseTabDialog />
       <CanvasContainer className="flex-1" containerRef={canvasContainerRef} />
     </>

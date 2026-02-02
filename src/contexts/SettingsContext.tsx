@@ -4,7 +4,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import type { AppSettings } from '../services'
-import { settingsManager } from '../services'
+import { settingsManager, windowManager } from '../services'
 
 interface SettingsContextValue {
   settings: AppSettings
@@ -90,11 +90,12 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     await settingsManager.reset()
   }, [])
 
-  const openSettings = useCallback(() => {
-    setIsOpen(true)
+  const openSettings = useCallback(async () => {
+    await windowManager.openSettings()
   }, [])
 
-  const closeSettings = useCallback(() => {
+  const closeSettings = useCallback(async () => {
+    await windowManager.closeSettings()
     setIsOpen(false)
   }, [])
 

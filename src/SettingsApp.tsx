@@ -1,0 +1,112 @@
+/**
+ * SettingsApp - Root component for the Settings window
+ * This runs in a separate Tauri window from the main app
+ */
+
+import { useState, useEffect, useCallback } from "react"
+import { listen, emit } from "@tauri-apps/api/event"
+import { getCurrentWindow } from "@tauri-apps/api/window"
+import { SettingsWindow } from "./components/settings/SettingsWindow"
+import { settingsManager } from "./services"
+import type { AppSettings } from "./services/types"
+
+function SettingsApp() {
+  const [settings, setSettings] = useState<AppSettings>(settingsManager.settings)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [isLoaded, setIsLoaded] = useState(false)
+
+  // Load settings on mount
+  useEffect(() => {
+    const init = async () => {
+      if (!settingsManager.loaded) {
+        await settingsManager.load()
+      }
+      setSettings({ ...settingsManager.settings })
+      setHasChanges(settingsManager.hasChanges)
+      setIsLoaded(true)
+    }
+    init()
+  }, [])
+
+  // Subscribe to settings changes
+  useEffect(() => {
+    const unsubscribe = settingsManager.on("settingsChanged", () => {
+      setSettings({ ...settingsManager.settings })
+      setHasChanges(settingsManager.hasChanges)
+    })
+
+    return () => {
+      unsubscribe()
+    }
+  }, [])
+
+  // Listen for events from main window
+  useEffect(() => {
+    const setupListeners = async () => {
+      const unlisten = await listen("settings-sync", () => {
+        // Sync settings from main window if needed
+        setSettings({ ...settingsManager.settings })
+        setHasChanges(settingsManager.hasChanges)
+      })
+
+      return unlisten
+    }
+
+    const unlistenPromise = setupListeners()
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten())
+    }
+  }, [])
+
+  const updateDraft = useCallback((updates: Partial<AppSettings>) => {
+    settingsManager.updateDraft(updates)
+  }, [])
+
+  const updateColorPreset = useCallback((index: number, color: string) => {
+    settingsManager.updateColorPreset(index, color)
+  }, [])
+
+  const handleSave = useCallback(async () => {
+    const success = await settingsManager.save()
+    if (success) {
+      // Emit event to main window that settings were saved
+      await emit("settings-saved", settingsManager.settings)
+      // Close the window after save
+      const currentWindow = getCurrentWindow()
+      await currentWindow.close()
+    }
+  }, [])
+
+  const handleCancel = useCallback(async () => {
+    settingsManager.cancel()
+    // Close the window
+    const currentWindow = getCurrentWindow()
+    await currentWindow.close()
+  }, [])
+
+  const handleReset = useCallback(() => {
+    settingsManager.reset()
+  }, [])
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-panel-bg">
+        <div className="text-text-muted">Loading settings...</div>
+      </div>
+    )
+  }
+
+  return (
+    <SettingsWindow
+      settings={settings}
+      hasChanges={hasChanges}
+      updateDraft={updateDraft}
+      updateColorPreset={updateColorPreset}
+      onSave={handleSave}
+      onCancel={handleCancel}
+      onReset={handleReset}
+    />
+  )
+}
+
+export default SettingsApp
