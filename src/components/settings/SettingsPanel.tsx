@@ -1,60 +1,51 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "../ui/button";
 import { Slider } from "../ui/slider";
 import { Switch } from "../ui/switch";
 import { Label } from "../ui/label";
 import { RotateCcw, Save, X } from "lucide-react";
-import type { AppSettings } from "../../hooks/useSettings";
+import { useSettings } from "../../contexts/SettingsContext";
 
-interface SettingsPanelProps {
-  settings: AppSettings;
-  hasChanges: boolean;
-  onUpdateDraft: (updates: Partial<AppSettings>) => void;
-  onUpdateColorPreset: (index: number, color: string) => void;
-  onSave: () => Promise<boolean>;
-  onCancel: () => void;
-  onReset: () => void;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-export function SettingsPanel({
-  settings,
-  hasChanges,
-  onUpdateDraft,
-  onUpdateColorPreset,
-  onSave,
-  onCancel,
-  onReset,
-  open,
-  onOpenChange,
-}: SettingsPanelProps) {
+export function SettingsPanel() {
+  const { settings, hasChanges, updateDraft, updateColorPreset, save, cancel, reset } = useSettings();
+  const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = async () => {
+  const handleOpenChange = useCallback((open: boolean) => {
+    if (!open && hasChanges) {
+      cancel();
+    }
+    setIsOpen(open);
+  }, [hasChanges, cancel]);
+
+  const handleSave = useCallback(async () => {
     setIsSaving(true);
-    const success = await onSave();
+    const success = await save();
     setIsSaving(false);
     if (success) {
-      onOpenChange(false);
+      setIsOpen(false);
     }
-  };
+  }, [save]);
 
-  const handleCancel = () => {
-    onCancel();
-    onOpenChange(false);
-  };
+  const handleCancel = useCallback(() => {
+    cancel();
+    setIsOpen(false);
+  }, [cancel]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (hasChanges) {
-      onCancel();
+      cancel();
     }
-    onOpenChange(false);
-  };
+    setIsOpen(false);
+  }, [hasChanges, cancel]);
+
+  const handleReset = useCallback(() => {
+    reset();
+  }, [reset]);
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] p-0 overflow-hidden flex flex-col">
         {/* Header */}
         <DialogHeader className="px-4 py-3 border-b border-toolbar-border flex-shrink-0">
@@ -84,7 +75,7 @@ export function SettingsPanel({
               <Switch
                 checked={settings.autoCopyOnChange}
                 onCheckedChange={(checked: boolean) =>
-                  onUpdateDraft({ autoCopyOnChange: checked })
+                  updateDraft({ autoCopyOnChange: checked })
                 }
               />
             </div>
@@ -102,7 +93,7 @@ export function SettingsPanel({
               <Button
                 variant={settings.closeTabBehavior === 'prompt' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => onUpdateDraft({ closeTabBehavior: 'prompt' })}
+                onClick={() => updateDraft({ closeTabBehavior: 'prompt' })}
                 className={`flex-1 h-8 text-xs ${
                   settings.closeTabBehavior === 'prompt' 
                     ? 'bg-text-primary/15 text-text-primary' 
@@ -114,7 +105,7 @@ export function SettingsPanel({
               <Button
                 variant={settings.closeTabBehavior === 'auto-save' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => onUpdateDraft({ closeTabBehavior: 'auto-save' })}
+                onClick={() => updateDraft({ closeTabBehavior: 'auto-save' })}
                 className={`flex-1 h-8 text-xs ${
                   settings.closeTabBehavior === 'auto-save' 
                     ? 'bg-text-primary/15 text-text-primary' 
@@ -126,7 +117,7 @@ export function SettingsPanel({
               <Button
                 variant={settings.closeTabBehavior === 'discard' ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={() => onUpdateDraft({ closeTabBehavior: 'discard' })}
+                onClick={() => updateDraft({ closeTabBehavior: 'discard' })}
                 className={`flex-1 h-8 text-xs ${
                   settings.closeTabBehavior === 'discard' 
                     ? 'bg-text-primary/15 text-text-primary' 
@@ -154,7 +145,7 @@ export function SettingsPanel({
                   <input
                     type="color"
                     value={color}
-                    onChange={(e) => onUpdateColorPreset(index, e.target.value)}
+                    onChange={(e) => updateColorPreset(index, e.target.value)}
                     className="w-9 h-9 rounded cursor-pointer border-2 border-panel-border"
                   />
                   <span className="text-xs text-text-muted">{index + 1}</span>
@@ -179,7 +170,7 @@ export function SettingsPanel({
               <Slider
                 value={[settings.defaultPenSize]}
                 onValueChange={([value]) =>
-                  onUpdateDraft({ defaultPenSize: value })
+                  updateDraft({ defaultPenSize: value })
                 }
                 min={1}
                 max={20}
@@ -197,7 +188,7 @@ export function SettingsPanel({
               <Slider
                 value={[settings.defaultMarkerSize]}
                 onValueChange={([value]) =>
-                  onUpdateDraft({ defaultMarkerSize: value })
+                  updateDraft({ defaultMarkerSize: value })
                 }
                 min={5}
                 max={50}
@@ -217,7 +208,7 @@ export function SettingsPanel({
               <Slider
                 value={[settings.defaultMarkerOpacity * 100]}
                 onValueChange={([value]) =>
-                  onUpdateDraft({ defaultMarkerOpacity: value / 100 })
+                  updateDraft({ defaultMarkerOpacity: value / 100 })
                 }
                 min={10}
                 max={100}
@@ -237,12 +228,178 @@ export function SettingsPanel({
               <Slider
                 value={[settings.defaultMarkerBorderRadius]}
                 onValueChange={([value]) =>
-                  onUpdateDraft({ defaultMarkerBorderRadius: value })
+                  updateDraft({ defaultMarkerBorderRadius: value })
                 }
                 min={0}
                 max={20}
                 step={1}
               />
+            </div>
+
+            {/* Marker Mode Toggle */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary text-sm">
+                  Default Marker Mode
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={settings.defaultMarkerMode === 'normal' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultMarkerMode: 'normal' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultMarkerMode === 'normal'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Normal
+                  </Button>
+                  <Button
+                    variant={settings.defaultMarkerMode === 'composition' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultMarkerMode: 'composition' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultMarkerMode === 'composition'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Composition
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-text-muted">
+                Composition mode colors only background pixels while preserving text visibility
+              </p>
+            </div>
+
+            {/* Area Tool Settings */}
+            <div className="pt-2 border-t border-toolbar-border">
+              <Label className="text-text-primary text-sm font-medium">
+                Area Tool Defaults
+              </Label>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-secondary text-sm">
+                  Area Opacity
+                </span>
+                <span className="text-text-muted text-sm">
+                  {Math.round(settings.defaultAreaOpacity * 100)}%
+                </span>
+              </div>
+              <Slider
+                value={[settings.defaultAreaOpacity * 100]}
+                onValueChange={([value]) =>
+                  updateDraft({ defaultAreaOpacity: value / 100 })
+                }
+                min={10}
+                max={100}
+                step={5}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-secondary text-sm">
+                  Area Corner Radius
+                </span>
+                <span className="text-text-muted text-sm">
+                  {settings.defaultAreaBorderRadius}px
+                </span>
+              </div>
+              <Slider
+                value={[settings.defaultAreaBorderRadius]}
+                onValueChange={([value]) =>
+                  updateDraft({ defaultAreaBorderRadius: value })
+                }
+                min={0}
+                max={50}
+                step={1}
+              />
+            </div>
+
+            {/* Area Border Toggle */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary text-sm">
+                  Default Area Border
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={settings.defaultAreaBorderEnabled ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultAreaBorderEnabled: !settings.defaultAreaBorderEnabled })}
+                    className={`h-7 text-xs ${
+                      settings.defaultAreaBorderEnabled
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    {settings.defaultAreaBorderEnabled ? 'Enabled' : 'Disabled'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Area Border Width - only when enabled */}
+            {settings.defaultAreaBorderEnabled && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-text-secondary text-sm">
+                    Area Border Width
+                  </span>
+                  <span className="text-text-muted text-sm">
+                    {settings.defaultAreaBorderWidth}px
+                  </span>
+                </div>
+                <Slider
+                  value={[settings.defaultAreaBorderWidth]}
+                  onValueChange={([value]) =>
+                    updateDraft({ defaultAreaBorderWidth: value })
+                  }
+                  min={1}
+                  max={10}
+                  step={1}
+                />
+              </div>
+            )}
+
+            {/* Area Mode Toggle */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary text-sm">
+                  Default Area Mode
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={settings.defaultAreaMode === 'normal' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultAreaMode: 'normal' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultAreaMode === 'normal'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Normal
+                  </Button>
+                  <Button
+                    variant={settings.defaultAreaMode === 'composition' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultAreaMode: 'composition' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultAreaMode === 'composition'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Composition
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -292,7 +449,7 @@ export function SettingsPanel({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onReset}
+            onClick={handleReset}
             className="text-text-muted hover:text-text-primary hover:bg-surface-bg-hover h-8"
           >
             <RotateCcw className="w-4 h-4 mr-1.5" />

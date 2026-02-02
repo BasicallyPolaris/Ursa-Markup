@@ -1,54 +1,112 @@
+import { useCallback } from 'react';
 import { Pencil, Highlighter, Square, Ruler, Undo2, Redo2, FolderOpen, Save, Copy, Maximize, Minus, Plus, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Slider } from '../ui/slider';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import type { Tool, BrushSettings, RulerState, ColorPalette } from '../../types';
-import { PASTEL_PALETTE } from '../../types';
+import { useSettings } from '../../contexts/SettingsContext';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useTabManager } from '../../contexts/TabManagerContext';
+import { useDocument } from '../../contexts/DocumentContext';
+import { useCanvasEngine } from '../../contexts/CanvasEngineContext';
+import { useDrawing } from '../../contexts/DrawingContext';
+import { services } from '../../services';
+import type { Tool, BrushSettings } from '../../core/types';
 import { cn } from '../../lib/utils';
 
-interface ToolbarProps {
-  tool: Tool;
-  onToolChange: (tool: Tool) => void;
-  brush: BrushSettings;
-  onBrushChange: (brush: Partial<BrushSettings>) => void;
-  ruler: RulerState;
-  onToggleRuler: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
-  onUndo: () => void;
-  onRedo: () => void;
-  onOpen: () => void;
-  onSave: () => void;
-  onCopy: () => void;
-  onSettings: () => void;
-  hasImage: boolean;
-  zoom: number;
-  onZoomChange: (zoom: number) => void;
-  onFitToWindow: () => void;
-  palette?: ColorPalette;
-}
+export function Toolbar() {
+  // Get contexts
+  const { settings, updateDraft: _updateDraft } = useSettings();
+  const { getActivePalette } = useTheme();
+  const { activeDocument, documents: _documents } = useTabManager();
+  const { strokeHistory, ruler, toggleRuler, undo, redo } = useDocument();
+  const { zoom, setZoom, fitToWindow: _fitToWindow } = useCanvasEngine();
+  
+  // Use shared drawing state from context
+  const { tool, setTool, brush, blendMode, setBlendMode, updateBrush } = useDrawing();
+  
+  const palette = getActivePalette();
+  const hasImage = activeDocument?.hasImage() ?? false;
+  const canUndo = strokeHistory.canUndo();
+  const canRedo = strokeHistory.canRedo();
+  
+  // Handlers
+  const handleToolChange = useCallback((newTool: Tool) => {
+    setTool(newTool);
+    // Update brush based on tool
+    if (newTool === 'pen') {
+      updateBrush({
+        size: settings.defaultPenSize,
+        opacity: settings.defaultPenOpacity,
+      });
+    } else if (newTool === 'highlighter') {
+      updateBrush({
+        size: settings.defaultMarkerSize,
+        opacity: settings.defaultMarkerOpacity,
+        borderRadius: settings.defaultMarkerBorderRadius,
+      });
+    } else if (newTool === 'area') {
+      updateBrush({
+        opacity: settings.defaultAreaOpacity,
+        borderRadius: settings.defaultAreaBorderRadius,
+        borderWidth: settings.defaultAreaBorderWidth,
+        borderEnabled: settings.defaultAreaBorderEnabled,
+      });
+    }
+  }, [settings, setTool, updateBrush]);
+  
+  const handleBrushChange = useCallback((changes: Partial<BrushSettings>) => {
+    updateBrush(changes);
+  }, [updateBrush]);
+  
+  const handleOpen = useCallback(async () => {
+    const result = await services.ioService.openFile();
+    if (result) {
+      const blob = new Blob([result.fileData]);
+      const url = URL.createObjectURL(blob);
+      services.tabManager.createDocument(result.filePath, undefined, url);
+    }
+  }, []);
+  
+  const handleSave = useCallback(async () => {
+    // This will be handled via context or callback
+    console.log('Save requested');
+  }, []);
+  
+  const handleCopy = useCallback(async () => {
+    // This will be handled via context or callback
+    console.log('Copy requested');
+  }, []);
+  
+  const handleSettings = useCallback(() => {
+    // Open settings - this is managed by SettingsPanel
+    console.log('Settings requested');
+  }, []);
+  
+  const handleZoomChange = useCallback((newZoom: number) => {
+    setZoom(newZoom);
+  }, [setZoom]);
+  
+  const handleFitToWindow = useCallback(() => {
+    // This needs container dimensions, handled by CanvasContainer
+    console.log('Fit to window requested');
+  }, []);
+  
+  const handleBlendModeChange = useCallback((mode: 'normal' | 'color' | 'multiply') => {
+    setBlendMode(mode);
+  }, []);
 
-export function Toolbar({
-  tool,
-  onToolChange,
-  brush,
-  onBrushChange,
-  ruler,
-  onToggleRuler,
-  canUndo,
-  canRedo,
-  onUndo,
-  onRedo,
-  onOpen,
-  onSave,
-  onCopy,
-  onSettings,
-  hasImage,
-  zoom,
-  onZoomChange,
-  onFitToWindow,
-  palette = PASTEL_PALETTE,
-}: ToolbarProps) {
+  const handleUndo = useCallback(() => {
+    undo();
+  }, [undo]);
+
+  const handleRedo = useCallback(() => {
+    redo();
+  }, [redo]);
+
+  const handleToggleRuler = useCallback(() => {
+    toggleRuler();
+  }, [toggleRuler]);
+  
   return (
     <TooltipProvider delayDuration={0}>
       <div className="flex flex-col select-none">
@@ -60,7 +118,7 @@ export function Toolbar({
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={onOpen}
+                  onClick={handleOpen}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                 >
                   <FolderOpen className="h-4 w-4 mr-1.5" />
@@ -75,7 +133,7 @@ export function Toolbar({
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={onSave}
+                  onClick={handleSave}
                   disabled={!hasImage}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 >
@@ -91,7 +149,7 @@ export function Toolbar({
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  onClick={onCopy}
+                  onClick={handleCopy}
                   disabled={!hasImage}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 >
@@ -110,7 +168,7 @@ export function Toolbar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onUndo}
+                  onClick={handleUndo}
                   disabled={!canUndo}
                   className="h-8 w-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 border border-transparent hover:border-toolbar-border"
                 >
@@ -125,7 +183,7 @@ export function Toolbar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onRedo}
+                  onClick={handleRedo}
                   disabled={!canRedo}
                   className="h-8 w-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 border border-transparent hover:border-toolbar-border"
                 >
@@ -144,7 +202,7 @@ export function Toolbar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onSettings}
+                  onClick={handleSettings}
                   className="h-8 w-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
                 >
                   <Settings className="h-4 w-4" />
@@ -164,7 +222,7 @@ export function Toolbar({
                 <Button
                   variant={tool === 'pen' ? 'secondary' : 'ghost'}
                   size="sm"
-                  onClick={() => onToolChange('pen')}
+                  onClick={() => handleToolChange('pen')}
                   className={cn(
                     'h-8 px-3 border',
                     tool === 'pen' 
@@ -184,7 +242,7 @@ export function Toolbar({
                 <Button
                   variant={tool === 'highlighter' ? 'secondary' : 'ghost'}
                   size="sm"
-                  onClick={() => onToolChange('highlighter')}
+                  onClick={() => handleToolChange('highlighter')}
                   className={cn(
                     'h-8 px-3 border',
                     tool === 'highlighter' 
@@ -204,7 +262,7 @@ export function Toolbar({
                 <Button
                   variant={tool === 'area' ? 'secondary' : 'ghost'}
                   size="sm"
-                  onClick={() => onToolChange('area')}
+                  onClick={() => handleToolChange('area')}
                   className={cn(
                     'h-8 px-3 border',
                     tool === 'area' 
@@ -228,7 +286,7 @@ export function Toolbar({
               <Tooltip key={color}>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => onBrushChange({ color })}
+                    onClick={() => handleBrushChange({ color })}
                     className={cn(
                       'w-6 h-6 rounded-full transition-all',
                       brush.color === color
@@ -262,7 +320,7 @@ export function Toolbar({
                   min={1}
                   max={tool === 'highlighter' ? 40 : 20}
                   step={1}
-                  onValueChange={([value]) => onBrushChange({ size: value })}
+                  onValueChange={([value]) => handleBrushChange({ size: value })}
                 />
               </div>
             )}
@@ -278,12 +336,12 @@ export function Toolbar({
                 min={10}
                 max={100}
                 step={5}
-                onValueChange={([value]) => onBrushChange({ opacity: value / 100 })}
+                onValueChange={([value]) => handleBrushChange({ opacity: value / 100 })}
               />
             </div>
 
-            {/* Border Radius - only for marker */}
-            {tool === 'highlighter' && (
+            {/* Border Radius - for marker and area */}
+            {(tool === 'highlighter' || tool === 'area') && (
               <div className="flex flex-col gap-1 w-24">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Radius</span>
@@ -292,12 +350,56 @@ export function Toolbar({
                 <Slider
                   value={[brush.borderRadius || 0]}
                   min={0}
-                  max={Math.floor(brush.size / 2)}
+                  max={tool === 'highlighter' ? Math.floor(brush.size / 2) : 50}
                   step={1}
-                  onValueChange={([value]) => onBrushChange({ borderRadius: value })}
+                  onValueChange={([value]) => handleBrushChange({ borderRadius: value })}
                 />
               </div>
             )}
+
+            {/* Area Border Controls */}
+            {tool === 'area' && (
+              <>
+                {/* Border Toggle */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={brush.borderEnabled ? 'secondary' : 'ghost'}
+                      size="sm"
+                      onClick={() => handleBrushChange({ borderEnabled: !brush.borderEnabled })}
+                      className={cn(
+                        'h-8 px-3 border',
+                        brush.borderEnabled
+                          ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm'
+                          : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
+                      )}
+                    >
+                      <span className="text-xs">Border</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Toggle Area Border</TooltipContent>
+                </Tooltip>
+
+                {/* Border Width - only when border is enabled */}
+                {brush.borderEnabled && (
+                  <div className="flex flex-col gap-1 w-24">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-text-muted">Border</span>
+                      <span className="text-xs text-text-secondary font-mono">{brush.borderWidth || 2}px</span>
+                    </div>
+                    <Slider
+                      value={[brush.borderWidth || 2]}
+                      min={1}
+                      max={10}
+                      step={1}
+                      onValueChange={([value]) => handleBrushChange({ borderWidth: value })}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+
 
             {/* Brush Preview */}
             <div className="flex items-center justify-center w-10 h-10 bg-surface-bg rounded-lg border border-toolbar-border">
@@ -310,6 +412,17 @@ export function Toolbar({
                     backgroundColor: brush.color,
                     opacity: brush.opacity,
                     borderRadius: brush.borderRadius || 0,
+                  }}
+                />
+              ) : tool === 'area' ? (
+                <div
+                  style={{
+                    width: 24,
+                    height: 18,
+                    backgroundColor: brush.color,
+                    opacity: brush.opacity,
+                    borderRadius: brush.borderRadius || 0,
+                    border: brush.borderEnabled ? `${Math.min(3, brush.borderWidth || 2)}px solid ${brush.color}` : 'none',
                   }}
                 />
               ) : (
@@ -334,7 +447,7 @@ export function Toolbar({
               <Button
                 variant={ruler.visible ? 'secondary' : 'ghost'}
                 size="sm"
-                onClick={onToggleRuler}
+                onClick={handleToggleRuler}
                 className={cn(
                   'h-8 px-3 border',
                   ruler.visible 
@@ -354,6 +467,52 @@ export function Toolbar({
             <TooltipContent>Toggle Ruler (Ctrl+R)</TooltipContent>
           </Tooltip>
 
+          <div className="w-px h-8 bg-surface-bg" />
+
+          {/* Blend Mode Toggle - shown for drawing tools */}
+          {(tool === 'pen' || tool === 'highlighter' || tool === 'area') && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={blendMode !== 'normal' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => handleBlendModeChange(blendMode === 'normal' ? 'multiply' : blendMode === 'multiply' ? 'color' : 'normal')}
+                className={cn(
+                  'h-8 px-3 border',
+                  blendMode !== 'normal'
+                    ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm'
+                    : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
+                )}
+              >
+                <span className="text-xs">{blendMode === 'normal' ? 'Normal' : blendMode === 'multiply' ? 'Mult' : 'Color'}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Blend Mode: {blendMode === 'normal' ? 'Normal' : blendMode === 'multiply' ? 'Multiply' : 'Color'}</TooltipContent>
+          </Tooltip>
+          )}
+
+          {/* Pen Mode Toggle - only when pen tool is active */}
+          {tool === 'pen' && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={brush.penMode === 'marker' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleBrushChange({ penMode: brush.penMode === 'marker' ? 'line' : 'marker' })}
+                  className={cn(
+                    'h-8 px-3 border',
+                    brush.penMode === 'marker'
+                      ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm'
+                      : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
+                  )}
+                >
+                  <span className="text-xs">{brush.penMode === 'marker' ? 'Marker' : 'Line'}</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Pen Mode: Line/Marker</TooltipContent>
+            </Tooltip>
+          )}
+
           <div className="flex-1" />
 
           {/* Zoom Controls */}
@@ -363,7 +522,7 @@ export function Toolbar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onZoomChange(Math.max(0.1, zoom / 1.2))}
+                  onClick={() => handleZoomChange(Math.max(0.1, zoom / 1.2))}
                   className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
                 >
                   <Minus className="h-3 w-3" />
@@ -381,7 +540,7 @@ export function Toolbar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => onZoomChange(Math.min(5, zoom * 1.2))}
+                  onClick={() => handleZoomChange(Math.min(5, zoom * 1.2))}
                   className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
                 >
                   <Plus className="h-3 w-3" />
@@ -397,7 +556,7 @@ export function Toolbar({
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={onFitToWindow}
+                  onClick={handleFitToWindow}
                   className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
                 >
                   <Maximize className="h-3 w-3" />

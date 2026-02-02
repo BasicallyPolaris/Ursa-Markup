@@ -13,6 +13,22 @@ export interface RulerState {
   isDragging: boolean
 }
 
+// Stroke data for history (stored per tab)
+export interface Stroke {
+  id: string
+  tool: Tool
+  points: Point[]
+  brush: BrushSettings
+  blendMode: 'normal' | 'color' | 'multiply'
+  timestamp: number
+}
+
+export interface StrokeGroup {
+  id: string
+  strokes: Stroke[]
+  timestamp: number
+}
+
 // Tab state for multi-tab support
 export interface Tab {
   id: string
@@ -25,13 +41,20 @@ export interface Tab {
   rulerPosition: { x: number; y: number; angle: number }
   hasChanges: boolean
   recentDir: string | null
+  // Per-tab stroke history (Option A)
+  strokeHistory: StrokeGroup[]
+  strokeHistoryIndex: number
 }
 
 export interface BrushSettings {
   size: number
   color: string
   opacity: number
-  borderRadius?: number  // For marker tool square corners
+  borderRadius?: number  // For marker and area tools
+  borderWidth?: number  // For area tool border
+  borderEnabled?: boolean  // Toggle area border on/off
+  penMode?: 'line' | 'marker'  // For pen tool - 'line' draws strokes, 'marker' draws filled rounded rectangles
+  blendMode?: 'normal' | 'composition'  // Global blend mode - 'composition' uses multiply blending
 }
 
 export interface CanvasState {
@@ -65,6 +88,8 @@ export interface HighlighterToolConfig {
 export interface AreaToolConfig {
   opacity: number
   defaultSize: number
+  borderRadius: number
+  borderWidth: number
 }
 
 export interface ToolConfig {
@@ -94,6 +119,6 @@ export const DEFAULT_CONFIG = {
   tools: {
     pen: { minSize: 1, maxSize: 20, defaultSize: 3 },
     highlighter: { opacity: 0.4, minSize: 5, maxSize: 50, defaultSize: 20 },
-    area: { opacity: 0.3, defaultSize: 2 }
+    area: { opacity: 0.4, defaultSize: 2, borderRadius: 0, borderWidth: 2 }
   }
 }

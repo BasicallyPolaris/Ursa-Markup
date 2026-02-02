@@ -1,17 +1,28 @@
+import { useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
+import { useTabManager } from '../../contexts/TabManagerContext';
 
-interface CloseTabDialogProps {
-  isOpen: boolean;
-  fileName: string | null;
-  onSave: () => void;
-  onDiscard: () => void;
-  onCancel: () => void;
-}
-
-export function CloseTabDialog({ isOpen, fileName, onSave, onDiscard, onCancel }: CloseTabDialogProps) {
+export function CloseTabDialog() {
+  const { pendingCloseDocument, confirmCloseWithSave, confirmCloseWithoutSave, cancelClose } = useTabManager();
+  
+  const isOpen = pendingCloseDocument !== null;
+  const fileName = pendingCloseDocument?.fileName ?? null;
+  
+  const handleSave = useCallback(() => {
+    confirmCloseWithSave();
+  }, [confirmCloseWithSave]);
+  
+  const handleDiscard = useCallback(() => {
+    confirmCloseWithoutSave();
+  }, [confirmCloseWithoutSave]);
+  
+  const handleCancel = useCallback(() => {
+    cancelClose();
+  }, [cancelClose]);
+  
   return (
-    <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onCancel()}>
+    <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && handleCancel()}>
       <DialogContent className="bg-panel-bg border-panel-border text-text-primary">
         <DialogHeader>
           <DialogTitle>Save Changes?</DialogTitle>
@@ -24,21 +35,21 @@ export function CloseTabDialog({ isOpen, fileName, onSave, onDiscard, onCancel }
         </DialogHeader>
         <DialogFooter className="gap-2">
           <Button 
-            onClick={onCancel}
+            onClick={handleCancel}
             variant="secondary"
             className="bg-toolbar-bg text-toolbar-text hover:bg-toolbar-hover"
           >
             Cancel
           </Button>
           <Button 
-            onClick={onDiscard}
+            onClick={handleDiscard}
             variant="secondary"
             className="bg-toolbar-bg text-toolbar-text hover:bg-toolbar-hover"
           >
             Don't Save
           </Button>
           <Button 
-            onClick={onSave}
+            onClick={handleSave}
             className="bg-accent-blue text-white hover:bg-accent-blue-hover"
           >
             Save

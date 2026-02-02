@@ -12,6 +12,13 @@ export interface AppSettings {
   defaultPenOpacity: number;
   defaultMarkerOpacity: number;
   defaultMarkerBorderRadius: number;
+  defaultMarkerMode: 'normal' | 'composition';
+  defaultAreaOpacity: number;
+  defaultAreaBorderRadius: number;
+  defaultAreaBorderWidth: number;
+  defaultAreaBorderEnabled: boolean;
+  defaultAreaMode: 'normal' | 'composition';
+  blendMode: 'normal' | 'color' | 'multiply';
   closeTabBehavior: CloseTabBehavior;
 }
 
@@ -30,8 +37,15 @@ const DEFAULT_SETTINGS: AppSettings = {
   defaultPenSize: 3,
   defaultMarkerSize: 20,
   defaultPenOpacity: 1,
-  defaultMarkerOpacity: 0.1,
+  defaultMarkerOpacity: 0.4,
   defaultMarkerBorderRadius: 4,
+  defaultMarkerMode: 'normal',
+  defaultAreaOpacity: 0.4,
+  defaultAreaBorderRadius: 0,
+  defaultAreaBorderWidth: 2,
+  defaultAreaBorderEnabled: false,
+  defaultAreaMode: 'normal',
+  blendMode: 'normal',
   closeTabBehavior: 'prompt',
 };
 

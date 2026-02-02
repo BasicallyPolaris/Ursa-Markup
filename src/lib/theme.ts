@@ -435,6 +435,8 @@ export const DEFAULT_THEME: ThemeConfig = {
     area: {
       opacity: 0.3,
       defaultSize: 2,
+      borderRadius: 0,
+      borderWidth: 2,
     },
   },
 };

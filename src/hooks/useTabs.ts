@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from 'react'
-import type { Tab } from '../types'
+import { useState, useCallback } from 'react'
+import type { Tab, StrokeGroup } from '../types'
 import type { CloseTabBehavior } from './useSettings'
 
 // Generate unique tab ID
@@ -17,6 +17,8 @@ const createEmptyTab = (): Tab => ({
   rulerPosition: { x: 400, y: 300, angle: 0 },
   hasChanges: false,
   recentDir: null,
+  strokeHistory: [],
+  strokeHistoryIndex: -1,
 })
 
 export interface PendingCloseTab {
@@ -29,19 +31,6 @@ export function useTabs(closeTabBehavior: CloseTabBehavior = 'prompt') {
   const [tabs, setTabs] = useState<Tab[]>([createEmptyTab()])
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id)
   const [pendingCloseTab, setPendingCloseTab] = useState<PendingCloseTab | null>(null)
-  
-  // Track history instances per tab (we'll manage this separately)
-  const strokeHistoryInstances = useRef<Map<string, {
-    canUndo: boolean
-    canRedo: boolean
-    startStrokeGroup: () => void
-    startStroke: (tool: string, brush: unknown, point: unknown) => void
-    addPointToStroke: (point: unknown) => void
-    endStrokeGroup: () => void
-    undo: (canvas: HTMLCanvasElement) => void
-    redo: (canvas: HTMLCanvasElement) => void
-    clearHistory: () => void
-  }>>(new Map())
 
   const activeTab = tabs.find(tab => tab.id === activeTabId) || tabs[0]
 
@@ -101,9 +90,6 @@ export function useTabs(closeTabBehavior: CloseTabBehavior = 'prompt') {
       if (tab.imageSrc) {
         URL.revokeObjectURL(tab.imageSrc)
       }
-      
-      // Clean up stroke history instance
-      strokeHistoryInstances.current.delete(tabId)
       
       const newTabs = prev.filter(t => t.id !== tabId)
       
@@ -195,6 +181,20 @@ export function useTabs(closeTabBehavior: CloseTabBehavior = 'prompt') {
     ))
   }, [activeTabId])
 
+  // Update stroke history for active tab
+  const updateActiveTabStrokeHistory = useCallback((history: StrokeGroup[], historyIndex: number) => {
+    setTabs(prev => prev.map(tab => 
+      tab.id === activeTabId ? { ...tab, strokeHistory: history, strokeHistoryIndex: historyIndex } : tab
+    ))
+  }, [activeTabId])
+
+  // Clear stroke history for active tab
+  const clearActiveTabStrokeHistory = useCallback(() => {
+    setTabs(prev => prev.map(tab => 
+      tab.id === activeTabId ? { ...tab, strokeHistory: [], strokeHistoryIndex: -1 } : tab
+    ))
+  }, [activeTabId])
+
   // Get next tab (for keyboard navigation)
   const switchToNextTab = useCallback(() => {
     const currentIndex = tabs.findIndex(t => t.id === activeTabId)
@@ -224,7 +224,8 @@ export function useTabs(closeTabBehavior: CloseTabBehavior = 'prompt') {
     markTabAsChanged,
     switchToNextTab,
     switchToPrevTab,
-    strokeHistoryInstances: strokeHistoryInstances.current,
+    updateActiveTabStrokeHistory,
+    clearActiveTabStrokeHistory,
     isTabEmpty,
     findEmptyTab,
   }
