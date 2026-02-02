@@ -10,6 +10,9 @@ interface SettingsContextValue {
   settings: AppSettings
   hasChanges: boolean
   isLoaded: boolean
+  isOpen: boolean
+  openSettings: () => void
+  closeSettings: () => void
   updateDraft: (updates: Partial<AppSettings>) => void
   updateColorPreset: (index: number, color: string) => void
   save: () => Promise<boolean>
@@ -27,6 +30,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
   const [settings, setSettings] = useState<AppSettings>(settingsManager.settings)
   const [hasChanges, setHasChanges] = useState<boolean>(settingsManager.hasChanges)
   const [isLoaded, setIsLoaded] = useState<boolean>(settingsManager.loaded)
+  const [isOpen, setIsOpen] = useState(false)
   const unsubscribeRef = useRef<(() => void) | null>(null)
 
   // Initial load
@@ -86,10 +90,21 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     await settingsManager.reset()
   }, [])
 
+  const openSettings = useCallback(() => {
+    setIsOpen(true)
+  }, [])
+
+  const closeSettings = useCallback(() => {
+    setIsOpen(false)
+  }, [])
+
   const value: SettingsContextValue = {
     settings,
     hasChanges,
     isLoaded,
+    isOpen,
+    openSettings,
+    closeSettings,
     updateDraft,
     updateColorPreset,
     save,

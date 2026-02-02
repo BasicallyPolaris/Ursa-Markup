@@ -595,7 +595,7 @@ export function DrawingCanvas({
         const borderWidth = brush.borderWidth || 2;
         const borderEnabled = brush.borderEnabled !== false;
         
-        displayCtx.globalAlpha = brush.opacity * 0.7;
+        displayCtx.globalAlpha = brush.opacity;
         displayCtx.fillStyle = brush.color;
         
         // Draw rounded rectangle fill

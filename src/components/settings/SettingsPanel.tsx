@@ -8,37 +8,38 @@ import { RotateCcw, Save, X } from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
 
 export function SettingsPanel() {
-  const { settings, hasChanges, updateDraft, updateColorPreset, save, cancel, reset } = useSettings();
-  const [isOpen, setIsOpen] = useState(false);
+  const { settings, hasChanges, isOpen, closeSettings, updateDraft, updateColorPreset, save, cancel, reset } = useSettings();
   const [isSaving, setIsSaving] = useState(false);
 
   const handleOpenChange = useCallback((open: boolean) => {
     if (!open && hasChanges) {
       cancel();
     }
-    setIsOpen(open);
-  }, [hasChanges, cancel]);
+    if (!open) {
+      closeSettings();
+    }
+  }, [hasChanges, cancel, closeSettings]);
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
     const success = await save();
     setIsSaving(false);
     if (success) {
-      setIsOpen(false);
+      closeSettings();
     }
-  }, [save]);
+  }, [save, closeSettings]);
 
   const handleCancel = useCallback(() => {
     cancel();
-    setIsOpen(false);
-  }, [cancel]);
+    closeSettings();
+  }, [cancel, closeSettings]);
 
   const handleClose = useCallback(() => {
     if (hasChanges) {
       cancel();
     }
-    setIsOpen(false);
-  }, [hasChanges, cancel]);
+    closeSettings();
+  }, [hasChanges, cancel, closeSettings]);
 
   const handleReset = useCallback(() => {
     reset();
@@ -274,6 +275,56 @@ export function SettingsPanel() {
               </p>
             </div>
 
+            {/* Marker Blend Mode Toggle */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary text-sm">
+                  Default Marker Blend Mode
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={settings.defaultMarkerBlendMode === 'normal' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultMarkerBlendMode: 'normal' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultMarkerBlendMode === 'normal'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Normal
+                  </Button>
+                  <Button
+                    variant={settings.defaultMarkerBlendMode === 'multiply' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultMarkerBlendMode: 'multiply' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultMarkerBlendMode === 'multiply'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Multiply
+                  </Button>
+                  <Button
+                    variant={settings.defaultMarkerBlendMode === 'color' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultMarkerBlendMode: 'color' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultMarkerBlendMode === 'color'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Color
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-text-muted">
+                Multiply darkens underlying colors, Color applies hue/saturation
+              </p>
+            </div>
+
             {/* Area Tool Settings */}
             <div className="pt-2 border-t border-toolbar-border">
               <Label className="text-text-primary text-sm font-medium">
@@ -400,6 +451,56 @@ export function SettingsPanel() {
                   </Button>
                 </div>
               </div>
+            </div>
+
+            {/* Area Blend Mode Toggle */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-text-secondary text-sm">
+                  Default Area Blend Mode
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    variant={settings.defaultAreaBlendMode === 'normal' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultAreaBlendMode: 'normal' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultAreaBlendMode === 'normal'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Normal
+                  </Button>
+                  <Button
+                    variant={settings.defaultAreaBlendMode === 'multiply' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultAreaBlendMode: 'multiply' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultAreaBlendMode === 'multiply'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Multiply
+                  </Button>
+                  <Button
+                    variant={settings.defaultAreaBlendMode === 'color' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => updateDraft({ defaultAreaBlendMode: 'color' })}
+                    className={`h-7 text-xs ${
+                      settings.defaultAreaBlendMode === 'color'
+                        ? 'bg-text-primary/15 text-text-primary'
+                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                    }`}
+                  >
+                    Color
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-text-muted">
+                Multiply darkens underlying colors, Color applies hue/saturation
+              </p>
             </div>
           </div>
 

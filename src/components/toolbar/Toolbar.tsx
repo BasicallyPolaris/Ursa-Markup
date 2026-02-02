@@ -16,7 +16,7 @@ import { cn } from '../../lib/utils';
 
 export function Toolbar() {
   // Get contexts
-  const { settings, updateDraft: _updateDraft } = useSettings();
+  const { settings, openSettings } = useSettings();
   const { getActivePalette } = useTheme();
   const { activeDocument, documents: _documents } = useTabManager();
   const { strokeHistory, ruler, toggleRuler, undo, redo } = useDocument();
@@ -33,7 +33,7 @@ export function Toolbar() {
   // Handlers
   const handleToolChange = useCallback((newTool: Tool) => {
     setTool(newTool);
-    // Update brush based on tool
+    // Update brush and blend mode based on tool
     if (newTool === 'pen') {
       updateBrush({
         size: settings.defaultPenSize,
@@ -45,6 +45,7 @@ export function Toolbar() {
         opacity: settings.defaultMarkerOpacity,
         borderRadius: settings.defaultMarkerBorderRadius,
       });
+      setBlendMode(settings.defaultMarkerBlendMode);
     } else if (newTool === 'area') {
       updateBrush({
         opacity: settings.defaultAreaOpacity,
@@ -52,8 +53,9 @@ export function Toolbar() {
         borderWidth: settings.defaultAreaBorderWidth,
         borderEnabled: settings.defaultAreaBorderEnabled,
       });
+      setBlendMode(settings.defaultAreaBlendMode);
     }
-  }, [settings, setTool, updateBrush]);
+  }, [settings, setTool, setBlendMode, updateBrush]);
   
   const handleBrushChange = useCallback((changes: Partial<BrushSettings>) => {
     updateBrush(changes);
@@ -79,9 +81,8 @@ export function Toolbar() {
   }, []);
   
   const handleSettings = useCallback(() => {
-    // Open settings - this is managed by SettingsPanel
-    console.log('Settings requested');
-  }, []);
+    openSettings();
+  }, [openSettings]);
   
   const handleZoomChange = useCallback((newZoom: number) => {
     setZoom(newZoom);
