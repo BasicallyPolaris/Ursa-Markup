@@ -2,7 +2,7 @@ use base64::Engine;
 use std::path::Path;
 use std::process::Command;
 use std::sync::Mutex;
-use tauri::{Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 /// Resolve path to absolute so frontend readFile works regardless of CWD.
 fn resolve_file_path(path: &str) -> String {
@@ -26,19 +26,97 @@ struct OpenFilePayload {
     file_path: String,
 }
 
+/// Payload for clipboard copy result event
+#[derive(Clone, serde::Serialize)]
+struct ClipboardCopyResult {
+    success: bool,
+    error: Option<String>,
+    version: u32,
+}
+
 // Store pending CLI file to open
 struct PendingFile {
     path: Mutex<Option<String>>,
 }
 
+/// Queue a clipboard copy operation from base64 PNG data
+/// This returns immediately and processes the copy in the background
+/// Emits "clipboard-copy-result" event when complete
 #[tauri::command]
-fn copy_image_wayland(image_base64: String) -> Result<(), String> {
-    // Decode base64
-    let decoded = base64::engine::general_purpose::STANDARD
+async fn queue_clipboard_copy_base64(
+    app: AppHandle,
+    image_base64: String,
+    version: u32,
+) -> Result<(), String> {
+    // Spawn a background task - returns immediately to frontend
+    tokio::spawn(async move {
+        let result = tokio::task::spawn_blocking(move || {
+            copy_png_to_clipboard(&image_base64)
+        })
+        .await
+        .map_err(|e| format!("Task join error: {}", e))
+        .and_then(|r| r);
+
+        // Emit result back to frontend for toast notification
+        let _ = app.emit(
+            "clipboard-copy-result",
+            ClipboardCopyResult {
+                success: result.is_ok(),
+                error: result.err(),
+                version,
+            },
+        );
+    });
+
+    Ok(())
+}
+
+/// Copy PNG data (base64 encoded) to clipboard
+fn copy_png_to_clipboard(image_base64: &str) -> Result<(), String> {
+    use arboard::{Clipboard, ImageData};
+    use image::GenericImageView;
+    use std::borrow::Cow;
+
+    // Decode base64 to PNG bytes
+    let png_data = base64::engine::general_purpose::STANDARD
         .decode(image_base64)
         .map_err(|e| format!("Failed to decode base64: {}", e))?;
 
-    // Try wl-copy for Wayland
+    // Decode PNG to get RGBA data for arboard
+    let img =
+        image::load_from_memory(&png_data).map_err(|e| format!("Failed to decode PNG: {}", e))?;
+
+    let (width, height) = img.dimensions();
+    let rgba_data = img.to_rgba8().into_raw();
+
+    // Try arboard first (cross-platform clipboard library)
+    match Clipboard::new() {
+        Ok(mut clipboard) => {
+            let img_data = ImageData {
+                width: width as usize,
+                height: height as usize,
+                bytes: Cow::Owned(rgba_data),
+            };
+
+            match clipboard.set_image(img_data) {
+                Ok(()) => return Ok(()),
+                Err(e) => {
+                    eprintln!(
+                        "arboard clipboard failed: {}, trying wl-copy fallback",
+                        e
+                    );
+                }
+            }
+        }
+        Err(e) => {
+            eprintln!(
+                "Failed to create clipboard: {}, trying wl-copy fallback",
+                e
+            );
+        }
+    }
+
+    // Fallback: Use wl-copy for Wayland (pass PNG directly - no re-encoding needed!)
     let mut child = Command::new("wl-copy")
         .arg("--type")
         .arg("image/png")
@@ -49,7 +127,7 @@ fn copy_image_wayland(image_base64: String) -> Result<(), String> {
     if let Some(stdin) = child.stdin.as_mut() {
         use std::io::Write;
         stdin
-            .write_all(&decoded)
+            .write_all(&png_data)
             .map_err(|e| format!("Failed to write to wl-copy: {}", e))?;
     }
 
@@ -99,7 +177,7 @@ pub fn run() {
             }
         }))
         .invoke_handler(tauri::generate_handler![
-            copy_image_wayland,
+            queue_clipboard_copy_base64,
             get_pending_file
         ])
         .setup(|app| {

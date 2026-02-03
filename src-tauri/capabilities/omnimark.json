@@ -22,12 +22,20 @@
     "dialog:allow-save",
     {
       "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "$HOME/**" }, { "path": "$RESOURCE/**" }]
+    },
+    {
+      "identifier": "fs:allow-write-file",
       "allow": [{ "path": "$HOME/**" }]
     },
-    "fs:allow-write-file",
-    "fs:allow-home-read",
-    "fs:allow-home-write",
-    "fs:scope-download-recursive",
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{ "path": "$RESOURCE/**" }, { "path": "$APPCONFIG/**" }]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [{ "path": "$APPCONFIG/**" }]
+    },
     "store:default",
     "store:allow-get",
     "store:allow-set",
@@ -39,6 +47,6 @@
     "store:allow-load"
   ],
   "commands": {
-    "allow": ["get_pending_file", "copy_image_wayland"]
+    "allow": ["get_pending_file", "queue_clipboard_copy_base64"]
   }
 }

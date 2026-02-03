@@ -36,6 +36,10 @@ export class Document {
   // Track if initial fit behavior has been applied (only do it once per document)
   hasAppliedInitialFit: boolean;
 
+  // Version tracking for clipboard copy deduplication
+  // Increments on each change, used to skip redundant copies
+  version: number;
+
   // Event callbacks (for React integration)
   private onChangeCallback: (() => void) | null = null;
 
@@ -55,6 +59,7 @@ export class Document {
     this.hasChanges = false;
     this.recentDir = null;
     this.hasAppliedInitialFit = false;
+    this.version = 0;
   }
 
   /**
@@ -105,8 +110,12 @@ export class Document {
 
   /**
    * Mark the document as having changes
+   * Increments version for clipboard copy deduplication
    */
   markAsChanged(changed: boolean = true): void {
+    if (changed) {
+      this.version++;
+    }
     this.hasChanges = changed;
     this.notifyChange();
   }
@@ -219,8 +228,8 @@ export class Document {
 
     const scaleX = availableWidth / this.canvasSize.width;
     const scaleY = availableHeight / this.canvasSize.height;
-    // Zoom in or out to fill the canvas
-    const finalZoom = Math.max(0.1, Math.min(10, Math.min(scaleX, scaleY)));
+    // Zoom in or out to fill the canvas (max 500% to match other zoom limits)
+    const finalZoom = Math.max(0.1, Math.min(5, Math.min(scaleX, scaleY)));
 
     const imageScreenWidth = this.canvasSize.width * finalZoom;
     const imageScreenHeight = this.canvasSize.height * finalZoom;

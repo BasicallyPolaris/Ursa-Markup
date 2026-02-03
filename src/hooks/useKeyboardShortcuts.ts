@@ -5,6 +5,7 @@ import { useDocument } from '../contexts/DocumentContext';
 import { useCanvasEngine } from '../contexts/CanvasEngineContext';
 import { useDrawing } from '../contexts/DrawingContext';
 import { services } from '../services';
+import { registerPendingCopy } from './useClipboardEvents';
 import type { Tool } from '../core/types';
 import { matchesHotkey, formatHotkey, DEFAULT_HOTKEYS } from '../services/types';
 import type { HotkeyAction, HotkeySettings, HotkeyBinding } from '../services/types';
@@ -58,10 +59,16 @@ export function useFileActions() {
   }, [engine]);
 
   const handleCopy = useCallback(async () => {
-    if (!engine) return;
+    const activeDoc = services.tabManager.getActiveDocument();
+    if (!engine || !activeDoc) return;
+    
     const canvas = engine.getCombinedCanvas();
     if (canvas) {
-      await services.ioService.copyToClipboard(canvas);
+      const version = activeDoc.version;
+      // Register as manual copy (show toast on success)
+      registerPendingCopy(version, false);
+      // Force copy even if version matches (user explicitly requested it)
+      await services.ioService.copyToClipboard(canvas, version, { force: true, isAutoCopy: false });
     }
   }, [engine]);
 
@@ -90,7 +97,7 @@ export function useKeyboardShortcuts() {
     toggleRuler,
   } = useDocument();
 
-  const { setTool, updateBrush } = useDrawing();
+  const { switchTool, updateBrush } = useDrawing();
 
   const {
     zoom,
@@ -119,8 +126,8 @@ export function useKeyboardShortcuts() {
   }, [toggleRuler]);
 
   const handleToolChange = useCallback((tool: Tool) => {
-    setTool(tool);
-  }, [setTool]);
+    switchTool(tool);
+  }, [switchTool]);
 
   const handleZoomIn = useCallback(() => {
     setZoom(Math.min(5, zoom * 1.2));

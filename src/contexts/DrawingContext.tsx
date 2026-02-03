@@ -25,6 +25,8 @@ interface DrawingContextValue {
   ) => void;
   setBlendMode: (mode: BlendMode) => void;
   updateBrush: (changes: Partial<BrushSettings>) => void;
+  /** Switch tool and apply default settings from user preferences */
+  switchTool: (tool: Tool) => void;
 }
 
 const DrawingContext = createContext<DrawingContextValue | null>(null);
@@ -43,13 +45,27 @@ export function DrawingProvider({
   // Initialize with first color from settings colorPresets
   const initialColor = settings.colorPresets[0] || "#FF6B6B";
 
-  const [tool, setTool] = useState<Tool>(initialTool);
+  // Determine blend mode based on tool
+  const getBlendModeForTool = useCallback((tool: Tool): BlendMode => {
+    switch (tool) {
+      case "pen":
+        return settings.defaultPenBlendMode ?? "normal";
+      case "highlighter":
+        return settings.defaultMarkerBlendMode ?? "multiply";
+      case "area":
+        return settings.defaultAreaBlendMode ?? "multiply";
+      default:
+        return "normal";
+    }
+  }, [settings.defaultPenBlendMode, settings.defaultMarkerBlendMode, settings.defaultAreaBlendMode]);
+
+  const [tool, setToolState] = useState<Tool>(initialTool);
   const [brush, setBrush] = useState<BrushSettings>({
     size: settings.defaultPenSize,
     color: initialColor,
     opacity: settings.defaultPenOpacity,
   });
-  const [blendMode, setBlendMode] = useState<BlendMode>("normal");
+  const [blendMode, setBlendMode] = useState<BlendMode>(() => getBlendModeForTool(initialTool));
 
   // Sync brush color if it doesn't match any preset (e.g., on settings change)
   useEffect(() => {
@@ -66,14 +82,61 @@ export function DrawingProvider({
     setBrush((prev) => ({ ...prev, ...changes }));
   }, []);
 
+  /**
+   * Switch tool and apply default settings from user preferences
+   * This should be used when switching tools via toolbar or keyboard shortcuts
+   */
+  const switchTool = useCallback((newTool: Tool) => {
+    setToolState(newTool);
+    
+    // Apply default settings for the tool
+    if (newTool === "pen") {
+      setBrush((prev) => ({
+        ...prev,
+        size: settings.defaultPenSize,
+        opacity: settings.defaultPenOpacity,
+      }));
+      setBlendMode(settings.defaultPenBlendMode ?? "normal");
+    } else if (newTool === "highlighter") {
+      setBrush((prev) => ({
+        ...prev,
+        size: settings.defaultMarkerSize,
+        opacity: settings.defaultMarkerOpacity,
+        borderRadius: settings.defaultMarkerBorderRadius,
+      }));
+      setBlendMode(settings.defaultMarkerBlendMode ?? "multiply");
+    } else if (newTool === "area") {
+      setBrush((prev) => ({
+        ...prev,
+        opacity: settings.defaultAreaOpacity,
+        borderRadius: settings.defaultAreaBorderRadius,
+        borderWidth: settings.defaultAreaBorderWidth,
+      }));
+      setBlendMode(settings.defaultAreaBlendMode ?? "multiply");
+    }
+  }, [
+    settings.defaultPenSize,
+    settings.defaultPenOpacity,
+    settings.defaultPenBlendMode,
+    settings.defaultMarkerSize,
+    settings.defaultMarkerOpacity,
+    settings.defaultMarkerBorderRadius,
+    settings.defaultMarkerBlendMode,
+    settings.defaultAreaOpacity,
+    settings.defaultAreaBorderRadius,
+    settings.defaultAreaBorderWidth,
+    settings.defaultAreaBlendMode,
+  ]);
+
   const value: DrawingContextValue = {
     tool,
     brush,
     blendMode,
-    setTool,
+    setTool: setToolState,
     setBrush,
     setBlendMode,
     updateBrush,
+    switchTool,
   };
 
   return (

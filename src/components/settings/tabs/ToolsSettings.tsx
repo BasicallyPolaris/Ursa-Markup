@@ -15,11 +15,6 @@ interface ToolsSettingsProps {
 }
 
 export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
-  const modeOptions = [
-    { value: "normal" as const, label: "Normal" },
-    { value: "composition" as const, label: "Composition" },
-  ];
-
   const blendModeOptions = [
     { value: "normal" as const, label: "Normal" },
     { value: "multiply" as const, label: "Multiply" },
@@ -46,6 +41,24 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
             step={1}
           />
         </SettingsSliderRow>
+
+        <div className="border-t border-toolbar-border/50 pt-4">
+          <SettingsGroup title="Blending">
+            <SettingsRow
+              label="Default Blend"
+              description="How colors mix with the image"
+            >
+              <ToggleButtonGroup
+                options={blendModeOptions}
+                value={settings.defaultPenBlendMode}
+                onChange={(value) =>
+                  updateDraft({ defaultPenBlendMode: value })
+                }
+                className="w-40"
+              />
+            </SettingsRow>
+          </SettingsGroup>
+        </div>
       </SettingsSection>
 
       {/* Marker Settings */}
@@ -106,18 +119,6 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
 
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Blending">
-            <SettingsRow
-              label="Default Mode"
-              description="Composition preserves text visibility"
-            >
-              <ToggleButtonGroup
-                options={modeOptions}
-                value={settings.defaultMarkerMode}
-                onChange={(value) => updateDraft({ defaultMarkerMode: value })}
-                className="w-48"
-              />
-            </SettingsRow>
-
             <SettingsRow
               label="Default Blend"
               description="How colors mix with the image"
@@ -200,18 +201,6 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
 
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Blending">
-            <SettingsRow
-              label="Default Mode"
-              description="Composition preserves text visibility"
-            >
-              <ToggleButtonGroup
-                options={modeOptions}
-                value={settings.defaultAreaMode}
-                onChange={(value) => updateDraft({ defaultAreaMode: value })}
-                className="w-48"
-              />
-            </SettingsRow>
-
             <SettingsRow
               label="Default Blend"
               description="How colors mix with the image"

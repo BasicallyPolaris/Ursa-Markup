@@ -1,16 +1,53 @@
 import { writeFile } from "@tauri-apps/plugin-fs";
-import { writeImage } from "@tauri-apps/plugin-clipboard-manager";
-import { Image } from "@tauri-apps/api/image";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
+
+// Import the worker
+import CopyWorker from "../workers/copyWorker?worker";
+
+/**
+ * Options for clipboard copy operation
+ */
+export interface CopyOptions {
+  /** Force copy even if version matches last copied version */
+  force?: boolean;
+  /** Whether this is an auto-copy (affects toast behavior) */
+  isAutoCopy?: boolean;
+}
+
+/**
+ * Result of clipboard copy operation
+ */
+export interface CopyResult {
+  /** Whether the copy was skipped (already copied this version) */
+  skipped: boolean;
+  /** The version that was copied (or would have been) */
+  version: number;
+}
 
 /**
  * IOService handles all file and clipboard operations
  * Provides a clean interface for file I/O and clipboard access
  */
 export class IOService {
+  /** Track the last version that was successfully queued for copy */
+  private lastCopiedVersion: number = -1;
+  
+  /** Web Worker for PNG encoding */
+  private copyWorker: Worker | null = null;
+
+  /**
+   * Get or create the copy worker (lazy initialization)
+   */
+  private getCopyWorker(): Worker {
+    if (!this.copyWorker) {
+      this.copyWorker = new CopyWorker();
+    }
+    return this.copyWorker;
+  }
+
   /**
    * Open a file dialog and read the selected file
    */
@@ -95,70 +132,105 @@ export class IOService {
   }
 
   /**
-   * Copy canvas image to clipboard
+   * Copy canvas image to clipboard using Web Worker + Rust backend
+   * 
+   * Flow:
+   * 1. Create ImageBitmap from canvas (fast, main thread)
+   * 2. Transfer ImageBitmap to Web Worker (zero-copy)
+   * 3. Worker converts to PNG and base64 (heavy work, off main thread)
+   * 4. Worker sends base64 string back
+   * 5. Main thread invokes Rust command (fire-and-forget)
+   * 6. Rust handles clipboard in background thread
+   * 
+   * This ensures the main thread stays responsive even for large images.
+   * 
+   * @param canvas The canvas to copy
+   * @param version The document version (for deduplication)
+   * @param options Copy options
+   * @returns Copy result indicating if copy was skipped or queued
    */
-  async copyToClipboard(canvas: HTMLCanvasElement): Promise<boolean> {
+  async copyToClipboard(
+    canvas: HTMLCanvasElement,
+    version: number,
+    options?: CopyOptions,
+  ): Promise<CopyResult> {
+    // Skip if already copied this version (unless forced)
+    if (!options?.force && version === this.lastCopiedVersion) {
+      return { skipped: true, version };
+    }
+
     try {
-      // Get raw RGBA image data from canvas for Tauri clipboard
-      const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        console.error("Failed to get canvas context");
-        return false;
-      }
+      // Step 1: Create ImageBitmap from canvas (fast, async)
+      const imageBitmap = await createImageBitmap(canvas);
       
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const rgbaData = new Uint8Array(imageData.data.buffer);
+      // Step 2-4: Send to worker for PNG encoding (off main thread)
+      const base64Data = await this.encodeInWorker(
+        imageBitmap,
+        canvas.width,
+        canvas.height
+      );
 
-      // Try Tauri clipboard manager first with RGBA data
-      try {
-        // Create a Tauri Image from raw RGBA data
-        const tauriImage = await Image.new(rgbaData, canvas.width, canvas.height);
-        await writeImage(tauriImage);
-        return true;
-      } catch (tauriError) {
-        console.log(
-          "Tauri clipboard failed, trying native command...",
-          tauriError,
-        );
+      // Step 5: Queue copy in Rust backend (fire-and-forget)
+      // This returns immediately - Rust handles the clipboard in background
+      await invoke("queue_clipboard_copy_base64", {
+        imageBase64: base64Data,
+        version,
+      });
 
-        // Fallback for Wayland: use wl-copy command via Rust backend with PNG data
-        const blob = await new Promise<Blob | null>((resolve) => {
-          canvas.toBlob(resolve, "image/png");
-        });
+      // Update last copied version
+      this.lastCopiedVersion = version;
 
-        if (!blob) {
-          console.error("Failed to create blob from canvas");
-          return false;
-        }
-
-        const arrayBuffer = await blob.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        
-        // Convert to base64 in chunks to avoid stack overflow
-        const base64 = this.uint8ArrayToBase64(uint8Array);
-        await invoke("copy_image_wayland", { imageBase64: base64 });
-        return true;
-      }
+      return { skipped: false, version };
     } catch (error) {
       console.error("Failed to copy to clipboard:", error);
-      return false;
+      throw error;
     }
   }
 
   /**
-   * Convert Uint8Array to base64 without stack overflow
-   * Uses chunked processing to handle large arrays
+   * Encode ImageBitmap to base64 PNG in a Web Worker
    */
-  private uint8ArrayToBase64(bytes: Uint8Array): string {
-    const chunkSize = 0x8000; // 32KB chunks
-    const chunks: string[] = [];
-    
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      const chunk = bytes.subarray(i, i + chunkSize);
-      chunks.push(String.fromCharCode.apply(null, chunk as unknown as number[]));
-    }
-    
-    return btoa(chunks.join(""));
+  private encodeInWorker(
+    imageBitmap: ImageBitmap,
+    width: number,
+    height: number
+  ): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const worker = this.getCopyWorker();
+      
+      const handleMessage = (event: MessageEvent) => {
+        worker.removeEventListener("message", handleMessage);
+        worker.removeEventListener("error", handleError);
+        
+        if (event.data.type === "success") {
+          resolve(event.data.base64Data);
+        } else {
+          reject(new Error(event.data.error || "Worker failed"));
+        }
+      };
+      
+      const handleError = (error: ErrorEvent) => {
+        worker.removeEventListener("message", handleMessage);
+        worker.removeEventListener("error", handleError);
+        reject(new Error(error.message));
+      };
+      
+      worker.addEventListener("message", handleMessage);
+      worker.addEventListener("error", handleError);
+      
+      // Transfer the ImageBitmap to the worker (zero-copy)
+      worker.postMessage(
+        { type: "copy", imageBitmap, width, height },
+        [imageBitmap]
+      );
+    });
+  }
+
+  /**
+   * Get the last copied version (for UI feedback)
+   */
+  getLastCopiedVersion(): number {
+    return this.lastCopiedVersion;
   }
 
   /**

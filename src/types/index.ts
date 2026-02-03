@@ -53,7 +53,7 @@ export interface BrushSettings {
   borderRadius?: number; // For marker and area tools
   borderWidth?: number; // For area tool border
   borderEnabled?: boolean; // Toggle area border on/off
-  blendMode?: "normal" | "composition"; // Global blend mode - 'composition' uses multiply blending
+  blendMode?: "normal" | "multiply"; // Blend mode for how colors mix with the image
 }
 
 export interface CanvasState {

@@ -52,7 +52,7 @@ export function Toolbar() {
   const { handleOpen, handleSave, handleCopy } = useFileActions();
 
   // Use shared drawing state from context
-  const { tool, setTool, brush, blendMode, setBlendMode, updateBrush } =
+  const { tool, brush, blendMode, setBlendMode, updateBrush, switchTool } =
     useDrawing();
 
   // Use colorPresets from settings (consistent with hotkeys)
@@ -77,30 +77,9 @@ export function Toolbar() {
   // Handlers
   const handleToolChange = useCallback(
     (newTool: Tool) => {
-      setTool(newTool);
-      // Update brush and blend mode based on tool
-      if (newTool === "pen") {
-        updateBrush({
-          size: settings.defaultPenSize,
-          opacity: settings.defaultPenOpacity,
-        });
-      } else if (newTool === "highlighter") {
-        updateBrush({
-          size: settings.defaultMarkerSize,
-          opacity: settings.defaultMarkerOpacity,
-          borderRadius: settings.defaultMarkerBorderRadius,
-        });
-        setBlendMode(settings.defaultMarkerBlendMode);
-      } else if (newTool === "area") {
-        updateBrush({
-          opacity: settings.defaultAreaOpacity,
-          borderRadius: settings.defaultAreaBorderRadius,
-          borderWidth: settings.defaultAreaBorderWidth,
-        });
-        setBlendMode(settings.defaultAreaBlendMode);
-      }
+      switchTool(newTool);
     },
-    [settings, setTool, setBlendMode, updateBrush],
+    [switchTool],
   );
 
   const handleBrushChange = useCallback(
@@ -470,29 +449,6 @@ export function Toolbar() {
               </div>
             )}
 
-            {/* Area Border Width Slider - 0 means no border */}
-            {tool === "area" && (
-              <div className="flex flex-col gap-1 w-24">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-text-muted">Border</span>
-                  <span className="text-xs text-text-secondary font-mono">
-                    {(brush.borderWidth || 0) === 0
-                      ? "Off"
-                      : `${brush.borderWidth}px`}
-                  </span>
-                </div>
-                <Slider
-                  value={[brush.borderWidth || 0]}
-                  min={0}
-                  max={10}
-                  step={1}
-                  onValueChange={([value]) =>
-                    handleBrushChange({ borderWidth: value })
-                  }
-                />
-              </div>
-            )}
-
             {/* Brush Preview */}
             <div className="flex items-center justify-center w-10 h-10 bg-surface-bg rounded-lg border border-toolbar-border">
               {tool === "highlighter" ? (
@@ -512,11 +468,8 @@ export function Toolbar() {
                     height: 18,
                     backgroundColor: brush.color,
                     opacity: brush.opacity,
-                    borderRadius: brush.borderRadius || 0,
-                    border:
-                      (brush.borderWidth || 0) > 0
-                        ? `${Math.min(3, brush.borderWidth || 0)}px solid ${brush.color}`
-                        : "none",
+                    // Clamp radius to half of the smaller dimension for valid preview
+                    borderRadius: Math.min(brush.borderRadius || 0, 9),
                   }}
                 />
               ) : (
@@ -573,8 +526,6 @@ export function Toolbar() {
                     Multiply
                   </span>
                 </SelectItem>
-                {/* Color mode disabled - preview rendering not yet accurate */}
-                {/* <SelectItem value="color">Color</SelectItem> */}
               </SelectContent>
             </Select>
           )}

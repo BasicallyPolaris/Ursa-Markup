@@ -2509,7 +2509,9 @@ dependencies = [
 name = "omnimark"
 version = "0.1.0"
 dependencies = [
+ "arboard",
  "base64 0.21.7",
+ "image",
  "serde",
  "serde_json",
  "tauri",

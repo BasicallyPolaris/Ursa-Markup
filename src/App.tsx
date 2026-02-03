@@ -9,11 +9,13 @@ import {
   useTabManager,
 } from "./contexts";
 import { useKeyboardShortcuts, useWindowTitle } from "./hooks";
+import { useClipboardEvents } from "./hooks/useClipboardEvents";
 import { services } from "./services";
 import { Toolbar } from "./components/toolbar/Toolbar";
 import { TabBar } from "./components/tabs/TabBar";
 import { CloseTabDialog } from "./components/tabs/CloseTabDialog";
 import { CanvasContainer } from "./components/canvas/CanvasContainer";
+import { Toaster } from "./components/ui/sonner";
 
 interface AppContentProps {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -167,6 +169,10 @@ function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
 
+  // Set up clipboard event listener at the app level (singleton)
+  // This ensures only one listener exists regardless of document changes
+  useClipboardEvents();
+
   // Initialize services on mount
   useEffect(() => {
     const init = async () => {
@@ -186,6 +192,7 @@ function App() {
             containerRef={containerRef}
             canvasContainerRef={canvasContainerRef}
           />
+          <Toaster />
         </TabManagerProvider>
       </ThemeProvider>
     </SettingsProvider>

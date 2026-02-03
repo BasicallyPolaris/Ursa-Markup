@@ -139,12 +139,11 @@ export interface AppSettings {
   defaultPenOpacity: number;
   defaultMarkerOpacity: number;
   defaultMarkerBorderRadius: number;
-  defaultMarkerMode: "normal" | "composition";
   defaultMarkerBlendMode: "normal" | "multiply";
+  defaultPenBlendMode: "normal" | "multiply";
   defaultAreaOpacity: number;
   defaultAreaBorderRadius: number;
   defaultAreaBorderWidth: number;
-  defaultAreaMode: "normal" | "composition";
   defaultAreaBlendMode: "normal" | "multiply";
   blendMode: "normal" | "multiply";
   closeTabBehavior: CloseTabBehavior;
@@ -170,12 +169,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultPenOpacity: 1,
   defaultMarkerOpacity: 1,
   defaultMarkerBorderRadius: 4,
-  defaultMarkerMode: "normal",
   defaultMarkerBlendMode: "multiply",
+  defaultPenBlendMode: "normal",
   defaultAreaOpacity: 1,
   defaultAreaBorderRadius: 0,
   defaultAreaBorderWidth: 0,
-  defaultAreaMode: "normal",
   defaultAreaBlendMode: "multiply",
   blendMode: "normal",
   closeTabBehavior: "prompt",

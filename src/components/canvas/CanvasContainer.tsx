@@ -6,6 +6,7 @@ import { useTabManager } from "../../contexts/TabManagerContext";
 import { useDrawing } from "../../contexts/DrawingContext";
 import { useSettings } from "../../contexts/SettingsContext";
 import { useHotkeys } from "../../hooks/useKeyboardShortcuts";
+import { registerPendingCopy } from "../../hooks/useClipboardEvents";
 import { formatHotkey } from "../../services/types";
 import { services } from "../../services";
 import { cn } from "../../lib/utils";
@@ -83,6 +84,7 @@ export function CanvasContainer({
   const panStartRef = useRef<Point | null>(null);
   const lastPointRef = useRef<Point | null>(null);
   const previewPointsRef = useRef<Point[]>([]);
+  const startPointSnappedRef = useRef(false); // Track if start point snapped to ruler (for area tool)
   
   // Ref for debounced auto-copy timer
   const autoCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -235,6 +237,7 @@ export function CanvasContainer({
 
       // Snap start point to ruler if in sticky zone
       let startDrawPoint = canvasPoint;
+      startPointSnappedRef.current = false; // Reset snap tracking
       if (ruler.visible) {
         const snapInfo = ruler.getSnapInfo(canvasPoint, viewState);
         if (snapInfo.inStickyZone) {
@@ -244,6 +247,7 @@ export function CanvasContainer({
               snapInfo.snapToFarSide,
               viewState,
             );
+            startPointSnappedRef.current = true; // Track that start point snapped
           } else {
             startDrawPoint = ruler.snapPoint(
               canvasPoint,
@@ -333,12 +337,15 @@ export function CanvasContainer({
         if (snapInfo.inStickyZone) {
           // Use different snap methods for area tool vs pen/highlighter
           if (tool === "area") {
-            // Area tool: snap point directly to ruler edge (no brush offset)
-            drawPoint = ruler.snapPointToEdge(
-              canvasPoint,
-              snapInfo.snapToFarSide,
-              viewState,
-            );
+            // Area tool: only snap end point if start point didn't snap
+            // This prevents both endpoints from snapping simultaneously
+            if (!startPointSnappedRef.current) {
+              drawPoint = ruler.snapPointToEdge(
+                canvasPoint,
+                snapInfo.snapToFarSide,
+                viewState,
+              );
+            }
           } else {
             // Pen/highlighter: snap with brush size offset
             drawPoint = ruler.snapPoint(
@@ -395,6 +402,7 @@ export function CanvasContainer({
     isDrawingRef.current = false;
     startPointRef.current = null;
     lastPointRef.current = null;
+    startPointSnappedRef.current = false; // Reset snap tracking
     setIsDrawing(false);
     _setStartPoint(null);
     setCurrentPoint(null);
@@ -411,13 +419,18 @@ export function CanvasContainer({
     }
     
     if (settings.autoCopyOnChange && engine) {
-      // Debounce auto-copy by 500ms to avoid freezing on rapid drawing
+      // Capture version after markAsChanged incremented it
+      const versionToCopy = document.version;
+      
+      // Debounce auto-copy by 500ms to avoid unnecessary copies on rapid drawing
       autoCopyTimerRef.current = setTimeout(() => {
         // Use requestAnimationFrame to ensure rendering is complete
         requestAnimationFrame(() => {
           const canvas = engine.getCombinedCanvas();
           if (canvas) {
-            services.ioService.copyToClipboard(canvas).catch((err) => {
+            // Register as auto-copy (silent - no toast on success)
+            registerPendingCopy(versionToCopy, true);
+            services.ioService.copyToClipboard(canvas, versionToCopy, { isAutoCopy: true }).catch((err) => {
               console.error("Auto-copy to clipboard failed:", err);
             });
           }
@@ -450,6 +463,7 @@ export function CanvasContainer({
       isDrawingRef.current = false;
       startPointRef.current = null;
       lastPointRef.current = null;
+      startPointSnappedRef.current = false; // Reset snap tracking
       setIsDrawing(false);
       _setStartPoint(null);
       setCurrentPoint(null);
@@ -505,6 +519,8 @@ export function CanvasContainer({
         e.preventDefault();
         const delta = deltaY > 0 ? 1 : -1;
         rotateRuler(delta);
+        // Force re-render by updating ruler position state
+        setRulerPosition({ x: ruler.x, y: ruler.y, angle: ruler.angle });
       } else {
         // Normal scroll (no ruler) = Vertical pan
         e.preventDefault();

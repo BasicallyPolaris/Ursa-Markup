@@ -137,8 +137,8 @@ export function CanvasEngineProvider({
 
     const scaleX = availableWidth / targetSize.width;
     const scaleY = availableHeight / targetSize.height;
-    // Zoom in or out to fill the canvas
-    const finalZoom = Math.max(0.1, Math.min(10, Math.min(scaleX, scaleY)));
+    // Zoom in or out to fill the canvas (max 500% to match other zoom limits)
+    const finalZoom = Math.max(0.1, Math.min(5, Math.min(scaleX, scaleY)));
 
     const imageScreenWidth = targetSize.width * finalZoom;
     const imageScreenHeight = targetSize.height * finalZoom;

@@ -112,9 +112,9 @@ export class BrushEngine {
   }
 
   /**
-   * Draw an area rectangle with optional border and rounded corners
+   * Draw an area rectangle with optional rounded corners
    * Uses smooth Canvas paths for high-quality rendering
-   * Border is drawn OUTSIDE the fill area (outset)
+   * Automatically clamps border radius to valid range based on dimensions
    */
   drawArea(
     ctx: CanvasRenderingContext2D,
@@ -129,8 +129,11 @@ export class BrushEngine {
     const y = Math.min(start.y, end.y);
     const width = Math.abs(end.x - start.x);
     const height = Math.abs(end.y - start.y);
-    const borderRadius = brush.borderRadius || 0;
-    const borderWidth = brush.borderWidth || 0;
+    
+    // Clamp border radius to half of the smaller dimension
+    // This prevents invalid rendering when radius exceeds the rect bounds
+    const maxRadius = Math.min(width, height) / 2;
+    const borderRadius = Math.min(brush.borderRadius || 0, maxRadius);
 
     // Draw fill
     ctx.globalAlpha = brush.opacity;
@@ -138,24 +141,6 @@ export class BrushEngine {
     ctx.beginPath();
     ctx.roundRect(x, y, width, height, borderRadius);
     ctx.fill();
-
-    // Draw border if width > 0
-    // Expand the border outward by drawing a larger rect with the border centered on its edge
-    if (borderWidth > 0) {
-      const halfBorder = borderWidth / 2;
-      ctx.strokeStyle = brush.color;
-      ctx.lineWidth = borderWidth;
-      ctx.beginPath();
-      // Offset outward by half the border width so the border is outside the fill
-      ctx.roundRect(
-        x - halfBorder,
-        y - halfBorder,
-        width + borderWidth,
-        height + borderWidth,
-        borderRadius + halfBorder,
-      );
-      ctx.stroke();
-    }
 
     ctx.restore();
   }

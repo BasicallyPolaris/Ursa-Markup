@@ -648,33 +648,21 @@ export function DrawingCanvas({
 
       // Draw area tool preview
       if (isDrawing && tool === "area" && startPoint && currentPoint) {
-        displayCtx.save();
         const x = Math.min(startPoint.x, currentPoint.x);
         const y = Math.min(startPoint.y, currentPoint.y);
         const width = Math.abs(currentPoint.x - startPoint.x);
         const height = Math.abs(currentPoint.y - startPoint.y);
-        const borderRadius = brush.borderRadius || 0;
-        const borderWidth = brush.borderWidth || 2;
-        const borderEnabled = brush.borderEnabled !== false;
-
-        displayCtx.globalAlpha = brush.opacity;
-        displayCtx.fillStyle = brush.color;
-
-        // Draw rounded rectangle fill
-        displayCtx.beginPath();
-        displayCtx.roundRect(x, y, width, height, borderRadius);
-        displayCtx.fill();
-
-        // Draw border if enabled
-        if (borderEnabled) {
+        
+        // Only draw if area has some size
+        if (width > 1 && height > 1) {
+          displayCtx.save();
           displayCtx.globalAlpha = brush.opacity;
-          displayCtx.strokeStyle = brush.color;
-          displayCtx.lineWidth = borderWidth / currentZoom;
+          displayCtx.fillStyle = brush.color;
           displayCtx.beginPath();
-          displayCtx.roundRect(x, y, width, height, borderRadius);
-          displayCtx.stroke();
+          displayCtx.roundRect(x, y, width, height, brush.borderRadius || 0);
+          displayCtx.fill();
+          displayCtx.restore();
         }
-        displayCtx.restore();
       }
 
       // Draw ruler

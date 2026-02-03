@@ -263,55 +263,6 @@ export function SettingsPanel() {
               />
             </div>
 
-            {/* Marker Mode Toggle */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-text-secondary text-sm">
-                  Default Marker Mode
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant={
-                      settings.defaultMarkerMode === "normal"
-                        ? "secondary"
-                        : "ghost"
-                    }
-                    size="sm"
-                    onClick={() => updateDraft({ defaultMarkerMode: "normal" })}
-                    className={`h-7 text-xs ${
-                      settings.defaultMarkerMode === "normal"
-                        ? "bg-text-primary/15 text-text-primary"
-                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
-                    }`}
-                  >
-                    Normal
-                  </Button>
-                  <Button
-                    variant={
-                      settings.defaultMarkerMode === "composition"
-                        ? "secondary"
-                        : "ghost"
-                    }
-                    size="sm"
-                    onClick={() =>
-                      updateDraft({ defaultMarkerMode: "composition" })
-                    }
-                    className={`h-7 text-xs ${
-                      settings.defaultMarkerMode === "composition"
-                        ? "bg-text-primary/15 text-text-primary"
-                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
-                    }`}
-                  >
-                    Composition
-                  </Button>
-                </div>
-              </div>
-              <p className="text-xs text-text-muted">
-                Composition mode colors only background pixels while preserving
-                text visibility
-              </p>
-            </div>
-
             {/* Marker Blend Mode Toggle */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
@@ -430,51 +381,6 @@ export function SettingsPanel() {
                 max={10}
                 step={1}
               />
-            </div>
-
-            {/* Area Mode Toggle */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-text-secondary text-sm">
-                  Default Area Mode
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant={
-                      settings.defaultAreaMode === "normal"
-                        ? "secondary"
-                        : "ghost"
-                    }
-                    size="sm"
-                    onClick={() => updateDraft({ defaultAreaMode: "normal" })}
-                    className={`h-7 text-xs ${
-                      settings.defaultAreaMode === "normal"
-                        ? "bg-text-primary/15 text-text-primary"
-                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
-                    }`}
-                  >
-                    Normal
-                  </Button>
-                  <Button
-                    variant={
-                      settings.defaultAreaMode === "composition"
-                        ? "secondary"
-                        : "ghost"
-                    }
-                    size="sm"
-                    onClick={() =>
-                      updateDraft({ defaultAreaMode: "composition" })
-                    }
-                    className={`h-7 text-xs ${
-                      settings.defaultAreaMode === "composition"
-                        ? "bg-text-primary/15 text-text-primary"
-                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
-                    }`}
-                  >
-                    Composition
-                  </Button>
-                </div>
-              </div>
             </div>
 
             {/* Area Blend Mode Toggle */}
