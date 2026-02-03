@@ -1,64 +1,79 @@
-import type { Stroke, StrokeGroup, Point, Tool, BrushSettings, BlendMode, StrokeHistoryState } from './types'
-import { BrushEngine } from './BrushEngine'
+import type {
+  Stroke,
+  StrokeGroup,
+  Point,
+  Tool,
+  BrushSettings,
+  BlendMode,
+  StrokeHistoryState,
+} from "./types";
+import { BrushEngine } from "./BrushEngine";
 
 /**
  * Maximum number of stroke groups in history
  */
-const MAX_HISTORY = 100
+const MAX_HISTORY = 100;
 
 /**
  * StrokeHistory manages stroke recording, undo/redo, and replay
  * This is a pure class that can be used independently of React
  */
 export class StrokeHistory {
-  groups: StrokeGroup[] = []
-  currentIndex = -1
-  maxHistory = MAX_HISTORY
+  groups: StrokeGroup[] = [];
+  currentIndex = -1;
+  maxHistory = MAX_HISTORY;
 
   // Current stroke tracking (not yet committed to history)
-  private currentGroup: StrokeGroup | null = null
-  private currentStroke: Stroke | null = null
-  private isRecording = false
+  private currentGroup: StrokeGroup | null = null;
+  private currentStroke: Stroke | null = null;
+  private isRecording = false;
 
-  private brushEngine: BrushEngine
+  private brushEngine: BrushEngine;
 
   constructor(brushEngine?: BrushEngine) {
-    this.brushEngine = brushEngine || new BrushEngine()
+    this.brushEngine = brushEngine || new BrushEngine();
   }
 
   /**
    * Check if undo is available
    */
   canUndo(): boolean {
-    return this.currentIndex >= 0
+    return this.currentIndex >= 0;
   }
 
   /**
    * Check if redo is available
    */
   canRedo(): boolean {
-    return this.currentIndex < this.groups.length - 1 && this.currentIndex >= -1
+    return (
+      this.currentIndex < this.groups.length - 1 && this.currentIndex >= -1
+    );
   }
 
   /**
    * Start a new stroke group (typically on mouse down)
    */
   startGroup(): void {
-    this.isRecording = true
+    this.isRecording = true;
     this.currentGroup = {
       id: this.generateId(),
       strokes: [],
       timestamp: Date.now(),
-    }
-    this.currentStroke = null
+    };
+    this.currentStroke = null;
   }
 
   /**
    * Start a new stroke within the current group
    */
-  startStroke(tool: Tool, brush: BrushSettings, point: Point, blendMode: BlendMode = 'normal'): void {
+  startStroke(
+    tool: Tool,
+    brush: BrushSettings,
+    point: Point,
+    blendMode: BlendMode = "normal",
+  ): void {
     if (!this.isRecording || !this.currentGroup) {
-      return
+      return;
     }
 
     const stroke: Stroke = {
@@ -68,10 +83,10 @@ export class StrokeHistory {
       brush: { ...brush },
       blendMode,
       timestamp: Date.now(),
-    }
+    };
 
-    this.currentStroke = stroke
-    this.currentGroup.strokes.push(stroke)
+    this.currentStroke = stroke;
+    this.currentGroup.strokes.push(stroke);
   }
 
   /**
@@ -79,9 +94,9 @@ export class StrokeHistory {
    */
   addPoint(point: Point): void {
     if (!this.isRecording || !this.currentStroke) {
-      return
+      return;
     }
-    this.currentStroke.points.push(point)
+    this.currentStroke.points.push(point);
   }
 
   /**
@@ -90,30 +105,30 @@ export class StrokeHistory {
    */
   endGroup(): void {
     if (!this.isRecording || !this.currentGroup) {
-      return
+      return;
     }
 
-    this.isRecording = false
-    this.currentStroke = null
+    this.isRecording = false;
+    this.currentStroke = null;
 
     // Only save if there are strokes
     if (this.currentGroup.strokes.length === 0) {
-      this.currentGroup = null
-      return
+      this.currentGroup = null;
+      return;
     }
 
     // Remove redo states and add new group
-    const newGroups = this.groups.slice(0, this.currentIndex + 1)
-    newGroups.push(this.currentGroup)
+    const newGroups = this.groups.slice(0, this.currentIndex + 1);
+    newGroups.push(this.currentGroup);
 
     // Keep only last maxHistory groups
     if (newGroups.length > this.maxHistory) {
-      newGroups.shift()
+      newGroups.shift();
     }
 
-    this.groups = newGroups
-    this.currentIndex = newGroups.length - 1
-    this.currentGroup = null
+    this.groups = newGroups;
+    this.currentIndex = newGroups.length - 1;
+    this.currentGroup = null;
   }
 
   /**
@@ -121,10 +136,10 @@ export class StrokeHistory {
    * Returns the new index after undo
    */
   undo(): number {
-    if (this.currentIndex < 0) return this.currentIndex
+    if (this.currentIndex < 0) return this.currentIndex;
 
-    this.currentIndex--
-    return this.currentIndex
+    this.currentIndex--;
+    return this.currentIndex;
   }
 
   /**
@@ -132,21 +147,21 @@ export class StrokeHistory {
    * Returns the new index after redo
    */
   redo(): number {
-    if (this.currentIndex >= this.groups.length - 1) return this.currentIndex
+    if (this.currentIndex >= this.groups.length - 1) return this.currentIndex;
 
-    this.currentIndex++
-    return this.currentIndex
+    this.currentIndex++;
+    return this.currentIndex;
   }
 
   /**
    * Clear all history
    */
   clear(): void {
-    this.groups = []
-    this.currentIndex = -1
-    this.currentGroup = null
-    this.currentStroke = null
-    this.isRecording = false
+    this.groups = [];
+    this.currentIndex = -1;
+    this.currentGroup = null;
+    this.currentStroke = null;
+    this.isRecording = false;
   }
 
   /**
@@ -154,21 +169,21 @@ export class StrokeHistory {
    */
   replayToCanvas(
     canvas: HTMLCanvasElement,
-    baseImageData: ImageData | null
+    baseImageData: ImageData | null,
   ): void {
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     // Clear canvas first
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     // Replay all stroke groups up to current index
     for (let i = 0; i <= this.currentIndex; i++) {
-      const group = this.groups[i]
-      if (!group) continue
+      const group = this.groups[i];
+      if (!group) continue;
 
       for (const stroke of group.strokes) {
-        this.replayStroke(ctx, stroke, baseImageData, canvas.width)
+        this.replayStroke(ctx, stroke, baseImageData, canvas.width);
       }
     }
   }
@@ -180,35 +195,40 @@ export class StrokeHistory {
     ctx: CanvasRenderingContext2D,
     stroke: Stroke,
     _baseImageData: ImageData | null,
-    _canvasWidth: number
+    _canvasWidth: number,
   ): void {
-    if (stroke.points.length === 0) return
+    if (stroke.points.length === 0) return;
 
     switch (stroke.tool) {
-      case 'pen':
-        this.brushEngine.drawPenStroke(ctx, stroke.points, stroke.brush, stroke.blendMode)
-        break
-      case 'highlighter':
+      case "pen":
+        this.brushEngine.drawPenStroke(
+          ctx,
+          stroke.points,
+          stroke.brush,
+          stroke.blendMode,
+        );
+        break;
+      case "highlighter":
         this.brushEngine.drawHighlighterStroke(
           ctx,
           stroke.points,
           stroke.brush,
-          stroke.blendMode
-        )
-        break
-      case 'area':
+          stroke.blendMode,
+        );
+        break;
+      case "area":
         if (stroke.points.length >= 2) {
-          const start = stroke.points[0]
-          const end = stroke.points[stroke.points.length - 1]
+          const start = stroke.points[0];
+          const end = stroke.points[stroke.points.length - 1];
           this.brushEngine.drawArea(
             ctx,
             start,
             end,
             stroke.brush,
-            stroke.blendMode
-          )
+            stroke.blendMode,
+          );
         }
-        break
+        break;
     }
   }
 
@@ -216,14 +236,14 @@ export class StrokeHistory {
    * Check if currently recording a stroke group
    */
   isCurrentlyRecording(): boolean {
-    return this.isRecording
+    return this.isRecording;
   }
 
   /**
    * Get the current stroke group being recorded (if any)
    */
   getCurrentGroup(): StrokeGroup | null {
-    return this.currentGroup
+    return this.currentGroup;
   }
 
   /**
@@ -233,23 +253,26 @@ export class StrokeHistory {
     return {
       groups: this.groups,
       currentIndex: this.currentIndex,
-    }
+    };
   }
 
   /**
    * Deserialize from plain object
    */
-  static deserialize(state: StrokeHistoryState, brushEngine?: BrushEngine): StrokeHistory {
-    const history = new StrokeHistory(brushEngine)
-    history.groups = state.groups
-    history.currentIndex = state.currentIndex
-    return history
+  static deserialize(
+    state: StrokeHistoryState,
+    brushEngine?: BrushEngine,
+  ): StrokeHistory {
+    const history = new StrokeHistory(brushEngine);
+    history.groups = state.groups;
+    history.currentIndex = state.currentIndex;
+    return history;
   }
 
   /**
    * Generate a unique ID
    */
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 }

@@ -22,11 +22,19 @@
     "dialog:allow-save",
     {
       "identifier": "fs:allow-read-file",
-      "allow": [{"path": "$HOME/**"}]
+      "allow": [{ "path": "$HOME/**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$APPCONFIG/**" }, { "path": "$HOME/**" }]
     },
     "fs:allow-write-file",
     "fs:allow-home-read",
     "fs:allow-home-write",
+    "fs:allow-appconfig-read",
+    "fs:allow-appconfig-write",
+    "fs:allow-appconfig-read-recursive",
+    "fs:allow-appconfig-write-recursive",
     "fs:scope-download-recursive",
     "store:default",
     "store:allow-get",

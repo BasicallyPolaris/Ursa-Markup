@@ -135,7 +135,7 @@ export function ShortcutsSettings({
     (action: HotkeyAction) => {
       const newHotkeys: HotkeySettings = {
         ...hotkeys,
-        [action]: { key: '' }, // Empty key = unbound
+        [action]: { key: "" }, // Empty key = unbound
       };
       updateDraft({ hotkeys: newHotkeys });
     },
@@ -165,7 +165,7 @@ export function ShortcutsSettings({
       if (e.key === "Backspace" || e.key === "Delete") {
         const newHotkeys: HotkeySettings = {
           ...hotkeys,
-          [recordingAction]: { key: '' }, // Empty key = unbound
+          [recordingAction]: { key: "" }, // Empty key = unbound
         };
         updateDraft({ hotkeys: newHotkeys });
         setRecordingAction(null);
@@ -212,7 +212,7 @@ export function ShortcutsSettings({
 
   // Check if a hotkey is unbound (empty key)
   const isUnbound = (binding: HotkeyBinding): boolean => {
-    return !binding.key || binding.key === '';
+    return !binding.key || binding.key === "";
   };
 
   return (
@@ -313,7 +313,7 @@ export function ShortcutsSettings({
                     <button
                       onClick={() => handleStartRecording(action)}
                       className={cn(
-                        "px-2.5 py-1 text-xs font-mono rounded-md border transition-all min-w-[80px] text-center",
+                        "px-2.5 py-1 text-xs font-mono rounded-md border transition-all min-w-20 text-center",
                         isRecording
                           ? "bg-accent-primary text-accent-primary-fg border-accent-primary animate-pulse"
                           : isUnbound(binding)

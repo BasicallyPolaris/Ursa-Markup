@@ -18,7 +18,7 @@ interface SettingsContextValue {
   updateColorPreset: (index: number, color: string) => void
   save: () => Promise<boolean>
   cancel: () => void
-  reset: () => Promise<void>
+  reset: () => void
 }
 
 const SettingsContext = createContext<SettingsContextValue | null>(null)
@@ -110,8 +110,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     settingsManager.cancel()
   }, [])
 
-  const reset = useCallback(async () => {
-    await settingsManager.reset()
+  const reset = useCallback(() => {
+    settingsManager.resetToDefaults()
   }, [])
 
   const openSettings = useCallback(async () => {

@@ -1,5 +1,11 @@
 import { useEffect, useRef, useCallback, useState } from "react";
-import type { Tool, BrushSettings, RulerState, Point, StrokeGroup } from "../../types";
+import type {
+  Tool,
+  BrushSettings,
+  RulerState,
+  Point,
+  StrokeGroup,
+} from "../../types";
 import { cn } from "../../lib/utils";
 
 /**
@@ -62,23 +68,30 @@ function getRulerColor(varName: string, alpha: number = 1): string {
  * HSL Color manipulation helpers for Color blend mode
  */
 function hexToHsl(hex: string): { h: number; s: number; l: number } {
-  const cleanHex = hex.replace('#', '');
+  const cleanHex = hex.replace("#", "");
   const r = parseInt(cleanHex.substring(0, 2), 16) / 255;
   const g = parseInt(cleanHex.substring(2, 4), 16) / 255;
   const b = parseInt(cleanHex.substring(4, 6), 16) / 255;
 
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
-  let h = 0, s = 0;
+  let h = 0,
+    s = 0;
   const l = (max + min) / 2;
 
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
+      case r:
+        h = (g - b) / d + (g < b ? 6 : 0);
+        break;
+      case g:
+        h = (b - r) / d + 2;
+        break;
+      case b:
+        h = (r - g) / d + 4;
+        break;
     }
     h /= 6;
   }
@@ -86,23 +99,34 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } {
   return { h: h * 360, s: s * 100, l: l * 100 };
 }
 
-function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: number } {
+function rgbToHsl(
+  r: number,
+  g: number,
+  b: number,
+): { h: number; s: number; l: number } {
   const rNorm = r / 255;
   const gNorm = g / 255;
   const bNorm = b / 255;
 
   const max = Math.max(rNorm, gNorm, bNorm);
   const min = Math.min(rNorm, gNorm, bNorm);
-  let h = 0, s = 0;
+  let h = 0,
+    s = 0;
   const l = (max + min) / 2;
 
   if (max !== min) {
     const d = max - min;
     s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
     switch (max) {
-      case rNorm: h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0); break;
-      case gNorm: h = (bNorm - rNorm) / d + 2; break;
-      case bNorm: h = (rNorm - gNorm) / d + 4; break;
+      case rNorm:
+        h = (gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0);
+        break;
+      case gNorm:
+        h = (bNorm - rNorm) / d + 2;
+        break;
+      case bNorm:
+        h = (rNorm - gNorm) / d + 4;
+        break;
     }
     h /= 6;
   }
@@ -110,26 +134,51 @@ function rgbToHsl(r: number, g: number, b: number): { h: number; s: number; l: n
   return { h: h * 360, s: s * 100, l: l * 100 };
 }
 
-function hslToRgb(h: number, s: number, l: number): { r: number; g: number; b: number } {
+function hslToRgb(
+  h: number,
+  s: number,
+  l: number,
+): { r: number; g: number; b: number } {
   const sNorm = s / 100;
   const lNorm = l / 100;
   const c = (1 - Math.abs(2 * lNorm - 1)) * sNorm;
   const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
   const m = lNorm - c / 2;
 
-  let r = 0, g = 0, b = 0;
+  let r = 0,
+    g = 0,
+    b = 0;
 
-  if (h < 60) { r = c; g = x; b = 0; }
-  else if (h < 120) { r = x; g = c; b = 0; }
-  else if (h < 180) { r = 0; g = c; b = x; }
-  else if (h < 240) { r = 0; g = x; b = c; }
-  else if (h < 300) { r = x; g = 0; b = c; }
-  else { r = c; g = 0; b = x; }
+  if (h < 60) {
+    r = c;
+    g = x;
+    b = 0;
+  } else if (h < 120) {
+    r = x;
+    g = c;
+    b = 0;
+  } else if (h < 180) {
+    r = 0;
+    g = c;
+    b = x;
+  } else if (h < 240) {
+    r = 0;
+    g = x;
+    b = c;
+  } else if (h < 300) {
+    r = x;
+    g = 0;
+    b = c;
+  } else {
+    r = c;
+    g = 0;
+    b = x;
+  }
 
   return {
     r: Math.round((r + m) * 255),
     g: Math.round((g + m) * 255),
-    b: Math.round((b + m) * 255)
+    b: Math.round((b + m) * 255),
   };
 }
 
@@ -144,7 +193,7 @@ function drawPixelWithColorBlend(
   brushColor: string,
   brushOpacity: number,
   baseImageData: ImageData | null,
-  canvasWidth: number
+  canvasWidth: number,
 ): void {
   if (!baseImageData) {
     // Fallback to normal drawing if no base image
@@ -189,7 +238,7 @@ interface DrawingCanvasProps {
   viewOffset: { x: number; y: number };
   canvasSize: { width: number; height: number };
   // Global blend mode for all tools: normal, color (HSL), multiply
-  blendMode?: 'normal' | 'color' | 'multiply';
+  blendMode?: "normal" | "color" | "multiply";
   onZoomChange: (zoom: number, mouseX?: number, mouseY?: number) => void;
   onViewOffsetChange: (offset: { x: number; y: number }) => void;
   onCanvasSizeChange: (size: { width: number; height: number }) => void;
@@ -199,7 +248,12 @@ interface DrawingCanvasProps {
   onRulerRotate: (delta: number) => void;
   // Stroke-based history methods
   onStartStrokeGroup: () => void;
-  onStartStroke: (tool: Tool, brush: BrushSettings, point: Point, blendMode: 'normal' | 'color' | 'multiply') => void;
+  onStartStroke: (
+    tool: Tool,
+    brush: BrushSettings,
+    point: Point,
+    blendMode: "normal" | "color" | "multiply",
+  ) => void;
   onAddPointToStroke: (point: Point) => void;
   onEndStrokeGroup: () => void;
   // Stroke history for replay
@@ -216,7 +270,7 @@ export function DrawingCanvas({
   zoom,
   viewOffset,
   canvasSize,
-  blendMode = 'normal',
+  blendMode = "normal",
   onZoomChange,
   onViewOffsetChange,
   onCanvasSizeChange,
@@ -254,160 +308,163 @@ export function DrawingCanvas({
   const baseImageDataRef = useRef<ImageData | null>(null);
 
   // Replay stroke helper function - supports blend modes
-  const replayStroke = useCallback((ctx: CanvasRenderingContext2D, stroke: any) => {
-    if (!stroke || stroke.points.length < 1) return;
+  const replayStroke = useCallback(
+    (ctx: CanvasRenderingContext2D, stroke: any) => {
+      if (!stroke || stroke.points.length < 1) return;
 
-    const strokeBrush = stroke.brush;
-    const strokeTool = stroke.tool;
-    const points = stroke.points;
-    const strokeBlendMode = stroke.brush.blendMode || 'normal';
+      const strokeBrush = stroke.brush;
+      const strokeTool = stroke.tool;
+      const points = stroke.points;
+      const strokeBlendMode = stroke.brush.blendMode || "normal";
 
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.lineWidth = strokeBrush.size;
-    ctx.globalAlpha = strokeBrush.opacity;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.lineWidth = strokeBrush.size;
+      ctx.globalAlpha = strokeBrush.opacity;
 
-    // Apply blend mode
-    if (strokeBlendMode === 'multiply') {
-      ctx.globalCompositeOperation = 'multiply';
-    } else {
-      ctx.globalCompositeOperation = 'source-over';
-    }
-
-    if (strokeTool === "pen") {
-      ctx.strokeStyle = strokeBrush.color;
-      ctx.beginPath();
-      ctx.moveTo(points[0].x, points[0].y);
-      for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x, points[i].y);
-      }
-      ctx.stroke();
-    } else if (strokeTool === "highlighter") {
-      const height = strokeBrush.size;
-      const width = strokeBrush.size * 0.3;
-      const halfWidth = width / 2;
-      const halfHeight = height / 2;
-
-      // Handle blend mode for highlighter
-      if (strokeBlendMode === 'multiply') {
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.fillStyle = strokeBrush.color;
-        ctx.globalAlpha = strokeBrush.opacity;
-      } else if (strokeBlendMode === 'color') {
-        ctx.globalCompositeOperation = 'source-over';
-        // Color blend mode requires per-pixel processing - handled below
+      // Apply blend mode
+      if (strokeBlendMode === "multiply") {
+        ctx.globalCompositeOperation = "multiply";
       } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = strokeBrush.color;
-        ctx.globalAlpha = strokeBrush.opacity;
+        ctx.globalCompositeOperation = "source-over";
       }
 
-      // For each segment of the stroke
-      for (let i = 0; i < points.length - 1; i++) {
-        const start = points[i];
-        const end = points[i + 1];
-        const dx = end.x - start.x;
-        const dy = end.y - start.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
+      if (strokeTool === "pen") {
+        ctx.strokeStyle = strokeBrush.color;
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.stroke();
+      } else if (strokeTool === "highlighter") {
+        const height = strokeBrush.size;
+        const width = strokeBrush.size * 0.3;
+        const halfWidth = width / 2;
+        const halfHeight = height / 2;
 
-        const stepSize = 2;
-        const steps = Math.max(1, Math.ceil(distance / stepSize));
+        // Handle blend mode for highlighter
+        if (strokeBlendMode === "multiply") {
+          ctx.globalCompositeOperation = "multiply";
+          ctx.fillStyle = strokeBrush.color;
+          ctx.globalAlpha = strokeBrush.opacity;
+        } else if (strokeBlendMode === "color") {
+          ctx.globalCompositeOperation = "source-over";
+          // Color blend mode requires per-pixel processing - handled below
+        } else {
+          ctx.globalCompositeOperation = "source-over";
+          ctx.fillStyle = strokeBrush.color;
+          ctx.globalAlpha = strokeBrush.opacity;
+        }
 
-        for (let step = 0; step <= steps; step++) {
-          const t = step / steps;
-          const interpX = start.x + dx * t;
-          const interpY = start.y + dy * t;
+        // For each segment of the stroke
+        for (let i = 0; i < points.length - 1; i++) {
+          const start = points[i];
+          const end = points[i + 1];
+          const dx = end.x - start.x;
+          const dy = end.y - start.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
 
-          const startGridX = Math.floor(interpX - halfWidth);
-          const endGridX = Math.ceil(interpX + halfWidth);
-          const startGridY = Math.floor(interpY - halfHeight);
-          const endGridY = Math.ceil(interpY + halfHeight);
+          const stepSize = 2;
+          const steps = Math.max(1, Math.ceil(distance / stepSize));
 
-          for (let gridX = startGridX; gridX < endGridX; gridX++) {
-            for (let gridY = startGridY; gridY < endGridY; gridY++) {
-              const pixelCenterX = gridX + 0.5;
-              const pixelCenterY = gridY + 0.5;
-              const pdx = Math.abs(pixelCenterX - interpX);
-              const pdy = Math.abs(pixelCenterY - interpY);
+          for (let step = 0; step <= steps; step++) {
+            const t = step / steps;
+            const interpX = start.x + dx * t;
+            const interpY = start.y + dy * t;
 
-              if (pdx <= halfWidth && pdy <= halfHeight) {
-                if (strokeBlendMode === 'color') {
-                  drawPixelWithColorBlend(
-                    ctx,
-                    gridX,
-                    gridY,
-                    strokeBrush.color,
-                    strokeBrush.opacity,
-                    baseImageDataRef.current,
-                    ctx.canvas.width
-                  );
-                } else {
-                  ctx.fillRect(gridX, gridY, 1, 1);
+            const startGridX = Math.floor(interpX - halfWidth);
+            const endGridX = Math.ceil(interpX + halfWidth);
+            const startGridY = Math.floor(interpY - halfHeight);
+            const endGridY = Math.ceil(interpY + halfHeight);
+
+            for (let gridX = startGridX; gridX < endGridX; gridX++) {
+              for (let gridY = startGridY; gridY < endGridY; gridY++) {
+                const pixelCenterX = gridX + 0.5;
+                const pixelCenterY = gridY + 0.5;
+                const pdx = Math.abs(pixelCenterX - interpX);
+                const pdy = Math.abs(pixelCenterY - interpY);
+
+                if (pdx <= halfWidth && pdy <= halfHeight) {
+                  if (strokeBlendMode === "color") {
+                    drawPixelWithColorBlend(
+                      ctx,
+                      gridX,
+                      gridY,
+                      strokeBrush.color,
+                      strokeBrush.opacity,
+                      baseImageDataRef.current,
+                      ctx.canvas.width,
+                    );
+                  } else {
+                    ctx.fillRect(gridX, gridY, 1, 1);
+                  }
                 }
               }
             }
           }
         }
-      }
-    } else if (strokeTool === "area") {
-      if (points.length >= 2) {
-        const start = points[0];
-        const end = points[points.length - 1];
-        const x = Math.min(start.x, end.x);
-        const y = Math.min(start.y, end.y);
-        const width = Math.abs(end.x - start.x);
-        const height = Math.abs(end.y - start.y);
-        const borderRadius = strokeBrush.borderRadius || 0;
-        const borderWidth = strokeBrush.borderWidth || 2;
-        const borderEnabled = strokeBrush.borderEnabled !== false;
-        
-        ctx.globalAlpha = strokeBrush.opacity;
-        ctx.fillStyle = strokeBrush.color;
-        
-        // Draw rounded rectangle fill
-        ctx.beginPath();
-        ctx.roundRect(x, y, width, height, borderRadius);
-        ctx.fill();
-        
-        // Draw border if enabled
-        if (borderEnabled) {
-          ctx.strokeStyle = strokeBrush.color;
-          ctx.lineWidth = borderWidth;
+      } else if (strokeTool === "area") {
+        if (points.length >= 2) {
+          const start = points[0];
+          const end = points[points.length - 1];
+          const x = Math.min(start.x, end.x);
+          const y = Math.min(start.y, end.y);
+          const width = Math.abs(end.x - start.x);
+          const height = Math.abs(end.y - start.y);
+          const borderRadius = strokeBrush.borderRadius || 0;
+          const borderWidth = strokeBrush.borderWidth || 2;
+          const borderEnabled = strokeBrush.borderEnabled !== false;
+
+          ctx.globalAlpha = strokeBrush.opacity;
+          ctx.fillStyle = strokeBrush.color;
+
+          // Draw rounded rectangle fill
           ctx.beginPath();
           ctx.roundRect(x, y, width, height, borderRadius);
-          ctx.stroke();
+          ctx.fill();
+
+          // Draw border if enabled
+          if (borderEnabled) {
+            ctx.strokeStyle = strokeBrush.color;
+            ctx.lineWidth = borderWidth;
+            ctx.beginPath();
+            ctx.roundRect(x, y, width, height, borderRadius);
+            ctx.stroke();
+          }
         }
       }
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Replay strokes helper - extracted for reuse
   const strokeHistoryRef = useRef(strokeHistory);
   const strokeHistoryIndexRef = useRef(strokeHistoryIndex);
-  
+
   useEffect(() => {
     strokeHistoryRef.current = strokeHistory;
     strokeHistoryIndexRef.current = strokeHistoryIndex;
   }, [strokeHistory, strokeHistoryIndex]);
-  
+
   const replayStrokesToCanvas = useCallback(() => {
     const drawCanvas = drawCanvasRef.current;
     if (!drawCanvas || drawCanvas.width === 0) return;
-    
-    const drawCtx = drawCanvas.getContext('2d');
+
+    const drawCtx = drawCanvas.getContext("2d");
     if (!drawCtx) return;
-    
+
     // Get latest values from refs to avoid stale closure
     const currentHistory = strokeHistoryRef.current;
     const currentIndex = strokeHistoryIndexRef.current;
-    
+
     // Clear and replay all strokes up to the current index
     drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
-    
+
     for (let i = 0; i <= (currentIndex ?? -1); i++) {
       const group = currentHistory?.[i];
       if (!group) continue;
-      
+
       for (const stroke of group.strokes) {
         replayStroke(drawCtx, stroke);
       }
@@ -469,7 +526,12 @@ export function DrawingCanvas({
         baseCtx.imageSmoothingQuality = "high";
         baseCtx.drawImage(img, 0, 0);
         // Capture base image data for Color blend mode
-        baseImageDataRef.current = baseCtx.getImageData(0, 0, baseCanvas.width, baseCanvas.height);
+        baseImageDataRef.current = baseCtx.getImageData(
+          0,
+          0,
+          baseCanvas.width,
+          baseCanvas.height,
+        );
       }
 
       const drawCtx = drawCanvas.getContext("2d");
@@ -487,14 +549,14 @@ export function DrawingCanvas({
       // Replay strokes after canvas is properly sized
       // This ensures annotations are restored when switching tabs
       replayStrokesToCanvas();
-      
+
       isImageLoadingRef.current = false;
     };
-    
+
     img.onerror = () => {
       isImageLoadingRef.current = false;
     };
-    
+
     img.src = imageSrc;
 
     // Cleanup: clear canvases and coloredPixels when unmounting or switching images
@@ -594,15 +656,15 @@ export function DrawingCanvas({
         const borderRadius = brush.borderRadius || 0;
         const borderWidth = brush.borderWidth || 2;
         const borderEnabled = brush.borderEnabled !== false;
-        
+
         displayCtx.globalAlpha = brush.opacity;
         displayCtx.fillStyle = brush.color;
-        
+
         // Draw rounded rectangle fill
         displayCtx.beginPath();
         displayCtx.roundRect(x, y, width, height, borderRadius);
         displayCtx.fill();
-        
+
         // Draw border if enabled
         if (borderEnabled) {
           displayCtx.globalAlpha = brush.opacity;
@@ -930,16 +992,16 @@ export function DrawingCanvas({
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.lineWidth = brush.size;
-      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalCompositeOperation = "source-over";
 
       if (tool === "pen") {
         ctx.globalAlpha = brush.opacity;
         ctx.strokeStyle = brush.color;
         // Apply blend mode for pen
-        if (blendMode === 'multiply') {
-          ctx.globalCompositeOperation = 'multiply';
+        if (blendMode === "multiply") {
+          ctx.globalCompositeOperation = "multiply";
         } else {
-          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalCompositeOperation = "source-over";
         }
         ctx.beginPath();
         ctx.moveTo(canvasPoint.x, canvasPoint.y);
@@ -952,15 +1014,15 @@ export function DrawingCanvas({
         const halfHeight = height / 2;
 
         // Handle blend mode for highlighter
-        if (blendMode === 'multiply') {
-          ctx.globalCompositeOperation = 'multiply';
+        if (blendMode === "multiply") {
+          ctx.globalCompositeOperation = "multiply";
           ctx.fillStyle = brush.color;
           ctx.globalAlpha = brush.opacity;
-        } else if (blendMode === 'color') {
-          ctx.globalCompositeOperation = 'source-over';
+        } else if (blendMode === "color") {
+          ctx.globalCompositeOperation = "source-over";
           // Color blend mode requires per-pixel processing - handled below
         } else {
-          ctx.globalCompositeOperation = 'source-over';
+          ctx.globalCompositeOperation = "source-over";
           ctx.fillStyle = brush.color;
           ctx.globalAlpha = brush.opacity;
         }
@@ -984,7 +1046,7 @@ export function DrawingCanvas({
 
             if (dx <= halfWidth && dy <= halfHeight) {
               coloredPixelsRef.current.add(pixelKey);
-              if (blendMode === 'color') {
+              if (blendMode === "color") {
                 drawPixelWithColorBlend(
                   ctx,
                   gridX,
@@ -992,7 +1054,7 @@ export function DrawingCanvas({
                   brush.color,
                   brush.opacity,
                   baseImageDataRef.current,
-                  canvas.width
+                  canvas.width,
                 );
               } else {
                 ctx.fillRect(gridX, gridY, 1, 1);
@@ -1077,15 +1139,15 @@ export function DrawingCanvas({
             const halfHeight = height / 2;
 
             // Handle blend mode for highlighter in mouse move
-            if (blendMode === 'multiply') {
-              ctx.globalCompositeOperation = 'multiply';
+            if (blendMode === "multiply") {
+              ctx.globalCompositeOperation = "multiply";
               ctx.fillStyle = brush.color;
               ctx.globalAlpha = brush.opacity;
-            } else if (blendMode === 'color') {
-              ctx.globalCompositeOperation = 'source-over';
+            } else if (blendMode === "color") {
+              ctx.globalCompositeOperation = "source-over";
               // Color blend mode requires per-pixel processing
             } else {
-              ctx.globalCompositeOperation = 'source-over';
+              ctx.globalCompositeOperation = "source-over";
               ctx.fillStyle = brush.color;
               ctx.globalAlpha = brush.opacity;
             }
@@ -1120,7 +1182,7 @@ export function DrawingCanvas({
 
                     if (pdx <= halfWidth && pdy <= halfHeight) {
                       coloredPixelsRef.current.add(pixelKey);
-                      if (blendMode === 'color') {
+                      if (blendMode === "color") {
                         drawPixelWithColorBlend(
                           ctx,
                           gridX,
@@ -1128,7 +1190,7 @@ export function DrawingCanvas({
                           brush.color,
                           brush.opacity,
                           baseImageDataRef.current,
-                          canvas.width
+                          canvas.width,
                         );
                       } else {
                         ctx.fillRect(gridX, gridY, 1, 1);
@@ -1213,15 +1275,15 @@ export function DrawingCanvas({
         const borderRadius = brush.borderRadius || 0;
         const borderWidth = brush.borderWidth || 2;
         const borderEnabled = brush.borderEnabled !== false;
-        
+
         ctx.globalAlpha = brush.opacity;
         ctx.fillStyle = brush.color;
-        
+
         // Draw rounded rectangle fill
         ctx.beginPath();
         ctx.roundRect(x, y, width, height, borderRadius);
         ctx.fill();
-        
+
         // Draw border if enabled
         if (borderEnabled) {
           ctx.strokeStyle = brush.color;
@@ -1280,7 +1342,7 @@ export function DrawingCanvas({
     }
   }, [ruler.isDragging, isDrawing, tool, onRulerDragEnd, onEndStrokeGroup]);
 
-  // Window-level wheel handler for zoom and ruler rotation
+  // Window-level wheel handler for zoom, panning, and ruler rotation
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -1295,16 +1357,40 @@ export function DrawingCanvas({
 
       if (!isInContainer) return;
 
+      // Scroll speed factor (adjusted by zoom for consistent feel)
+      const scrollSpeed = 1.0;
+      const currentZoom = zoomRef.current;
+      const currentViewOffset = viewOffsetRef.current;
+
       if (e.ctrlKey) {
+        // Ctrl + Scroll = Zoom
         e.preventDefault();
         e.stopPropagation();
 
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
-        const currentZoom = zoomRef.current;
         const newZoom = Math.max(0.1, Math.min(5, currentZoom * delta));
 
         onZoomChange(newZoom, e.clientX, e.clientY);
-      } else if (ruler.visible && !e.shiftKey) {
+      } else if (e.shiftKey) {
+        // Shift + Scroll = Vertical pan (natural direction: scroll down moves view down)
+        e.preventDefault();
+        e.stopPropagation();
+        const scrollAmount = e.deltaY * scrollSpeed / currentZoom;
+        onViewOffsetChange({
+          x: currentViewOffset.x,
+          y: currentViewOffset.y + scrollAmount,
+        });
+      } else if (e.altKey) {
+        // Alt + Scroll = Horizontal pan (scroll down moves view right)
+        e.preventDefault();
+        e.stopPropagation();
+        const scrollAmount = e.deltaY * scrollSpeed / currentZoom;
+        onViewOffsetChange({
+          x: currentViewOffset.x + scrollAmount,
+          y: currentViewOffset.y,
+        });
+      } else if (ruler.visible) {
+        // No modifier + Scroll (when ruler visible) = Rotate ruler
         e.preventDefault();
         e.stopPropagation();
         const delta = e.deltaY > 0 ? 3 : -3;
@@ -1320,7 +1406,7 @@ export function DrawingCanvas({
     return () => {
       window.removeEventListener("wheel", handleWindowWheel, { capture: true });
     };
-  }, [ruler.visible, onZoomChange, onRulerRotate]);
+  }, [ruler.visible, onZoomChange, onRulerRotate, onViewOffsetChange]);
 
   // React wheel handler (fallback)
   const handleWheel = useCallback((e: React.WheelEvent) => {

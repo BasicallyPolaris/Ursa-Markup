@@ -2,112 +2,125 @@
  * TabManagerContext - Bridges TabManager with React
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import type { Document } from '../core'
-import { tabManager } from '../services'
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import type { Document } from "../core";
+import { tabManager } from "../services";
 
 interface PendingCloseDocument {
-  id: string
-  fileName: string | null
-  hasChanges: boolean
+  id: string;
+  fileName: string | null;
+  hasChanges: boolean;
 }
 
 interface TabManagerContextValue {
-  documents: Document[]
-  activeDocument: Document | null
-  activeDocumentId: string | null
-  pendingCloseDocument: PendingCloseDocument | null
-  addTab: (filePath?: string, fileName?: string, imageSrc?: string) => string
-  closeTab: (id: string) => void
-  switchTab: (id: string) => void
-  confirmCloseWithSave: () => string | null
-  confirmCloseWithoutSave: () => void
-  cancelClose: () => void
-  switchToNextTab: () => void
-  switchToPreviousTab: () => void
+  documents: Document[];
+  activeDocument: Document | null;
+  activeDocumentId: string | null;
+  pendingCloseDocument: PendingCloseDocument | null;
+  addTab: (filePath?: string, fileName?: string, imageSrc?: string) => string;
+  closeTab: (id: string) => void;
+  switchTab: (id: string) => void;
+  confirmCloseWithSave: () => string | null;
+  confirmCloseWithoutSave: () => void;
+  cancelClose: () => void;
+  switchToNextTab: () => void;
+  switchToPreviousTab: () => void;
 }
 
-const TabManagerContext = createContext<TabManagerContextValue | null>(null)
+const TabManagerContext = createContext<TabManagerContextValue | null>(null);
 
 interface TabManagerProviderProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function TabManagerProvider({ children }: TabManagerProviderProps) {
   const [documents, setDocuments] = useState<Document[]>(() => {
-    const activeDoc = tabManager.getActiveDocument()
-    return activeDoc ? [activeDoc] : []
-  })
-  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(tabManager.activeDocumentId)
-  const [pendingCloseDocument, setPendingCloseDocument] = useState<PendingCloseDocument | null>(null)
+    const activeDoc = tabManager.getActiveDocument();
+    return activeDoc ? [activeDoc] : [];
+  });
+  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(
+    tabManager.activeDocumentId,
+  );
+  const [pendingCloseDocument, setPendingCloseDocument] =
+    useState<PendingCloseDocument | null>(null);
 
   // Get active document from current state
-  const activeDocument = documents.find(doc => doc.id === activeDocumentId) || null
+  const activeDocument =
+    documents.find((doc) => doc.id === activeDocumentId) || null;
 
   // Subscribe to tab manager events
   useEffect(() => {
     const updateState = () => {
       const newDocs = tabManager.documentIds
-        .map(id => tabManager.getDocument(id))
-        .filter((doc): doc is Document => doc !== undefined)
-      setDocuments(newDocs)
-      setActiveDocumentId(tabManager.activeDocumentId)
-      
-      const pending = tabManager.pendingCloseDocument
+        .map((id) => tabManager.getDocument(id))
+        .filter((doc): doc is Document => doc !== undefined);
+      setDocuments(newDocs);
+      setActiveDocumentId(tabManager.activeDocumentId);
+
+      const pending = tabManager.pendingCloseDocument;
       if (pending) {
-        setPendingCloseDocument(pending)
+        setPendingCloseDocument(pending);
       } else {
-        setPendingCloseDocument(null)
+        setPendingCloseDocument(null);
       }
-    }
+    };
 
     // Initial state
-    updateState()
+    updateState();
 
     // Subscribe to all relevant events
-    const unsubs: (() => void)[] = []
-    
-    unsubs.push(tabManager.on('documentAdded', updateState))
-    unsubs.push(tabManager.on('documentClosed', updateState))
-    unsubs.push(tabManager.on('activeDocumentChanged', updateState))
-    unsubs.push(tabManager.on('documentChanged', updateState))
+    const unsubs: (() => void)[] = [];
+
+    unsubs.push(tabManager.on("documentAdded", updateState));
+    unsubs.push(tabManager.on("documentClosed", updateState));
+    unsubs.push(tabManager.on("activeDocumentChanged", updateState));
+    unsubs.push(tabManager.on("documentChanged", updateState));
 
     return () => {
-      unsubs.forEach(unsub => unsub())
-    }
-  }, [])
+      unsubs.forEach((unsub) => unsub());
+    };
+  }, []);
 
-  const addTab = useCallback((filePath?: string, fileName?: string, imageSrc?: string) => {
-    return tabManager.createDocument(filePath, fileName, imageSrc)
-  }, [])
+  const addTab = useCallback(
+    (filePath?: string, fileName?: string, imageSrc?: string) => {
+      return tabManager.createDocument(filePath, fileName, imageSrc);
+    },
+    [],
+  );
 
   const closeTab = useCallback((id: string) => {
-    tabManager.closeDocument(id)
-  }, [])
+    tabManager.closeDocument(id);
+  }, []);
 
   const switchTab = useCallback((id: string) => {
-    tabManager.switchToDocument(id)
-  }, [])
+    tabManager.switchToDocument(id);
+  }, []);
 
   const confirmCloseWithSave = useCallback(() => {
-    return tabManager.confirmCloseWithSave()
-  }, [])
+    return tabManager.confirmCloseWithSave();
+  }, []);
 
   const confirmCloseWithoutSave = useCallback(() => {
-    tabManager.confirmCloseWithoutSave()
-  }, [])
+    tabManager.confirmCloseWithoutSave();
+  }, []);
 
   const cancelClose = useCallback(() => {
-    tabManager.cancelClose()
-  }, [])
+    tabManager.cancelClose();
+  }, []);
 
   const switchToNextTab = useCallback(() => {
-    tabManager.switchToNextDocument()
-  }, [])
+    tabManager.switchToNextDocument();
+  }, []);
 
   const switchToPreviousTab = useCallback(() => {
-    tabManager.switchToPreviousDocument()
-  }, [])
+    tabManager.switchToPreviousDocument();
+  }, []);
 
   const value: TabManagerContextValue = {
     documents,
@@ -122,21 +135,21 @@ export function TabManagerProvider({ children }: TabManagerProviderProps) {
     cancelClose,
     switchToNextTab,
     switchToPreviousTab,
-  }
+  };
 
   return (
     <TabManagerContext.Provider value={value}>
       {children}
     </TabManagerContext.Provider>
-  )
+  );
 }
 
 export function useTabManager(): TabManagerContextValue {
-  const context = useContext(TabManagerContext)
+  const context = useContext(TabManagerContext);
   if (!context) {
-    throw new Error('useTabManager must be used within a TabManagerProvider')
+    throw new Error("useTabManager must be used within a TabManagerProvider");
   }
-  return context
+  return context;
 }
 
-export { TabManagerContext }
+export { TabManagerContext };

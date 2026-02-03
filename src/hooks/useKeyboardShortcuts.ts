@@ -95,7 +95,9 @@ export function useKeyboardShortcuts() {
   const {
     zoom,
     setZoom,
-    fitToWindow
+    fitToWindow,
+    stretchToFill,
+    centerImage
   } = useCanvasEngine();
 
   // Get file action handlers
@@ -142,6 +144,12 @@ export function useKeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Skip hotkeys when typing in an input field
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
       // Map hotkey actions to handlers - defined inside effect to capture current values
       const actionHandlers: Record<HotkeyAction, (() => void) | null> = {
         'file.open': handleOpen,
@@ -163,6 +171,8 @@ export function useKeyboardShortcuts() {
         'nav.zoomIn': handleZoomIn,
         'nav.zoomOut': handleZoomOut,
         'nav.fitToWindow': fitToWindow,
+        'nav.stretchToFill': stretchToFill,
+        'nav.centerImage': centerImage,
         'tab.new': addTab,
         'tab.close': documents.length > 1 && activeDocumentId ? handleCloseTab : null,
         'tab.next': switchToNextTab,
@@ -198,6 +208,8 @@ export function useKeyboardShortcuts() {
     handleZoomIn,
     handleZoomOut,
     fitToWindow,
+    stretchToFill,
+    centerImage,
     addTab,
     handleCloseTab,
     activeDocumentId,

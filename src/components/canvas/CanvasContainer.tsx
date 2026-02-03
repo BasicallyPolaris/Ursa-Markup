@@ -1,61 +1,71 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
-import type { RefObject } from 'react';
-import { useDocument } from '../../contexts/DocumentContext';
-import { useCanvasEngine } from '../../contexts/CanvasEngineContext';
-import { useTabManager } from '../../contexts/TabManagerContext';
-import { useDrawing } from '../../contexts/DrawingContext';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useHotkeys } from '../../hooks/useKeyboardShortcuts';
-import { formatHotkey } from '../../services/types';
-import { cn } from '../../lib/utils';
-import type { Point, ViewState } from '../../core/types';
+import { useRef, useEffect, useCallback, useState } from "react";
+import type { RefObject } from "react";
+import { useDocument } from "../../contexts/DocumentContext";
+import { useCanvasEngine } from "../../contexts/CanvasEngineContext";
+import { useTabManager } from "../../contexts/TabManagerContext";
+import { useDrawing } from "../../contexts/DrawingContext";
+import { useSettings } from "../../contexts/SettingsContext";
+import { useHotkeys } from "../../hooks/useKeyboardShortcuts";
+import { formatHotkey } from "../../services/types";
+import { services } from "../../services";
+import { cn } from "../../lib/utils";
+import type { Point, ViewState } from "../../core/types";
 
 interface CanvasContainerProps {
   className?: string;
   containerRef?: RefObject<HTMLDivElement | null>;
 }
 
-export function CanvasContainer({ className, containerRef: externalRef }: CanvasContainerProps) {
+export function CanvasContainer({
+  className,
+  containerRef: externalRef,
+}: CanvasContainerProps) {
   const localRef = useRef<HTMLDivElement>(null);
   const containerRef = externalRef || localRef;
-  const { 
-    document, 
-    strokeHistory, 
+  const {
+    document,
+    strokeHistory,
     ruler,
     startStrokeGroup,
-    startStroke, 
-    addPointToStroke, 
+    startStroke,
+    addPointToStroke,
     endStrokeGroup,
     toggleRuler: _toggleRuler,
     rotateRuler,
     startDragRuler,
     dragRulerTo: dragRuler,
-    endDragRuler
+    endDragRuler,
+    autoCenter: _autoCenter,
+    stretchToFill: _documentStretchToFill,
   } = useDocument();
-  
-  const { 
-    engine, 
-    zoom, 
-    viewOffset, 
-    setZoom: _setZoom, 
+
+  const {
+    engine,
+    zoom,
+    viewOffset,
+    setZoom: _setZoom,
     setViewOffset,
-    fitToWindow: _fitToWindow,
+    fitToWindow,
+    stretchToFill,
+    centerImage: _centerImage,
     zoomAroundPoint,
     canvasSize,
-    setCanvasSize
+    setCanvasSize,
   } = useCanvasEngine();
-  
-  const { /* no methods needed */ } = useTabManager();
-  
+
+  const {
+    /* no methods needed */
+  } = useTabManager();
+
   // Get drawing state from shared context
   const { tool, brush, blendMode } = useDrawing();
-  
+
   // Get settings for debug info display
   const { settings } = useSettings();
-  
+
   // Get hotkeys for dynamic display
   const hotkeys = useHotkeys();
-  
+
   // Local state for drawing
   const [isDrawing, setIsDrawing] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
@@ -63,7 +73,9 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
   const [currentPoint, setCurrentPoint] = useState<Point | null>(null);
   const [isRulerHover, setIsRulerHover] = useState(false);
   const [isRulerDragging, setIsRulerDragging] = useState(false);
-  
+  const [rulerPosition, setRulerPosition] = useState({ x: 0, y: 0, angle: 0 });
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
   // Refs for mutable state during gestures
   const isDrawingRef = useRef(false);
   const isPanningRef = useRef(false);
@@ -71,23 +83,49 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
   const panStartRef = useRef<Point | null>(null);
   const lastPointRef = useRef<Point | null>(null);
   const previewPointsRef = useRef<Point[]>([]);
+  
+  // Ref for debounced auto-copy timer
+  const autoCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Get screen size of container
+  const getScreenSize = useCallback(() => {
+    if (!containerRef.current) return { width: 1920, height: 1080 };
+    const rect = containerRef.current.getBoundingClientRect();
+    return { width: rect.width, height: rect.height };
+  }, [containerRef]);
 
   // Load image when document changes, then replay strokes
   useEffect(() => {
     if (!document?.imageSrc || !engine) return;
-    
+
     engine.loadImage(document.imageSrc).then(() => {
       if (engine.canvasSize.width > 0 && engine.canvasSize.height > 0) {
-        setCanvasSize(engine.canvasSize);
-        document.setCanvasSize(engine.canvasSize);
-        
+        const loadedSize = engine.canvasSize;
+        setCanvasSize(loadedSize);
+        document.setCanvasSize(loadedSize);
+
+        // Apply fit behavior on INITIAL load only (not tab switch)
+        // Use CanvasEngineContext functions that update React state
+        // Track on the Document object since component remounts on tab switch
+        if (!document.hasAppliedInitialFit) {
+          document.hasAppliedInitialFit = true;
+          
+          if (settings.imageOpenBehavior === "fit") {
+            stretchToFill(loadedSize);
+          } else {
+            fitToWindow(loadedSize);
+          }
+        }
+
         // Replay strokes after image is loaded (important for tab switching)
         engine.replayStrokes({
           groups: strokeHistory.groups,
-          currentIndex: strokeHistory.currentIndex
+          currentIndex: strokeHistory.currentIndex,
         });
       }
     });
+    // Note: We intentionally only run this when imageSrc changes, not on settings change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [document?.imageSrc, engine]);
 
   // Replay strokes when history changes (undo/redo or new strokes)
@@ -95,55 +133,67 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
     if (!engine || !document) return;
     // Only replay if image is already loaded (canvas size > 0)
     if (engine.canvasSize.width === 0 || engine.canvasSize.height === 0) return;
-    
+
     engine.replayStrokes({
       groups: strokeHistory.groups,
-      currentIndex: strokeHistory.currentIndex
+      currentIndex: strokeHistory.currentIndex,
     });
   }, [strokeHistory.currentIndex, strokeHistory.groups, engine, document]);
 
-  // Animation loop for rendering
+  // Render when state changes (not continuous animation loop)
   useEffect(() => {
     if (!engine) return;
-    
-    let animationId: number;
-    const render = () => {
-      engine.render(
-        { zoom, viewOffset, canvasSize },
-        ruler,
-        isDrawingRef.current && startPointRef.current
-          ? {
-              tool,
-              startPoint: startPointRef.current!,
-              currentPoint: currentPoint || startPointRef.current!,
-              brush,
-              points: previewPointsRef.current,
-              blendMode
-            }
-          : undefined
-      );
-      animationId = requestAnimationFrame(render);
-    };
-    
-    render();
-    return () => cancelAnimationFrame(animationId);
-  }, [engine, zoom, viewOffset, canvasSize, ruler, tool, brush, blendMode, currentPoint]);
+
+    // Single render call when dependencies change
+    engine.render(
+      { zoom, viewOffset, canvasSize },
+      ruler,
+      isDrawing && startPointRef.current
+        ? {
+            tool,
+            startPoint: startPointRef.current!,
+            currentPoint: currentPoint || startPointRef.current!,
+            brush,
+            points: previewPointsRef.current,
+            blendMode,
+          }
+        : undefined,
+    );
+  }, [
+    engine,
+    zoom,
+    viewOffset,
+    canvasSize,
+    containerSize, // Trigger re-render on container resize
+    ruler,
+    ruler.visible, // Trigger re-render when ruler visibility changes
+    rulerPosition, // Track ruler position changes for re-render during drag
+    tool,
+    brush,
+    blendMode,
+    currentPoint,
+    isDrawing,
+    strokeHistory.currentIndex, // Trigger re-render after undo/redo
+  ]);
 
   // Screen to canvas coordinate conversion (for drawing strokes)
-  const screenToCanvas = useCallback((screenX: number, screenY: number): Point | null => {
-    if (!containerRef.current) return null;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    return {
-      x: (screenX - rect.left) / zoom + viewOffset.x,
-      y: (screenY - rect.top) / zoom + viewOffset.y,
-    };
-  }, [zoom, viewOffset]);
+  const screenToCanvas = useCallback(
+    (screenX: number, screenY: number): Point | null => {
+      if (!containerRef.current) return null;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      return {
+        x: (screenX - rect.left) / zoom + viewOffset.x,
+        y: (screenY - rect.top) / zoom + viewOffset.y,
+      };
+    },
+    [zoom, viewOffset],
+  );
 
   // Get screen point relative to container (for ruler operations)
   const getScreenPoint = useCallback((e: React.MouseEvent): Point | null => {
     if (!containerRef.current) return null;
-    
+
     const rect = containerRef.current.getBoundingClientRect();
     return {
       x: e.clientX - rect.left,
@@ -156,120 +206,171 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
     return { zoom, viewOffset, canvasSize };
   }, [zoom, viewOffset, canvasSize]);
 
-  // Get screen size of container
-  const getScreenSize = useCallback(() => {
-    if (!containerRef.current) return { width: 1920, height: 1080 };
-    const rect = containerRef.current.getBoundingClientRect();
-    return { width: rect.width, height: rect.height };
-  }, []);
-
   // Mouse down handler
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const canvasPoint = screenToCanvas(e.clientX, e.clientY);
-    const screenPoint = getScreenPoint(e);
-    if (!canvasPoint || !screenPoint) return;
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const canvasPoint = screenToCanvas(e.clientX, e.clientY);
+      const screenPoint = getScreenPoint(e);
+      if (!canvasPoint || !screenPoint) return;
 
-    // Pan with middle mouse or Ctrl+left click
-    if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
-      isPanningRef.current = true;
-      panStartRef.current = canvasPoint;
-      setIsPanning(true);
-      return;
-    }
+      // Pan with middle mouse or Ctrl+left click
+      if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
+        isPanningRef.current = true;
+        panStartRef.current = canvasPoint;
+        setIsPanning(true);
+        return;
+      }
 
-    // Get screen size for ruler hit detection
-    const screenSize = getScreenSize();
-    const viewState = getViewState();
+      // Get screen size for ruler hit detection
+      const screenSize = getScreenSize();
+      const viewState = getViewState();
 
-    // Check if clicking on ruler (using screen coordinates)
-    if (ruler.visible && ruler.isPointOnRuler(screenPoint, screenSize)) {
-      startDragRuler(screenPoint);
-      setIsRulerDragging(true);
-      return;
-    }
+      // Check if clicking on ruler (using screen coordinates)
+      if (ruler.visible && ruler.isPointOnRuler(screenPoint, screenSize)) {
+        startDragRuler(screenPoint);
+        setIsRulerDragging(true);
+        return;
+      }
 
-    // Snap start point to ruler if in sticky zone
-    let startDrawPoint = canvasPoint;
-    if (ruler.visible) {
-      const snapInfo = ruler.getSnapInfo(canvasPoint, viewState);
-      if (snapInfo.inStickyZone) {
-        if (tool === 'area') {
-          startDrawPoint = ruler.snapPointToEdge(canvasPoint, snapInfo.snapToFarSide, viewState);
-        } else {
-          startDrawPoint = ruler.snapPoint(canvasPoint, brush.size, snapInfo.snapToFarSide, viewState);
+      // Snap start point to ruler if in sticky zone
+      let startDrawPoint = canvasPoint;
+      if (ruler.visible) {
+        const snapInfo = ruler.getSnapInfo(canvasPoint, viewState);
+        if (snapInfo.inStickyZone) {
+          if (tool === "area") {
+            startDrawPoint = ruler.snapPointToEdge(
+              canvasPoint,
+              snapInfo.snapToFarSide,
+              viewState,
+            );
+          } else {
+            startDrawPoint = ruler.snapPoint(
+              canvasPoint,
+              brush.size,
+              snapInfo.snapToFarSide,
+              viewState,
+            );
+          }
         }
       }
-    }
 
-    // Start drawing (using canvas coordinates)
-    isDrawingRef.current = true;
-    startPointRef.current = startDrawPoint;
-    lastPointRef.current = startDrawPoint;
-    setIsDrawing(true);
-    _setStartPoint(startDrawPoint);
-    previewPointsRef.current = [startDrawPoint];
+      // Start drawing (using canvas coordinates)
+      isDrawingRef.current = true;
+      startPointRef.current = startDrawPoint;
+      lastPointRef.current = startDrawPoint;
+      setIsDrawing(true);
+      _setStartPoint(startDrawPoint);
+      previewPointsRef.current = [startDrawPoint];
 
-    startStrokeGroup();
-    startStroke(tool, brush, startDrawPoint, blendMode);
-  }, [screenToCanvas, getScreenPoint, getScreenSize, getViewState, ruler, tool, brush, blendMode, startStrokeGroup, startStroke, startDragRuler]);
+      startStrokeGroup();
+      startStroke(tool, brush, startDrawPoint, blendMode);
+    },
+    [
+      screenToCanvas,
+      getScreenPoint,
+      getScreenSize,
+      getViewState,
+      ruler,
+      tool,
+      brush,
+      blendMode,
+      startStrokeGroup,
+      startStroke,
+      startDragRuler,
+    ],
+  );
 
   // Mouse move handler
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const canvasPoint = screenToCanvas(e.clientX, e.clientY);
-    const screenPoint = getScreenPoint(e);
-    if (!canvasPoint || !screenPoint) return;
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      const canvasPoint = screenToCanvas(e.clientX, e.clientY);
+      const screenPoint = getScreenPoint(e);
+      if (!canvasPoint || !screenPoint) return;
 
-    // Get screen size for ruler hit detection
-    const screenSize = getScreenSize();
-    const viewState = getViewState();
+      // Get screen size for ruler hit detection
+      const screenSize = getScreenSize();
+      const viewState = getViewState();
 
-    // Check ruler hover (using screen coordinates)
-    if (!isDrawingRef.current && !isPanningRef.current && !ruler.isDragging && !isRulerDragging) {
-      setIsRulerHover(ruler.visible && ruler.isPointOnRuler(screenPoint, screenSize));
-    }
+      // Check ruler hover (using screen coordinates)
+      if (
+        !isDrawingRef.current &&
+        !isPanningRef.current &&
+        !ruler.isDragging &&
+        !isRulerDragging
+      ) {
+        setIsRulerHover(
+          ruler.visible && ruler.isPointOnRuler(screenPoint, screenSize),
+        );
+      }
 
-    // Handle panning
-    if (isPanningRef.current && panStartRef.current) {
-      const deltaX = panStartRef.current.x - canvasPoint.x;
-      const deltaY = panStartRef.current.y - canvasPoint.y;
-      setViewOffset({
-        x: viewOffset.x + deltaX,
-        y: viewOffset.y + deltaY
-      });
-      return;
-    }
+      // Handle panning
+      if (isPanningRef.current && panStartRef.current) {
+        const deltaX = panStartRef.current.x - canvasPoint.x;
+        const deltaY = panStartRef.current.y - canvasPoint.y;
+        setViewOffset({
+          x: viewOffset.x + deltaX,
+          y: viewOffset.y + deltaY,
+        });
+        return;
+      }
 
-    // Handle ruler dragging (using screen coordinates)
-    if (ruler.isDragging || isRulerDragging) {
-      dragRuler(screenPoint);
-      return;
-    }
+      // Handle ruler dragging (using screen coordinates)
+      if (ruler.isDragging || isRulerDragging) {
+        dragRuler(screenPoint);
+        // Force re-render by updating ruler position state
+        setRulerPosition({ x: ruler.x, y: ruler.y, angle: ruler.angle });
+        return;
+      }
 
-    // Handle drawing
-    if (!isDrawingRef.current || !startPointRef.current) return;
+      // Handle drawing
+      if (!isDrawingRef.current || !startPointRef.current) return;
 
-    // Snap to ruler if near (using canvas coordinates for stroke, viewState for ruler conversion)
-    let drawPoint = canvasPoint;
-    if (ruler.visible) {
-      const snapInfo = ruler.getSnapInfo(canvasPoint, viewState);
-      if (snapInfo.inStickyZone) {
-        // Use different snap methods for area tool vs pen/highlighter
-        if (tool === 'area') {
-          // Area tool: snap point directly to ruler edge (no brush offset)
-          drawPoint = ruler.snapPointToEdge(canvasPoint, snapInfo.snapToFarSide, viewState);
-        } else {
-          // Pen/highlighter: snap with brush size offset
-          drawPoint = ruler.snapPoint(canvasPoint, brush.size, snapInfo.snapToFarSide, viewState);
+      // Snap to ruler if near (using canvas coordinates for stroke, viewState for ruler conversion)
+      let drawPoint = canvasPoint;
+      if (ruler.visible) {
+        const snapInfo = ruler.getSnapInfo(canvasPoint, viewState);
+        if (snapInfo.inStickyZone) {
+          // Use different snap methods for area tool vs pen/highlighter
+          if (tool === "area") {
+            // Area tool: snap point directly to ruler edge (no brush offset)
+            drawPoint = ruler.snapPointToEdge(
+              canvasPoint,
+              snapInfo.snapToFarSide,
+              viewState,
+            );
+          } else {
+            // Pen/highlighter: snap with brush size offset
+            drawPoint = ruler.snapPoint(
+              canvasPoint,
+              brush.size,
+              snapInfo.snapToFarSide,
+              viewState,
+            );
+          }
         }
       }
-    }
 
-    setCurrentPoint(canvasPoint);
-    addPointToStroke(drawPoint);
-    previewPointsRef.current = [...previewPointsRef.current, drawPoint];
-    lastPointRef.current = drawPoint;
-  }, [screenToCanvas, getScreenPoint, getScreenSize, getViewState, isPanning, ruler, brush.size, viewOffset, setViewOffset, dragRuler, addPointToStroke, isRulerDragging]);
+      setCurrentPoint(canvasPoint);
+      addPointToStroke(drawPoint);
+      previewPointsRef.current = [...previewPointsRef.current, drawPoint];
+      lastPointRef.current = drawPoint;
+    },
+    [
+      screenToCanvas,
+      getScreenPoint,
+      getScreenSize,
+      getViewState,
+      isPanning,
+      ruler,
+      brush.size,
+      viewOffset,
+      setViewOffset,
+      dragRuler,
+      addPointToStroke,
+      isRulerDragging,
+    ],
+  );
 
   // Mouse up handler
   const handleMouseUp = useCallback(() => {
@@ -298,10 +399,41 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
     _setStartPoint(null);
     setCurrentPoint(null);
     previewPointsRef.current = [];
-    
+
     endStrokeGroup();
     document.markAsChanged();
-  }, [ruler.isDragging, isRulerDragging, endDragRuler, endStrokeGroup, document]);
+
+    // Auto-copy to clipboard if enabled (debounced to avoid lag on rapid strokes)
+    // Cancel any pending auto-copy timer
+    if (autoCopyTimerRef.current) {
+      clearTimeout(autoCopyTimerRef.current);
+      autoCopyTimerRef.current = null;
+    }
+    
+    if (settings.autoCopyOnChange && engine) {
+      // Debounce auto-copy by 500ms to avoid freezing on rapid drawing
+      autoCopyTimerRef.current = setTimeout(() => {
+        // Use requestAnimationFrame to ensure rendering is complete
+        requestAnimationFrame(() => {
+          const canvas = engine.getCombinedCanvas();
+          if (canvas) {
+            services.ioService.copyToClipboard(canvas).catch((err) => {
+              console.error("Auto-copy to clipboard failed:", err);
+            });
+          }
+        });
+        autoCopyTimerRef.current = null;
+      }, 500);
+    }
+  }, [
+    ruler.isDragging,
+    isRulerDragging,
+    endDragRuler,
+    endStrokeGroup,
+    document,
+    settings.autoCopyOnChange,
+    engine,
+  ]);
 
   // Mouse leave handler
   const handleMouseLeave = useCallback(() => {
@@ -322,14 +454,14 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
       _setStartPoint(null);
       setCurrentPoint(null);
       previewPointsRef.current = [];
-      if (tool !== 'area') {
+      if (tool !== "area") {
         endStrokeGroup();
       }
     }
     setIsRulerHover(false);
   }, [ruler.isDragging, isRulerDragging, tool, endDragRuler, endStrokeGroup]);
 
-  // Wheel handler for zoom and ruler rotation
+  // Wheel handler for zoom, panning, and ruler rotation
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -344,29 +476,87 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
 
       if (!isInContainer) return;
 
+      // Scroll speed factor - smaller value = smoother scrolling
+      const scrollSpeed = 0.4;
+      
+      // Note: When Shift is pressed, some browsers swap deltaX and deltaY
+      // We use deltaX when available for more natural horizontal scrolling
+      const deltaY = e.deltaY;
+      const deltaX = e.deltaX;
+
       if (e.ctrlKey) {
+        // Ctrl + Scroll = Zoom
         e.preventDefault();
-        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        const delta = deltaY > 0 ? 0.9 : 1.1;
         const newZoom = Math.max(0.1, Math.min(5, zoom * delta));
         zoomAroundPoint(newZoom, e.clientX, e.clientY, rect);
-      } else if (ruler.visible && !e.shiftKey) {
+      } else if (e.shiftKey) {
+        // Shift + Scroll = Horizontal pan
+        // Some browsers convert Shift+ScrollY to ScrollX, so we check both
         e.preventDefault();
-        const delta = e.deltaY > 0 ? 1 : -1;
+        const scrollDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+        const scrollAmount = scrollDelta * scrollSpeed / zoom;
+        setViewOffset({
+          x: viewOffset.x + scrollAmount,
+          y: viewOffset.y,
+        });
+      } else if (ruler.visible) {
+        // No modifier + Scroll (when ruler visible) = Rotate ruler
+        e.preventDefault();
+        const delta = deltaY > 0 ? 1 : -1;
         rotateRuler(delta);
+      } else {
+        // Normal scroll (no ruler) = Vertical pan
+        e.preventDefault();
+        const scrollAmount = deltaY * scrollSpeed / zoom;
+        setViewOffset({
+          x: viewOffset.x,
+          y: viewOffset.y + scrollAmount,
+        });
       }
     };
 
-    window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
-    return () => window.removeEventListener('wheel', handleWheel, { capture: true });
-  }, [zoom, ruler.visible, zoomAroundPoint, rotateRuler]);
+    window.addEventListener("wheel", handleWheel, {
+      passive: false,
+      capture: true,
+    });
+    return () =>
+      window.removeEventListener("wheel", handleWheel, { capture: true });
+  }, [zoom, viewOffset, ruler.visible, zoomAroundPoint, rotateRuler, setViewOffset]);
+
+  // Cleanup auto-copy timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoCopyTimerRef.current) {
+        clearTimeout(autoCopyTimerRef.current);
+        autoCopyTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Handle container resize to trigger re-render
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setContainerSize({ width, height });
+      }
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, [containerRef]);
 
   // Get cursor style
   const getCursor = () => {
-    if (isPanning) return 'grabbing';
-    if (ruler.isDragging || isRulerDragging) return 'grabbing';
-    if (isRulerHover) return 'grab';
-    if (isDrawing) return 'crosshair';
-    return 'crosshair';
+    if (isPanning) return "grabbing";
+    if (ruler.isDragging || isRulerDragging) return "grabbing";
+    if (isRulerHover) return "grab";
+    if (isDrawing) return "crosshair";
+    return "crosshair";
   };
 
   // Empty state when no image
@@ -375,18 +565,18 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
       <div
         ref={containerRef}
         className={cn(
-          'relative flex items-center justify-center select-none bg-canvas-bg flex-1 min-h-0',
-          className
+          "relative flex items-center justify-center select-none bg-canvas-bg flex-1 min-h-0",
+          className,
         )}
         style={{
-          width: '100%',
-          height: '100%',
+          width: "100%",
+          height: "100%",
           backgroundImage: `linear-gradient(45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%),
                            linear-gradient(-45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%),
                            linear-gradient(45deg, transparent 75%, hsl(var(--canvas-pattern)) 75%),
                            linear-gradient(-45deg, transparent 75%, hsl(var(--canvas-pattern)) 75%)`,
-          backgroundSize: '20px 20px',
-          backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+          backgroundSize: "20px 20px",
+          backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
         }}
       >
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -395,7 +585,7 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
               OmniMark
             </p>
             <p className="text-text-primary/60 text-sm mb-1">
-              Press {formatHotkey(hotkeys['file.open'])} to open an image
+              Press {formatHotkey(hotkeys["file.open"])} to open an image
             </p>
             <p className="text-text-primary/40 text-xs">
               Ctrl+Click to pan • Ctrl+Scroll to zoom
@@ -409,17 +599,20 @@ export function CanvasContainer({ className, containerRef: externalRef }: Canvas
   return (
     <div
       ref={containerRef}
-      className={cn('relative overflow-hidden bg-canvas-bg flex-1 min-h-0', className)}
+      className={cn(
+        "relative overflow-hidden bg-canvas-bg flex-1 min-h-0",
+        className,
+      )}
       style={{
-        width: '100%',
-        height: '100%',
+        width: "100%",
+        height: "100%",
         cursor: getCursor(),
         backgroundImage: `linear-gradient(45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%),
                          linear-gradient(-45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%),
                          linear-gradient(45deg, transparent 75%, hsl(var(--canvas-pattern)) 75%),
                          linear-gradient(-45deg, transparent 75%, hsl(var(--canvas-pattern)) 75%)`,
-        backgroundSize: '20px 20px',
-        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+        backgroundSize: "20px 20px",
+        backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}

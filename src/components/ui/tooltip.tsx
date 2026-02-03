@@ -36,17 +36,14 @@ function TooltipTrigger({
   children,
   ...props
 }: React.ComponentProps<typeof BaseTooltip.Trigger> & { asChild?: boolean }) {
-  // When asChild is true, wrap children in an inline-flex span
-  // This preserves the child's event handlers while providing a proper anchor for positioning
-  if (asChild) {
+  // When asChild is true, use render prop to avoid nested buttons
+  if (asChild && React.isValidElement(children)) {
     return (
       <BaseTooltip.Trigger
         data-slot="tooltip-trigger"
-        className={cn("inline-flex", className)}
+        render={children as React.ReactElement<Record<string, unknown>>}
         {...props}
-      >
-        {children}
-      </BaseTooltip.Trigger>
+      />
     )
   }
 

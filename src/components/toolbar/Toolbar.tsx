@@ -1,125 +1,178 @@
-import { useCallback, useState, useEffect } from 'react';
-import { Pencil, Highlighter, Square, Ruler, Undo2, Redo2, FolderOpen, Save, Copy, Maximize, Minus, Plus, Settings, Layers, Blend } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Slider } from '../ui/slider';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
-import { useSettings } from '../../contexts/SettingsContext';
-import { useTabManager } from '../../contexts/TabManagerContext';
-import { useDocument } from '../../contexts/DocumentContext';
-import { useCanvasEngine } from '../../contexts/CanvasEngineContext';
-import { useDrawing } from '../../contexts/DrawingContext';
-import { useHotkeys, useFileActions } from '../../hooks/useKeyboardShortcuts';
-import { formatHotkey } from '../../services/types';
-import type { Tool, BrushSettings } from '../../core/types';
-import { cn } from '../../lib/utils';
+import { useCallback, useState, useEffect } from "react";
+import {
+  Pencil,
+  Highlighter,
+  Square,
+  Ruler,
+  Undo2,
+  Redo2,
+  FolderOpen,
+  Save,
+  Copy,
+  Maximize,
+  Expand,
+  Minus,
+  Plus,
+  Settings,
+  Layers,
+  Blend,
+} from "lucide-react";
+import { Button } from "../ui/button";
+import { Slider } from "../ui/slider";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "../ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
+import { useSettings } from "../../contexts/SettingsContext";
+import { useTabManager } from "../../contexts/TabManagerContext";
+import { useDocument } from "../../contexts/DocumentContext";
+import { useCanvasEngine } from "../../contexts/CanvasEngineContext";
+import { useDrawing } from "../../contexts/DrawingContext";
+import { useHotkeys, useFileActions } from "../../hooks/useKeyboardShortcuts";
+import { formatHotkey } from "../../services/types";
+import type { Tool, BrushSettings } from "../../core/types";
+import { cn } from "../../lib/utils";
 
 export function Toolbar() {
   // Get contexts
   const { settings, openSettings } = useSettings();
   const { activeDocument, documents: _documents } = useTabManager();
   const { strokeHistory, ruler, toggleRuler, undo, redo } = useDocument();
-  const { zoom, setZoom, fitToWindow } = useCanvasEngine();
+  const { zoom, setZoom, stretchToFill, centerImage } = useCanvasEngine();
   const hotkeys = useHotkeys();
   const { handleOpen, handleSave, handleCopy } = useFileActions();
-  
+
   // Use shared drawing state from context
-  const { tool, setTool, brush, blendMode, setBlendMode, updateBrush } = useDrawing();
-  
+  const { tool, setTool, brush, blendMode, setBlendMode, updateBrush } =
+    useDrawing();
+
   // Use colorPresets from settings (consistent with hotkeys)
   const colorPresets = settings.colorPresets;
   const hasImage = activeDocument?.hasImage() ?? false;
-  const canUndo = strokeHistory.canUndo();
-  const canRedo = strokeHistory.canRedo();
-  
+  const canUndo = strokeHistory.canUndo;
+  const canRedo = strokeHistory.canRedo;
+
   // Zoom input state
-  const [zoomInputValue, setZoomInputValue] = useState(Math.round(zoom * 100).toString() + '%');
+  const [zoomInputValue, setZoomInputValue] = useState(
+    Math.round(zoom * 100).toString() + "%",
+  );
   const [isEditingZoom, setIsEditingZoom] = useState(false);
-  
+
   // Sync zoom input value when zoom changes externally
   useEffect(() => {
     if (!isEditingZoom) {
-      setZoomInputValue(Math.round(zoom * 100).toString() + '%');
+      setZoomInputValue(Math.round(zoom * 100).toString() + "%");
     }
   }, [zoom, isEditingZoom]);
-  
+
   // Handlers
-  const handleToolChange = useCallback((newTool: Tool) => {
-    setTool(newTool);
-    // Update brush and blend mode based on tool
-    if (newTool === 'pen') {
-      updateBrush({
-        size: settings.defaultPenSize,
-        opacity: settings.defaultPenOpacity,
-      });
-    } else if (newTool === 'highlighter') {
-      updateBrush({
-        size: settings.defaultMarkerSize,
-        opacity: settings.defaultMarkerOpacity,
-        borderRadius: settings.defaultMarkerBorderRadius,
-      });
-      setBlendMode(settings.defaultMarkerBlendMode);
-    } else if (newTool === 'area') {
-      updateBrush({
-        opacity: settings.defaultAreaOpacity,
-        borderRadius: settings.defaultAreaBorderRadius,
-        borderWidth: settings.defaultAreaBorderWidth,
-      });
-      setBlendMode(settings.defaultAreaBlendMode);
-    }
-  }, [settings, setTool, setBlendMode, updateBrush]);
-  
-  const handleBrushChange = useCallback((changes: Partial<BrushSettings>) => {
-    updateBrush(changes);
-  }, [updateBrush]);
-  
+  const handleToolChange = useCallback(
+    (newTool: Tool) => {
+      setTool(newTool);
+      // Update brush and blend mode based on tool
+      if (newTool === "pen") {
+        updateBrush({
+          size: settings.defaultPenSize,
+          opacity: settings.defaultPenOpacity,
+        });
+      } else if (newTool === "highlighter") {
+        updateBrush({
+          size: settings.defaultMarkerSize,
+          opacity: settings.defaultMarkerOpacity,
+          borderRadius: settings.defaultMarkerBorderRadius,
+        });
+        setBlendMode(settings.defaultMarkerBlendMode);
+      } else if (newTool === "area") {
+        updateBrush({
+          opacity: settings.defaultAreaOpacity,
+          borderRadius: settings.defaultAreaBorderRadius,
+          borderWidth: settings.defaultAreaBorderWidth,
+        });
+        setBlendMode(settings.defaultAreaBlendMode);
+      }
+    },
+    [settings, setTool, setBlendMode, updateBrush],
+  );
+
+  const handleBrushChange = useCallback(
+    (changes: Partial<BrushSettings>) => {
+      updateBrush(changes);
+    },
+    [updateBrush],
+  );
+
   const handleSettings = useCallback(() => {
     openSettings();
   }, [openSettings]);
-  
-  const handleZoomChange = useCallback((newZoom: number) => {
-    setZoom(newZoom);
-  }, [setZoom]);
-  
-  const handleZoomInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setZoomInputValue(e.target.value);
-  }, []);
-  
+
+  const handleZoomChange = useCallback(
+    (newZoom: number) => {
+      setZoom(newZoom);
+    },
+    [setZoom],
+  );
+
+  const handleZoomInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setZoomInputValue(e.target.value);
+    },
+    [],
+  );
+
   const handleZoomInputBlur = useCallback(() => {
     setIsEditingZoom(false);
     // Remove % sign if present for parsing
-    const cleanValue = zoomInputValue.replace('%', '').trim();
+    const cleanValue = zoomInputValue.replace("%", "").trim();
     const value = parseInt(cleanValue, 10);
     if (!isNaN(value) && value >= 10 && value <= 500) {
       setZoom(value / 100);
-      setZoomInputValue(value.toString() + '%');
+      setZoomInputValue(value.toString() + "%");
     } else {
       // Reset to current zoom if invalid
-      setZoomInputValue(Math.round(zoom * 100).toString() + '%');
+      setZoomInputValue(Math.round(zoom * 100).toString() + "%");
     }
   }, [zoomInputValue, zoom, setZoom]);
-  
-  const handleZoomInputKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      (e.target as HTMLInputElement).blur();
-    } else if (e.key === 'Escape') {
-      setZoomInputValue(Math.round(zoom * 100).toString() + '%');
-      setIsEditingZoom(false);
-      (e.target as HTMLInputElement).blur();
-    }
-  }, [zoom]);
-  
+
+  const handleZoomInputKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        (e.target as HTMLInputElement).blur();
+      } else if (e.key === "Escape") {
+        setZoomInputValue(Math.round(zoom * 100).toString() + "%");
+        setIsEditingZoom(false);
+        (e.target as HTMLInputElement).blur();
+      }
+    },
+    [zoom],
+  );
+
   const handleZoomInputFocus = useCallback(() => {
     setIsEditingZoom(true);
   }, []);
-  
-  const handleFitToWindow = useCallback(() => {
-    fitToWindow();
-  }, [fitToWindow]);
-  
-  const handleBlendModeChange = useCallback((mode: 'normal' | 'multiply') => {
-    setBlendMode(mode);
-  }, [setBlendMode]);
+
+  const handleStretchToFill = useCallback(() => {
+    stretchToFill();
+  }, [stretchToFill]);
+
+  const handleCenterImage = useCallback(() => {
+    centerImage();
+  }, [centerImage]);
+
+  const handleBlendModeChange = useCallback(
+    (mode: "normal" | "multiply") => {
+      setBlendMode(mode);
+    },
+    [setBlendMode],
+  );
 
   const handleUndo = useCallback(() => {
     undo();
@@ -132,7 +185,7 @@ export function Toolbar() {
   const handleToggleRuler = useCallback(() => {
     toggleRuler();
   }, [toggleRuler]);
-  
+
   return (
     <TooltipProvider delayDuration={0}>
       <div className="flex flex-col select-none">
@@ -141,9 +194,9 @@ export function Toolbar() {
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleOpen}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                 >
@@ -151,14 +204,16 @@ export function Toolbar() {
                   <span className="text-sm">Open</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{formatHotkey(hotkeys['file.open'])}</TooltipContent>
+              <TooltipContent>
+                {formatHotkey(hotkeys["file.open"])}
+              </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleSave}
                   disabled={!hasImage}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
@@ -167,14 +222,16 @@ export function Toolbar() {
                   <span className="text-sm">Save</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{formatHotkey(hotkeys['file.save'])}</TooltipContent>
+              <TooltipContent>
+                {formatHotkey(hotkeys["file.save"])}
+              </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={handleCopy}
                   disabled={!hasImage}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
@@ -183,7 +240,9 @@ export function Toolbar() {
                   <span className="text-sm">Copy</span>
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>{formatHotkey(hotkeys['file.copy'])}</TooltipContent>
+              <TooltipContent>
+                {formatHotkey(hotkeys["file.copy"])}
+              </TooltipContent>
             </Tooltip>
           </div>
 
@@ -201,7 +260,9 @@ export function Toolbar() {
                   <Undo2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Undo ({formatHotkey(hotkeys['edit.undo'])})</TooltipContent>
+              <TooltipContent>
+                Undo ({formatHotkey(hotkeys["edit.undo"])})
+              </TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -216,7 +277,9 @@ export function Toolbar() {
                   <Redo2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Redo ({formatHotkey(hotkeys['edit.redo'])})</TooltipContent>
+              <TooltipContent>
+                Redo ({formatHotkey(hotkeys["edit.redo"])})
+              </TooltipContent>
             </Tooltip>
 
             {/* Divider */}
@@ -246,58 +309,64 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant={tool === 'pen' ? 'secondary' : 'ghost'}
+                  variant={tool === "pen" ? "secondary" : "ghost"}
                   size="icon"
-                  onClick={() => handleToolChange('pen')}
+                  onClick={() => handleToolChange("pen")}
                   className={cn(
-                    'h-8 w-8 border',
-                    tool === 'pen' 
-                      ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm' 
-                      : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
+                    "h-8 w-8 border",
+                    tool === "pen"
+                      ? "bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm hover:bg-surface-bg-hover"
+                      : "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent",
                   )}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Pen ({formatHotkey(hotkeys['tool.pen'])})</TooltipContent>
+              <TooltipContent>
+                Pen ({formatHotkey(hotkeys["tool.pen"])})
+              </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant={tool === 'highlighter' ? 'secondary' : 'ghost'}
+                  variant={tool === "highlighter" ? "secondary" : "ghost"}
                   size="icon"
-                  onClick={() => handleToolChange('highlighter')}
+                  onClick={() => handleToolChange("highlighter")}
                   className={cn(
-                    'h-8 w-8 border',
-                    tool === 'highlighter' 
-                      ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm' 
-                      : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
+                    "h-8 w-8 border",
+                    tool === "highlighter"
+                      ? "bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm hover:bg-surface-bg-hover"
+                      : "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent",
                   )}
                 >
                   <Highlighter className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Marker ({formatHotkey(hotkeys['tool.marker'])})</TooltipContent>
+              <TooltipContent>
+                Marker ({formatHotkey(hotkeys["tool.marker"])})
+              </TooltipContent>
             </Tooltip>
 
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant={tool === 'area' ? 'secondary' : 'ghost'}
+                  variant={tool === "area" ? "secondary" : "ghost"}
                   size="icon"
-                  onClick={() => handleToolChange('area')}
+                  onClick={() => handleToolChange("area")}
                   className={cn(
-                    'h-8 w-8 border',
-                    tool === 'area' 
-                      ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm' 
-                      : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
+                    "h-8 w-8 border",
+                    tool === "area"
+                      ? "bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm hover:bg-surface-bg-hover"
+                      : "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent",
                   )}
                 >
                   <Square className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Area ({formatHotkey(hotkeys['tool.area'])})</TooltipContent>
+              <TooltipContent>
+                Area ({formatHotkey(hotkeys["tool.area"])})
+              </TooltipContent>
             </Tooltip>
           </div>
 
@@ -311,18 +380,27 @@ export function Toolbar() {
                   <button
                     onClick={() => handleBrushChange({ color })}
                     className={cn(
-                      'w-6 h-6 rounded-full transition-all',
+                      "w-6 h-6 rounded-full transition-all",
                       brush.color === color
-                        ? 'ring-2 ring-text-primary/60 ring-offset-2 ring-offset-toolbar-bg-secondary scale-110'
-                        : 'hover:scale-105 hover:ring-2 hover:ring-text-primary/30'
+                        ? "ring-2 ring-text-primary/60 ring-offset-2 ring-offset-toolbar-bg-secondary scale-110"
+                        : "hover:scale-105 hover:ring-2 hover:ring-text-primary/30",
                     )}
-                    style={{ 
+                    style={{
                       backgroundColor: color,
-                      boxShadow: brush.color === color ? '0 2px 8px rgba(0,0,0,0.3)' : 'none'
+                      boxShadow:
+                        brush.color === color
+                          ? "0 2px 8px rgba(0,0,0,0.3)"
+                          : "none",
                     }}
                   />
                 </TooltipTrigger>
-                <TooltipContent>{color} ({formatHotkey(hotkeys[`color.${index + 1}` as keyof typeof hotkeys])})</TooltipContent>
+                <TooltipContent>
+                  {color} (
+                  {formatHotkey(
+                    hotkeys[`color.${index + 1}` as keyof typeof hotkeys],
+                  )}
+                  )
+                </TooltipContent>
               </Tooltip>
             ))}
           </div>
@@ -332,18 +410,22 @@ export function Toolbar() {
           {/* Size & Opacity Controls */}
           <div className="flex items-center gap-4">
             {/* Size Slider - hidden for area tool */}
-            {tool !== 'area' && (
+            {tool !== "area" && (
               <div className="flex flex-col gap-1 w-24">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Size</span>
-                  <span className="text-xs text-text-secondary font-mono">{brush.size}px</span>
+                  <span className="text-xs text-text-secondary font-mono">
+                    {brush.size}px
+                  </span>
                 </div>
                 <Slider
                   value={[brush.size]}
                   min={1}
-                  max={tool === 'highlighter' ? 40 : 20}
+                  max={tool === "highlighter" ? 40 : 20}
                   step={1}
-                  onValueChange={([value]) => handleBrushChange({ size: value })}
+                  onValueChange={([value]) =>
+                    handleBrushChange({ size: value })
+                  }
                 />
               </div>
             )}
@@ -352,41 +434,51 @@ export function Toolbar() {
             <div className="flex flex-col gap-1 w-24">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-text-muted">Opacity</span>
-                <span className="text-xs text-text-secondary font-mono">{Math.round(brush.opacity * 100)}%</span>
+                <span className="text-xs text-text-secondary font-mono">
+                  {Math.round(brush.opacity * 100)}%
+                </span>
               </div>
               <Slider
                 value={[brush.opacity * 100]}
                 min={10}
                 max={100}
                 step={5}
-                onValueChange={([value]) => handleBrushChange({ opacity: value / 100 })}
+                onValueChange={([value]) =>
+                  handleBrushChange({ opacity: value / 100 })
+                }
               />
             </div>
 
             {/* Border Radius - for area only (marker uses smooth curves now) */}
-            {tool === 'area' && (
+            {tool === "area" && (
               <div className="flex flex-col gap-1 w-24">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Radius</span>
-                  <span className="text-xs text-text-secondary font-mono">{brush.borderRadius || 0}px</span>
+                  <span className="text-xs text-text-secondary font-mono">
+                    {brush.borderRadius || 0}px
+                  </span>
                 </div>
                 <Slider
                   value={[brush.borderRadius || 0]}
                   min={0}
                   max={50}
                   step={1}
-                  onValueChange={([value]) => handleBrushChange({ borderRadius: value })}
+                  onValueChange={([value]) =>
+                    handleBrushChange({ borderRadius: value })
+                  }
                 />
               </div>
             )}
 
             {/* Area Border Width Slider - 0 means no border */}
-            {tool === 'area' && (
+            {tool === "area" && (
               <div className="flex flex-col gap-1 w-24">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Border</span>
                   <span className="text-xs text-text-secondary font-mono">
-                    {(brush.borderWidth || 0) === 0 ? 'Off' : `${brush.borderWidth}px`}
+                    {(brush.borderWidth || 0) === 0
+                      ? "Off"
+                      : `${brush.borderWidth}px`}
                   </span>
                 </div>
                 <Slider
@@ -394,16 +486,16 @@ export function Toolbar() {
                   min={0}
                   max={10}
                   step={1}
-                  onValueChange={([value]) => handleBrushChange({ borderWidth: value })}
+                  onValueChange={([value]) =>
+                    handleBrushChange({ borderWidth: value })
+                  }
                 />
               </div>
             )}
 
-
-
             {/* Brush Preview */}
             <div className="flex items-center justify-center w-10 h-10 bg-surface-bg rounded-lg border border-toolbar-border">
-              {tool === 'highlighter' ? (
+              {tool === "highlighter" ? (
                 <div
                   className="bg-current"
                   style={{
@@ -413,7 +505,7 @@ export function Toolbar() {
                     opacity: brush.opacity,
                   }}
                 />
-              ) : tool === 'area' ? (
+              ) : tool === "area" ? (
                 <div
                   style={{
                     width: 24,
@@ -421,7 +513,10 @@ export function Toolbar() {
                     backgroundColor: brush.color,
                     opacity: brush.opacity,
                     borderRadius: brush.borderRadius || 0,
-                    border: (brush.borderWidth || 0) > 0 ? `${Math.min(3, brush.borderWidth || 0)}px solid ${brush.color}` : 'none',
+                    border:
+                      (brush.borderWidth || 0) > 0
+                        ? `${Math.min(3, brush.borderWidth || 0)}px solid ${brush.color}`
+                        : "none",
                   }}
                 />
               ) : (
@@ -441,15 +536,17 @@ export function Toolbar() {
           <div className="w-px h-8 bg-surface-bg" />
 
           {/* Blend Mode Select - shown for drawing tools */}
-          {(tool === 'pen' || tool === 'highlighter' || tool === 'area') && (
-            <Select 
-              value={blendMode} 
-              onValueChange={(value) => handleBlendModeChange(value as 'normal' | 'multiply')}
+          {(tool === "pen" || tool === "highlighter" || tool === "area") && (
+            <Select
+              value={blendMode}
+              onValueChange={(value) =>
+                handleBlendModeChange(value as "normal" | "multiply")
+              }
             >
               <SelectTrigger className="w-[110px]">
                 <SelectValue>
                   <span className="flex items-center gap-1.5">
-                    {blendMode === 'normal' ? (
+                    {blendMode === "normal" ? (
                       <>
                         <Layers className="h-3 w-3" />
                         Normal
@@ -486,21 +583,21 @@ export function Toolbar() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={ruler.visible ? 'secondary' : 'ghost'}
+                variant={ruler.visible ? "secondary" : "ghost"}
                 size="icon"
                 onClick={handleToggleRuler}
                 className={cn(
-                  'h-8 w-8 border',
-                  ruler.visible 
-                    ? 'bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm' 
-                    : 'text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent'
+                  "h-8 w-8 border",
+                  ruler.visible
+                    ? "bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm hover:bg-surface-bg-hover"
+                    : "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent",
                 )}
               >
                 <Ruler className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              Ruler ({formatHotkey(hotkeys['nav.ruler'])})
+              Ruler ({formatHotkey(hotkeys["nav.ruler"])})
               {ruler.visible && ` • ${Math.round(ruler.angle % 360)}°`}
             </TooltipContent>
           </Tooltip>
@@ -520,7 +617,9 @@ export function Toolbar() {
                   <Minus className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Zoom Out ({formatHotkey(hotkeys['nav.zoomOut'])})</TooltipContent>
+              <TooltipContent>
+                Zoom Out ({formatHotkey(hotkeys["nav.zoomOut"])})
+              </TooltipContent>
             </Tooltip>
 
             <input
@@ -545,7 +644,9 @@ export function Toolbar() {
                   <Plus className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Zoom In ({formatHotkey(hotkeys['nav.zoomIn'])})</TooltipContent>
+              <TooltipContent>
+                Zoom In ({formatHotkey(hotkeys["nav.zoomIn"])})
+              </TooltipContent>
             </Tooltip>
 
             <div className="w-px h-4 bg-text-secondary/20 mx-1" />
@@ -555,13 +656,31 @@ export function Toolbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={handleFitToWindow}
+                  onClick={handleStretchToFill}
+                  className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
+                >
+                  <Expand className="h-3 w-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                Fit to Canvas ({formatHotkey(hotkeys["nav.stretchToFill"])})
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleCenterImage}
                   className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
                 >
                   <Maximize className="h-3 w-3" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Fit to Window ({formatHotkey(hotkeys['nav.fitToWindow'])})</TooltipContent>
+              <TooltipContent>
+                Center Canvas ({formatHotkey(hotkeys["nav.centerImage"])})
+              </TooltipContent>
             </Tooltip>
           </div>
         </div>

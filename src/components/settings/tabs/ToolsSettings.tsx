@@ -1,35 +1,43 @@
-import { Pencil, Highlighter, Square } from "lucide-react"
-import { Slider } from "../../ui/slider"
-import { ToggleButtonGroup } from "../components/ToggleButtonGroup"
-import { SettingsSection, SettingsSliderRow, SettingsRow, SettingsGroup } from "../components/SettingsSection"
-import type { AppSettings } from "../../../services/types"
+import { Pencil, Highlighter, Square } from "lucide-react";
+import { Slider } from "../../ui/slider";
+import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
+import {
+  SettingsSection,
+  SettingsSliderRow,
+  SettingsRow,
+  SettingsGroup,
+} from "../components/SettingsSection";
+import type { AppSettings } from "../../../services/types";
 
 interface ToolsSettingsProps {
-  settings: AppSettings
-  updateDraft: (updates: Partial<AppSettings>) => void
+  settings: AppSettings;
+  updateDraft: (updates: Partial<AppSettings>) => void;
 }
 
 export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
   const modeOptions = [
     { value: "normal" as const, label: "Normal" },
     { value: "composition" as const, label: "Composition" },
-  ]
+  ];
 
   const blendModeOptions = [
     { value: "normal" as const, label: "Normal" },
     { value: "multiply" as const, label: "Multiply" },
-  ]
+  ];
 
   return (
     <div className="space-y-5">
-
       {/* Pen Settings */}
-      <SettingsSection 
-        title="Pen Tool Defaults" 
+      <SettingsSection
+        title="Pen Tool Defaults"
         description="Freehand drawing with solid strokes"
         icon={<Pencil className="w-4 h-4" />}
       >
-        <SettingsSliderRow label="Default Size" value={settings.defaultPenSize} unit="px">
+        <SettingsSliderRow
+          label="Default Size"
+          value={settings.defaultPenSize}
+          unit="px"
+        >
           <Slider
             value={[settings.defaultPenSize]}
             onValueChange={([value]) => updateDraft({ defaultPenSize: value })}
@@ -47,10 +55,16 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         icon={<Highlighter className="w-4 h-4" />}
       >
         <SettingsGroup title="Appearance">
-          <SettingsSliderRow label="Default Size" value={settings.defaultMarkerSize} unit="px">
+          <SettingsSliderRow
+            label="Default Size"
+            value={settings.defaultMarkerSize}
+            unit="px"
+          >
             <Slider
               value={[settings.defaultMarkerSize]}
-              onValueChange={([value]) => updateDraft({ defaultMarkerSize: value })}
+              onValueChange={([value]) =>
+                updateDraft({ defaultMarkerSize: value })
+              }
               min={5}
               max={50}
               step={1}
@@ -64,7 +78,9 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
           >
             <Slider
               value={[settings.defaultMarkerOpacity * 100]}
-              onValueChange={([value]) => updateDraft({ defaultMarkerOpacity: value / 100 })}
+              onValueChange={([value]) =>
+                updateDraft({ defaultMarkerOpacity: value / 100 })
+              }
               min={10}
               max={100}
               step={5}
@@ -78,7 +94,9 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
           >
             <Slider
               value={[settings.defaultMarkerBorderRadius]}
-              onValueChange={([value]) => updateDraft({ defaultMarkerBorderRadius: value })}
+              onValueChange={([value]) =>
+                updateDraft({ defaultMarkerBorderRadius: value })
+              }
               min={0}
               max={20}
               step={1}
@@ -88,7 +106,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
 
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Blending">
-            <SettingsRow 
+            <SettingsRow
               label="Default Mode"
               description="Composition preserves text visibility"
             >
@@ -100,14 +118,16 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
               />
             </SettingsRow>
 
-            <SettingsRow 
+            <SettingsRow
               label="Default Blend"
               description="How colors mix with the image"
             >
               <ToggleButtonGroup
                 options={blendModeOptions}
                 value={settings.defaultMarkerBlendMode}
-                onChange={(value) => updateDraft({ defaultMarkerBlendMode: value })}
+                onChange={(value) =>
+                  updateDraft({ defaultMarkerBlendMode: value })
+                }
                 className="w-40"
               />
             </SettingsRow>
@@ -129,7 +149,9 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
           >
             <Slider
               value={[settings.defaultAreaOpacity * 100]}
-              onValueChange={([value]) => updateDraft({ defaultAreaOpacity: value / 100 })}
+              onValueChange={([value]) =>
+                updateDraft({ defaultAreaOpacity: value / 100 })
+              }
               min={10}
               max={100}
               step={5}
@@ -143,7 +165,9 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
           >
             <Slider
               value={[settings.defaultAreaBorderRadius]}
-              onValueChange={([value]) => updateDraft({ defaultAreaBorderRadius: value })}
+              onValueChange={([value]) =>
+                updateDraft({ defaultAreaBorderRadius: value })
+              }
               min={0}
               max={50}
               step={1}
@@ -156,23 +180,27 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
             <SettingsSliderRow
               label="Border Width"
               value={settings.defaultAreaBorderWidth}
-              unit={settings.defaultAreaBorderWidth === 0 ? '' : 'px'}
+              unit={settings.defaultAreaBorderWidth === 0 ? "" : "px"}
             >
               <Slider
                 value={[settings.defaultAreaBorderWidth]}
-                onValueChange={([value]) => updateDraft({ defaultAreaBorderWidth: value })}
+                onValueChange={([value]) =>
+                  updateDraft({ defaultAreaBorderWidth: value })
+                }
                 min={0}
                 max={10}
                 step={1}
               />
             </SettingsSliderRow>
-            <p className="text-xs text-text-muted -mt-1">Set to 0 for no border</p>
+            <p className="text-xs text-text-muted -mt-1">
+              Set to 0 for no border
+            </p>
           </SettingsGroup>
         </div>
 
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Blending">
-            <SettingsRow 
+            <SettingsRow
               label="Default Mode"
               description="Composition preserves text visibility"
             >
@@ -184,14 +212,16 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
               />
             </SettingsRow>
 
-            <SettingsRow 
+            <SettingsRow
               label="Default Blend"
               description="How colors mix with the image"
             >
               <ToggleButtonGroup
                 options={blendModeOptions}
                 value={settings.defaultAreaBlendMode}
-                onChange={(value) => updateDraft({ defaultAreaBlendMode: value })}
+                onChange={(value) =>
+                  updateDraft({ defaultAreaBlendMode: value })
+                }
                 className="w-40"
               />
             </SettingsRow>
@@ -199,5 +229,5 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         </div>
       </SettingsSection>
     </div>
-  )
+  );
 }

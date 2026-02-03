@@ -1,19 +1,19 @@
-import { useRef, useEffect, RefObject } from 'react';
-import { 
-  SettingsProvider, 
+import { useRef, useEffect, RefObject } from "react";
+import {
+  SettingsProvider,
   ThemeProvider,
   TabManagerProvider,
   DocumentProvider,
   CanvasEngineProvider,
   DrawingProvider,
-  useTabManager
-} from './contexts';
-import { useKeyboardShortcuts, useWindowTitle } from './hooks';
-import { services } from './services';
-import { Toolbar } from './components/toolbar/Toolbar';
-import { TabBar } from './components/tabs/TabBar';
-import { CloseTabDialog } from './components/tabs/CloseTabDialog';
-import { CanvasContainer } from './components/canvas/CanvasContainer';
+  useTabManager,
+} from "./contexts";
+import { useKeyboardShortcuts, useWindowTitle } from "./hooks";
+import { services } from "./services";
+import { Toolbar } from "./components/toolbar/Toolbar";
+import { TabBar } from "./components/tabs/TabBar";
+import { CloseTabDialog } from "./components/tabs/CloseTabDialog";
+import { CanvasContainer } from "./components/canvas/CanvasContainer";
 
 interface AppContentProps {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -24,7 +24,11 @@ interface AppContentProps {
  * DocumentContent - Component that has access to document and canvas contexts
  * Only renders when a document is active
  */
-function DocumentContentInner({ canvasContainerRef }: { canvasContainerRef: RefObject<HTMLDivElement | null> }) {
+function DocumentContentInner({
+  canvasContainerRef,
+}: {
+  canvasContainerRef: RefObject<HTMLDivElement | null>;
+}) {
   useKeyboardShortcuts();
   useWindowTitle();
 
@@ -38,7 +42,11 @@ function DocumentContentInner({ canvasContainerRef }: { canvasContainerRef: RefO
   );
 }
 
-function DocumentContent({ canvasContainerRef }: { canvasContainerRef: RefObject<HTMLDivElement | null> }) {
+function DocumentContent({
+  canvasContainerRef,
+}: {
+  canvasContainerRef: RefObject<HTMLDivElement | null>;
+}) {
   return (
     <DrawingProvider>
       <DocumentContentInner canvasContainerRef={canvasContainerRef} />
@@ -51,26 +59,30 @@ function DocumentContent({ canvasContainerRef }: { canvasContainerRef: RefObject
  */
 function GlobalKeyboardShortcuts() {
   const { addTab, activeDocumentId, documents, closeTab } = useTabManager();
-  
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
-          case 'o':
+          case "o":
             e.preventDefault();
-            services.ioService.openFile().then(result => {
+            services.ioService.openFile().then((result) => {
               if (result) {
                 const blob = new Blob([result.fileData]);
                 const url = URL.createObjectURL(blob);
-                services.tabManager.createDocument(result.filePath, undefined, url);
+                services.tabManager.createDocument(
+                  result.filePath,
+                  undefined,
+                  url,
+                );
               }
             });
             break;
-          case 't':
+          case "t":
             e.preventDefault();
             addTab();
             break;
-          case 'w':
+          case "w":
             if (documents.length > 1 && activeDocumentId) {
               e.preventDefault();
               closeTab(activeDocumentId);
@@ -80,10 +92,10 @@ function GlobalKeyboardShortcuts() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [addTab, activeDocumentId, documents.length, closeTab]);
-  
+
   return null;
 }
 
@@ -91,7 +103,11 @@ function GlobalKeyboardShortcuts() {
  * EmptyStateContent - Component shown when no document is open
  * Only uses contexts that are always available
  */
-function EmptyStateContentInner({ canvasContainerRef }: { canvasContainerRef: RefObject<HTMLDivElement | null> }) {
+function EmptyStateContentInner({
+  canvasContainerRef,
+}: {
+  canvasContainerRef: RefObject<HTMLDivElement | null>;
+}) {
   useWindowTitle();
 
   return (
@@ -105,7 +121,11 @@ function EmptyStateContentInner({ canvasContainerRef }: { canvasContainerRef: Re
   );
 }
 
-function EmptyStateContent({ canvasContainerRef }: { canvasContainerRef: RefObject<HTMLDivElement | null> }) {
+function EmptyStateContent({
+  canvasContainerRef,
+}: {
+  canvasContainerRef: RefObject<HTMLDivElement | null>;
+}) {
   return (
     <DrawingProvider>
       <EmptyStateContentInner canvasContainerRef={canvasContainerRef} />
@@ -122,13 +142,13 @@ function AppContent({ containerRef, canvasContainerRef }: AppContentProps) {
   const { activeDocument } = useTabManager();
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="flex flex-col h-screen w-screen overflow-hidden bg-app-bg"
     >
       {activeDocument ? (
         <DocumentProvider key={activeDocument.id} document={activeDocument}>
-          <CanvasEngineProvider containerRef={canvasContainerRef}>
+          <CanvasEngineProvider containerRef={canvasContainerRef} document={activeDocument}>
             <DocumentContent canvasContainerRef={canvasContainerRef} />
           </CanvasEngineProvider>
         </DocumentProvider>
@@ -146,7 +166,7 @@ function AppContent({ containerRef, canvasContainerRef }: AppContentProps) {
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
-  
+
   // Initialize services on mount
   useEffect(() => {
     const init = async () => {
@@ -154,15 +174,18 @@ function App() {
       await services.themeManager.load();
       services.tabManager.loadInitialState();
     };
-    
+
     init();
   }, []);
-  
+
   return (
     <SettingsProvider>
       <ThemeProvider>
         <TabManagerProvider>
-          <AppContent containerRef={containerRef} canvasContainerRef={canvasContainerRef} />
+          <AppContent
+            containerRef={containerRef}
+            canvasContainerRef={canvasContainerRef}
+          />
         </TabManagerProvider>
       </ThemeProvider>
     </SettingsProvider>

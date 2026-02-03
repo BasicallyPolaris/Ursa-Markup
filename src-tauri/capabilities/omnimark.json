@@ -22,7 +22,7 @@
     "dialog:allow-save",
     {
       "identifier": "fs:allow-read-file",
-      "allow": [{"path": "$HOME/**"}]
+      "allow": [{ "path": "$HOME/**" }]
     },
     "fs:allow-write-file",
     "fs:allow-home-read",
@@ -39,9 +39,6 @@
     "store:allow-load"
   ],
   "commands": {
-    "allow": [
-      "get_pending_file",
-      "copy_image_wayland"
-    ]
+    "allow": ["get_pending_file", "copy_image_wayland"]
   }
 }

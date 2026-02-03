@@ -1,13 +1,13 @@
-import { Clipboard, FolderClosed, Palette, Eye } from "lucide-react"
-import { Switch } from "../../ui/switch"
-import { ToggleButtonGroup } from "../components/ToggleButtonGroup"
-import { SettingsSection, SettingsRow } from "../components/SettingsSection"
-import type { AppSettings, CloseTabBehavior } from "../../../services/types"
+import { Clipboard, FolderClosed, Palette, Eye } from "lucide-react";
+import { Switch } from "../../ui/switch";
+import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
+import { SettingsSection, SettingsRow } from "../components/SettingsSection";
+import type { AppSettings, CloseTabBehavior } from "../../../services/types";
 
 interface GeneralSettingsProps {
-  settings: AppSettings
-  updateDraft: (updates: Partial<AppSettings>) => void
-  updateColorPreset: (index: number, color: string) => void
+  settings: AppSettings;
+  updateDraft: (updates: Partial<AppSettings>) => void;
+  updateColorPreset: (index: number, color: string) => void;
 }
 
 export function GeneralSettings({
@@ -19,7 +19,7 @@ export function GeneralSettings({
     { value: "prompt", label: "Ask me" },
     { value: "auto-save", label: "Auto-save" },
     { value: "discard", label: "Discard" },
-  ]
+  ];
 
   return (
     <div className="space-y-5">
@@ -29,7 +29,7 @@ export function GeneralSettings({
         description="Canvas and interface display options"
         icon={<Eye className="w-4 h-4" />}
       >
-        <SettingsRow 
+        <SettingsRow
           label="Show debug info"
           description="Display zoom level and ruler angle on canvas"
         >
@@ -40,6 +40,19 @@ export function GeneralSettings({
             }
           />
         </SettingsRow>
+        <SettingsRow
+          label="Image open behavior"
+          description="How images are positioned when opened"
+        >
+          <ToggleButtonGroup
+            options={[
+              { value: "fit", label: "Fit" },
+              { value: "center", label: "Center" },
+            ]}
+            value={settings.imageOpenBehavior}
+            onChange={(value) => updateDraft({ imageOpenBehavior: value as any })}
+          />
+        </SettingsRow>
       </SettingsSection>
 
       {/* Auto-copy setting */}
@@ -48,7 +61,7 @@ export function GeneralSettings({
         description="Control how images are copied to clipboard"
         icon={<Clipboard className="w-4 h-4" />}
       >
-        <SettingsRow 
+        <SettingsRow
           label="Auto-copy to clipboard"
           description="Automatically copy the image to clipboard after each stroke"
         >
@@ -107,5 +120,5 @@ export function GeneralSettings({
         </div>
       </SettingsSection>
     </div>
-  )
+  );
 }

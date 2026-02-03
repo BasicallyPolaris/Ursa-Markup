@@ -8,17 +8,30 @@ import { RotateCcw, Save, X } from "lucide-react";
 import { useSettings } from "../../contexts/SettingsContext";
 
 export function SettingsPanel() {
-  const { settings, hasChanges, isOpen, closeSettings, updateDraft, updateColorPreset, save, cancel, reset } = useSettings();
+  const {
+    settings,
+    hasChanges,
+    isOpen,
+    closeSettings,
+    updateDraft,
+    updateColorPreset,
+    save,
+    cancel,
+    reset,
+  } = useSettings();
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleOpenChange = useCallback((open: boolean) => {
-    if (!open && hasChanges) {
-      cancel();
-    }
-    if (!open) {
-      closeSettings();
-    }
-  }, [hasChanges, cancel, closeSettings]);
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open && hasChanges) {
+        cancel();
+      }
+      if (!open) {
+        closeSettings();
+      }
+    },
+    [hasChanges, cancel, closeSettings],
+  );
 
   const handleSave = useCallback(async () => {
     setIsSaving(true);
@@ -49,7 +62,7 @@ export function SettingsPanel() {
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] p-0 overflow-hidden flex flex-col">
         {/* Header */}
-        <DialogHeader className="px-4 py-3 border-b border-toolbar-border flex-shrink-0">
+        <DialogHeader className="px-4 py-3 border-b border-toolbar-border shrink-0">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-text-primary text-lg font-semibold flex-1 text-center pl-10">
               Settings
@@ -92,46 +105,59 @@ export function SettingsPanel() {
             </Label>
             <div className="flex gap-2">
               <Button
-                variant={settings.closeTabBehavior === 'prompt' ? 'secondary' : 'ghost'}
+                variant={
+                  settings.closeTabBehavior === "prompt" ? "secondary" : "ghost"
+                }
                 size="sm"
-                onClick={() => updateDraft({ closeTabBehavior: 'prompt' })}
+                onClick={() => updateDraft({ closeTabBehavior: "prompt" })}
                 className={`flex-1 h-8 text-xs ${
-                  settings.closeTabBehavior === 'prompt' 
-                    ? 'bg-text-primary/15 text-text-primary' 
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                  settings.closeTabBehavior === "prompt"
+                    ? "bg-text-primary/15 text-text-primary"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                 }`}
               >
                 Ask me
               </Button>
               <Button
-                variant={settings.closeTabBehavior === 'auto-save' ? 'secondary' : 'ghost'}
+                variant={
+                  settings.closeTabBehavior === "auto-save"
+                    ? "secondary"
+                    : "ghost"
+                }
                 size="sm"
-                onClick={() => updateDraft({ closeTabBehavior: 'auto-save' })}
+                onClick={() => updateDraft({ closeTabBehavior: "auto-save" })}
                 className={`flex-1 h-8 text-xs ${
-                  settings.closeTabBehavior === 'auto-save' 
-                    ? 'bg-text-primary/15 text-text-primary' 
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                  settings.closeTabBehavior === "auto-save"
+                    ? "bg-text-primary/15 text-text-primary"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                 }`}
               >
                 Auto-save
               </Button>
               <Button
-                variant={settings.closeTabBehavior === 'discard' ? 'secondary' : 'ghost'}
+                variant={
+                  settings.closeTabBehavior === "discard"
+                    ? "secondary"
+                    : "ghost"
+                }
                 size="sm"
-                onClick={() => updateDraft({ closeTabBehavior: 'discard' })}
+                onClick={() => updateDraft({ closeTabBehavior: "discard" })}
                 className={`flex-1 h-8 text-xs ${
-                  settings.closeTabBehavior === 'discard' 
-                    ? 'bg-text-primary/15 text-text-primary' 
-                    : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                  settings.closeTabBehavior === "discard"
+                    ? "bg-text-primary/15 text-text-primary"
+                    : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                 }`}
               >
                 Discard
               </Button>
             </div>
             <p className="text-xs text-text-muted">
-              {settings.closeTabBehavior === 'prompt' && 'Show a confirmation dialog before closing'}
-              {settings.closeTabBehavior === 'auto-save' && 'Automatically save changes when closing'}
-              {settings.closeTabBehavior === 'discard' && 'Close without saving changes'}
+              {settings.closeTabBehavior === "prompt" &&
+                "Show a confirmation dialog before closing"}
+              {settings.closeTabBehavior === "auto-save" &&
+                "Automatically save changes when closing"}
+              {settings.closeTabBehavior === "discard" &&
+                "Close without saving changes"}
             </p>
           </div>
 
@@ -245,25 +271,35 @@ export function SettingsPanel() {
                 </span>
                 <div className="flex gap-2">
                   <Button
-                    variant={settings.defaultMarkerMode === 'normal' ? 'secondary' : 'ghost'}
+                    variant={
+                      settings.defaultMarkerMode === "normal"
+                        ? "secondary"
+                        : "ghost"
+                    }
                     size="sm"
-                    onClick={() => updateDraft({ defaultMarkerMode: 'normal' })}
+                    onClick={() => updateDraft({ defaultMarkerMode: "normal" })}
                     className={`h-7 text-xs ${
-                      settings.defaultMarkerMode === 'normal'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                      settings.defaultMarkerMode === "normal"
+                        ? "bg-text-primary/15 text-text-primary"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                     }`}
                   >
                     Normal
                   </Button>
                   <Button
-                    variant={settings.defaultMarkerMode === 'composition' ? 'secondary' : 'ghost'}
+                    variant={
+                      settings.defaultMarkerMode === "composition"
+                        ? "secondary"
+                        : "ghost"
+                    }
                     size="sm"
-                    onClick={() => updateDraft({ defaultMarkerMode: 'composition' })}
+                    onClick={() =>
+                      updateDraft({ defaultMarkerMode: "composition" })
+                    }
                     className={`h-7 text-xs ${
-                      settings.defaultMarkerMode === 'composition'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                      settings.defaultMarkerMode === "composition"
+                        ? "bg-text-primary/15 text-text-primary"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                     }`}
                   >
                     Composition
@@ -271,7 +307,8 @@ export function SettingsPanel() {
                 </div>
               </div>
               <p className="text-xs text-text-muted">
-                Composition mode colors only background pixels while preserving text visibility
+                Composition mode colors only background pixels while preserving
+                text visibility
               </p>
             </div>
 
@@ -283,25 +320,37 @@ export function SettingsPanel() {
                 </span>
                 <div className="flex gap-2">
                   <Button
-                    variant={settings.defaultMarkerBlendMode === 'normal' ? 'secondary' : 'ghost'}
+                    variant={
+                      settings.defaultMarkerBlendMode === "normal"
+                        ? "secondary"
+                        : "ghost"
+                    }
                     size="sm"
-                    onClick={() => updateDraft({ defaultMarkerBlendMode: 'normal' })}
+                    onClick={() =>
+                      updateDraft({ defaultMarkerBlendMode: "normal" })
+                    }
                     className={`h-7 text-xs ${
-                      settings.defaultMarkerBlendMode === 'normal'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                      settings.defaultMarkerBlendMode === "normal"
+                        ? "bg-text-primary/15 text-text-primary"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                     }`}
                   >
                     Normal
                   </Button>
                   <Button
-                    variant={settings.defaultMarkerBlendMode === 'multiply' ? 'secondary' : 'ghost'}
+                    variant={
+                      settings.defaultMarkerBlendMode === "multiply"
+                        ? "secondary"
+                        : "ghost"
+                    }
                     size="sm"
-                    onClick={() => updateDraft({ defaultMarkerBlendMode: 'multiply' })}
+                    onClick={() =>
+                      updateDraft({ defaultMarkerBlendMode: "multiply" })
+                    }
                     className={`h-7 text-xs ${
-                      settings.defaultMarkerBlendMode === 'multiply'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                      settings.defaultMarkerBlendMode === "multiply"
+                        ? "bg-text-primary/15 text-text-primary"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                     }`}
                   >
                     Multiply
@@ -367,7 +416,9 @@ export function SettingsPanel() {
                   Area Border Width
                 </span>
                 <span className="text-text-muted text-sm">
-                  {settings.defaultAreaBorderWidth === 0 ? 'Off' : `${settings.defaultAreaBorderWidth}px`}
+                  {settings.defaultAreaBorderWidth === 0
+                    ? "Off"
+                    : `${settings.defaultAreaBorderWidth}px`}
                 </span>
               </div>
               <Slider
@@ -389,25 +440,35 @@ export function SettingsPanel() {
                 </span>
                 <div className="flex gap-2">
                   <Button
-                    variant={settings.defaultAreaMode === 'normal' ? 'secondary' : 'ghost'}
+                    variant={
+                      settings.defaultAreaMode === "normal"
+                        ? "secondary"
+                        : "ghost"
+                    }
                     size="sm"
-                    onClick={() => updateDraft({ defaultAreaMode: 'normal' })}
+                    onClick={() => updateDraft({ defaultAreaMode: "normal" })}
                     className={`h-7 text-xs ${
-                      settings.defaultAreaMode === 'normal'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                      settings.defaultAreaMode === "normal"
+                        ? "bg-text-primary/15 text-text-primary"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                     }`}
                   >
                     Normal
                   </Button>
                   <Button
-                    variant={settings.defaultAreaMode === 'composition' ? 'secondary' : 'ghost'}
+                    variant={
+                      settings.defaultAreaMode === "composition"
+                        ? "secondary"
+                        : "ghost"
+                    }
                     size="sm"
-                    onClick={() => updateDraft({ defaultAreaMode: 'composition' })}
+                    onClick={() =>
+                      updateDraft({ defaultAreaMode: "composition" })
+                    }
                     className={`h-7 text-xs ${
-                      settings.defaultAreaMode === 'composition'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                      settings.defaultAreaMode === "composition"
+                        ? "bg-text-primary/15 text-text-primary"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                     }`}
                   >
                     Composition
@@ -424,25 +485,37 @@ export function SettingsPanel() {
                 </span>
                 <div className="flex gap-2">
                   <Button
-                    variant={settings.defaultAreaBlendMode === 'normal' ? 'secondary' : 'ghost'}
+                    variant={
+                      settings.defaultAreaBlendMode === "normal"
+                        ? "secondary"
+                        : "ghost"
+                    }
                     size="sm"
-                    onClick={() => updateDraft({ defaultAreaBlendMode: 'normal' })}
+                    onClick={() =>
+                      updateDraft({ defaultAreaBlendMode: "normal" })
+                    }
                     className={`h-7 text-xs ${
-                      settings.defaultAreaBlendMode === 'normal'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                      settings.defaultAreaBlendMode === "normal"
+                        ? "bg-text-primary/15 text-text-primary"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                     }`}
                   >
                     Normal
                   </Button>
                   <Button
-                    variant={settings.defaultAreaBlendMode === 'multiply' ? 'secondary' : 'ghost'}
+                    variant={
+                      settings.defaultAreaBlendMode === "multiply"
+                        ? "secondary"
+                        : "ghost"
+                    }
                     size="sm"
-                    onClick={() => updateDraft({ defaultAreaBlendMode: 'multiply' })}
+                    onClick={() =>
+                      updateDraft({ defaultAreaBlendMode: "multiply" })
+                    }
                     className={`h-7 text-xs ${
-                      settings.defaultAreaBlendMode === 'multiply'
-                        ? 'bg-text-primary/15 text-text-primary'
-                        : 'text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover'
+                      settings.defaultAreaBlendMode === "multiply"
+                        ? "bg-text-primary/15 text-text-primary"
+                        : "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                     }`}
                   >
                     Multiply
@@ -496,7 +569,7 @@ export function SettingsPanel() {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-3 border-t border-toolbar-border flex items-center justify-between flex-shrink-0">
+        <div className="px-4 py-3 border-t border-toolbar-border flex items-center justify-between shrink-0">
           {/* Reset button on left */}
           <Button
             variant="ghost"

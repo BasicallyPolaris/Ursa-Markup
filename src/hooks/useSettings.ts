@@ -25,7 +25,7 @@ export interface AppSettings {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  autoCopyOnChange: false,
+  autoCopyOnChange: true,
   colorPresets: [
     '#FF6B6B',
     '#FF9F43',
@@ -125,18 +125,9 @@ export function useSettings() {
     setDraftSettings(savedSettings);
   }, [savedSettings]);
 
-  // Reset to defaults
-  const resetToDefaults = useCallback(async () => {
+  // Reset to defaults (doesn't save to disk - user must press Save)
+  const resetToDefaults = useCallback(() => {
     setDraftSettings(DEFAULT_SETTINGS);
-    if (storeRef.current) {
-      try {
-        await storeRef.current.set('appSettings', DEFAULT_SETTINGS);
-        await storeRef.current.save();
-        setSavedSettings(DEFAULT_SETTINGS);
-      } catch (error) {
-        console.error('Failed to reset settings:', error);
-      }
-    }
   }, []);
 
   const hasChanges = JSON.stringify(savedSettings) !== JSON.stringify(draftSettings);
