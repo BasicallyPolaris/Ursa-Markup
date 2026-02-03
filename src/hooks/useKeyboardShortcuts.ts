@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from 'react';
+import { useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import { useTabManager } from '../contexts/TabManagerContext';
 import { useDocument } from '../contexts/DocumentContext';
@@ -34,6 +34,9 @@ export function useHotkeys(): HotkeySettings {
  */
 export function useFileActions() {
   const { engine } = useCanvasEngine();
+  // Keep engine in a ref to always have the latest reference
+  const engineRef = useRef(engine);
+  engineRef.current = engine;
 
   const handleOpen = useCallback(async () => {
     const result = await services.ioService.openFile();
@@ -46,9 +49,10 @@ export function useFileActions() {
 
   const handleSave = useCallback(async () => {
     const activeDoc = services.tabManager.getActiveDocument();
-    if (!activeDoc || !engine) return;
+    const currentEngine = engineRef.current;
+    if (!activeDoc || !currentEngine) return;
     
-    const canvas = engine.getCombinedCanvas();
+    const canvas = currentEngine.getCombinedCanvas();
     if (!canvas) return;
     
     const defaultPath = activeDoc.filePath || 'annotated-image.png';
@@ -56,13 +60,14 @@ export function useFileActions() {
     if (success) {
       activeDoc.markAsChanged(false);
     }
-  }, [engine]);
+  }, []);
 
   const handleCopy = useCallback(async () => {
     const activeDoc = services.tabManager.getActiveDocument();
-    if (!engine || !activeDoc) return;
+    const currentEngine = engineRef.current;
+    if (!currentEngine || !activeDoc) return;
     
-    const canvas = engine.getCombinedCanvas();
+    const canvas = currentEngine.getCombinedCanvas();
     if (canvas) {
       const version = activeDoc.version;
       // Register as manual copy (show toast on success)
@@ -70,7 +75,7 @@ export function useFileActions() {
       // Force copy even if version matches (user explicitly requested it)
       await services.ioService.copyToClipboard(canvas, version, { force: true, isAutoCopy: false });
     }
-  }, [engine]);
+  }, []);
 
   return { handleOpen, handleSave, handleCopy };
 }

@@ -1,6 +1,9 @@
 /**
  * DrawingContext - Shared state for drawing tools and brush settings
  * Connects Toolbar with CanvasContainer
+ * 
+ * Each tool maintains its own session settings that persist until app restart.
+ * Switching between tools restores that tool's last-used settings.
  */
 
 import React, {
@@ -9,11 +12,21 @@ import React, {
   useState,
   useCallback,
   useEffect,
+  useRef,
 } from "react";
 import type { Tool, BrushSettings } from "../core";
 import { useSettings } from "./SettingsContext";
 
 type BlendMode = "normal" | "multiply";
+
+/** Per-tool configuration that persists during the session */
+interface ToolConfig {
+  size: number;
+  opacity: number;
+  blendMode: BlendMode;
+  borderRadius?: number;
+  borderWidth?: number;
+}
 
 interface DrawingContextValue {
   tool: Tool;
@@ -25,7 +38,7 @@ interface DrawingContextValue {
   ) => void;
   setBlendMode: (mode: BlendMode) => void;
   updateBrush: (changes: Partial<BrushSettings>) => void;
-  /** Switch tool and apply default settings from user preferences */
+  /** Switch tool and restore that tool's session settings */
   switchTool: (tool: Tool) => void;
 }
 
@@ -45,88 +58,106 @@ export function DrawingProvider({
   // Initialize with first color from settings colorPresets
   const initialColor = settings.colorPresets[0] || "#FF6B6B";
 
-  // Determine blend mode based on tool
-  const getBlendModeForTool = useCallback((tool: Tool): BlendMode => {
-    switch (tool) {
-      case "pen":
-        return settings.defaultPenBlendMode ?? "normal";
-      case "highlighter":
-        return settings.defaultMarkerBlendMode ?? "multiply";
-      case "area":
-        return settings.defaultAreaBlendMode ?? "multiply";
-      default:
-        return "normal";
-    }
-  }, [settings.defaultPenBlendMode, settings.defaultMarkerBlendMode, settings.defaultAreaBlendMode]);
+  // Per-tool session configs - initialized from user settings, but maintained per-session
+  const [toolConfigs, setToolConfigs] = useState<Record<Tool, ToolConfig>>(() => ({
+    pen: {
+      size: settings.defaultPenSize,
+      opacity: settings.defaultPenOpacity,
+      blendMode: settings.defaultPenBlendMode ?? "normal",
+    },
+    highlighter: {
+      size: settings.defaultMarkerSize,
+      opacity: settings.defaultMarkerOpacity,
+      blendMode: settings.defaultMarkerBlendMode ?? "multiply",
+    },
+    area: {
+      size: 1, // Not used for area tool
+      opacity: settings.defaultAreaOpacity,
+      blendMode: settings.defaultAreaBlendMode ?? "multiply",
+      borderRadius: settings.defaultAreaBorderRadius,
+      borderWidth: settings.defaultAreaBorderWidth,
+    },
+  }));
 
   const [tool, setToolState] = useState<Tool>(initialTool);
-  const [brush, setBrush] = useState<BrushSettings>({
-    size: settings.defaultPenSize,
-    color: initialColor,
-    opacity: settings.defaultPenOpacity,
-  });
-  const [blendMode, setBlendMode] = useState<BlendMode>(() => getBlendModeForTool(initialTool));
+  
+  // Current brush state derived from tool config + shared color
+  const [color, setColor] = useState<string>(initialColor);
+  
+  // Get current tool's config
+  const currentConfig = toolConfigs[tool];
+  
+  // Build brush from current tool config and shared color
+  const brush: BrushSettings = {
+    size: currentConfig.size,
+    color: color,
+    opacity: currentConfig.opacity,
+    borderRadius: currentConfig.borderRadius,
+    borderWidth: currentConfig.borderWidth,
+  };
+  
+  const blendMode = currentConfig.blendMode;
+
+  // Track if this is the first render to avoid resetting configs on settings change
+  const isInitialized = useRef(false);
+  
+  useEffect(() => {
+    isInitialized.current = true;
+  }, []);
 
   // Sync brush color if it doesn't match any preset (e.g., on settings change)
   useEffect(() => {
     // If current brush color is not in presets, update to first preset
-    if (!settings.colorPresets.includes(brush.color)) {
-      setBrush((prev) => ({
-        ...prev,
-        color: settings.colorPresets[0] || prev.color,
-      }));
+    if (!settings.colorPresets.includes(color)) {
+      setColor(settings.colorPresets[0] || color);
     }
-  }, [settings.colorPresets, brush.color]);
+  }, [settings.colorPresets, color]);
 
-  const updateBrush = useCallback((changes: Partial<BrushSettings>) => {
-    setBrush((prev) => ({ ...prev, ...changes }));
+  /** Update the current tool's config */
+  const updateToolConfig = useCallback((toolToUpdate: Tool, changes: Partial<ToolConfig>) => {
+    setToolConfigs(prev => ({
+      ...prev,
+      [toolToUpdate]: { ...prev[toolToUpdate], ...changes },
+    }));
   }, []);
 
+  const updateBrush = useCallback((changes: Partial<BrushSettings>) => {
+    // Update color separately (shared across tools)
+    if (changes.color !== undefined) {
+      setColor(changes.color);
+    }
+    
+    // Update tool-specific settings in the current tool's config
+    const toolConfigChanges: Partial<ToolConfig> = {};
+    if (changes.size !== undefined) toolConfigChanges.size = changes.size;
+    if (changes.opacity !== undefined) toolConfigChanges.opacity = changes.opacity;
+    if (changes.borderRadius !== undefined) toolConfigChanges.borderRadius = changes.borderRadius;
+    if (changes.borderWidth !== undefined) toolConfigChanges.borderWidth = changes.borderWidth;
+    
+    if (Object.keys(toolConfigChanges).length > 0) {
+      updateToolConfig(tool, toolConfigChanges);
+    }
+  }, [tool, updateToolConfig]);
+
+  const setBlendMode = useCallback((mode: BlendMode) => {
+    updateToolConfig(tool, { blendMode: mode });
+  }, [tool, updateToolConfig]);
+
+  const setBrush = useCallback((
+    brushOrFn: BrushSettings | ((prev: BrushSettings) => BrushSettings),
+  ) => {
+    const newBrush = typeof brushOrFn === 'function' ? brushOrFn(brush) : brushOrFn;
+    updateBrush(newBrush);
+  }, [brush, updateBrush]);
+
   /**
-   * Switch tool and apply default settings from user preferences
-   * This should be used when switching tools via toolbar or keyboard shortcuts
+   * Switch tool and restore that tool's session settings.
+   * No longer resets to defaults - each tool remembers its last-used settings.
    */
   const switchTool = useCallback((newTool: Tool) => {
     setToolState(newTool);
-    
-    // Apply default settings for the tool
-    if (newTool === "pen") {
-      setBrush((prev) => ({
-        ...prev,
-        size: settings.defaultPenSize,
-        opacity: settings.defaultPenOpacity,
-      }));
-      setBlendMode(settings.defaultPenBlendMode ?? "normal");
-    } else if (newTool === "highlighter") {
-      setBrush((prev) => ({
-        ...prev,
-        size: settings.defaultMarkerSize,
-        opacity: settings.defaultMarkerOpacity,
-        borderRadius: settings.defaultMarkerBorderRadius,
-      }));
-      setBlendMode(settings.defaultMarkerBlendMode ?? "multiply");
-    } else if (newTool === "area") {
-      setBrush((prev) => ({
-        ...prev,
-        opacity: settings.defaultAreaOpacity,
-        borderRadius: settings.defaultAreaBorderRadius,
-        borderWidth: settings.defaultAreaBorderWidth,
-      }));
-      setBlendMode(settings.defaultAreaBlendMode ?? "multiply");
-    }
-  }, [
-    settings.defaultPenSize,
-    settings.defaultPenOpacity,
-    settings.defaultPenBlendMode,
-    settings.defaultMarkerSize,
-    settings.defaultMarkerOpacity,
-    settings.defaultMarkerBorderRadius,
-    settings.defaultMarkerBlendMode,
-    settings.defaultAreaOpacity,
-    settings.defaultAreaBorderRadius,
-    settings.defaultAreaBorderWidth,
-    settings.defaultAreaBlendMode,
-  ]);
+    // Tool config is automatically applied via the derived brush state
+  }, []);
 
   const value: DrawingContextValue = {
     tool,

@@ -386,10 +386,9 @@ export function Toolbar() {
 
           <div className="w-px h-8 bg-surface-bg" />
 
-          {/* Size & Opacity Controls */}
+          {/* Size or Radius Controls */}
           <div className="flex items-center gap-4">
-            {/* Size Slider - hidden for area tool */}
-            {tool !== "area" && (
+            {tool !== "area" ? (
               <div className="flex flex-col gap-1 w-24">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Size</span>
@@ -404,6 +403,24 @@ export function Toolbar() {
                   step={1}
                   onValueChange={([value]) =>
                     handleBrushChange({ size: value })
+                  }
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-1 w-24">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-muted">Radius</span>
+                  <span className="text-xs text-text-secondary font-mono">
+                    {brush.borderRadius || 0}px
+                  </span>
+                </div>
+                <Slider
+                  value={[brush.borderRadius || 0]}
+                  min={0}
+                  max={50}
+                  step={1}
+                  onValueChange={([value]) =>
+                    handleBrushChange({ borderRadius: value })
                   }
                 />
               </div>
@@ -428,27 +445,6 @@ export function Toolbar() {
               />
             </div>
 
-            {/* Border Radius - for area only (marker uses smooth curves now) */}
-            {tool === "area" && (
-              <div className="flex flex-col gap-1 w-24">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-text-muted">Radius</span>
-                  <span className="text-xs text-text-secondary font-mono">
-                    {brush.borderRadius || 0}px
-                  </span>
-                </div>
-                <Slider
-                  value={[brush.borderRadius || 0]}
-                  min={0}
-                  max={50}
-                  step={1}
-                  onValueChange={([value]) =>
-                    handleBrushChange({ borderRadius: value })
-                  }
-                />
-              </div>
-            )}
-
             {/* Brush Preview */}
             <div className="flex items-center justify-center w-10 h-10 bg-surface-bg rounded-lg border border-toolbar-border">
               {tool === "highlighter" ? (
@@ -468,7 +464,6 @@ export function Toolbar() {
                     height: 18,
                     backgroundColor: brush.color,
                     opacity: brush.opacity,
-                    // Clamp radius to half of the smaller dimension for valid preview
                     borderRadius: Math.min(brush.borderRadius || 0, 9),
                   }}
                 />
@@ -496,7 +491,7 @@ export function Toolbar() {
                 handleBlendModeChange(value as "normal" | "multiply")
               }
             >
-              <SelectTrigger className="w-[110px]">
+              <SelectTrigger className="w-27.5">
                 <SelectValue>
                   <span className="flex items-center gap-1.5">
                     {blendMode === "normal" ? (

@@ -135,14 +135,12 @@ export class IOService {
    * Copy canvas image to clipboard using Web Worker + Rust backend
    * 
    * Flow:
-   * 1. Create ImageBitmap from canvas (fast, main thread)
-   * 2. Transfer ImageBitmap to Web Worker (zero-copy)
+   * 1. Get ImageData from canvas (raw pixels)
+   * 2. Transfer ImageData to Web Worker (transferable)
    * 3. Worker converts to PNG and base64 (heavy work, off main thread)
    * 4. Worker sends base64 string back
    * 5. Main thread invokes Rust command (fire-and-forget)
    * 6. Rust handles clipboard in background thread
-   * 
-   * This ensures the main thread stays responsive even for large images.
    * 
    * @param canvas The canvas to copy
    * @param version The document version (for deduplication)
@@ -160,18 +158,16 @@ export class IOService {
     }
 
     try {
-      // Step 1: Create ImageBitmap from canvas (fast, async)
-      const imageBitmap = await createImageBitmap(canvas);
+      // Step 1: Get raw pixel data from canvas
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Failed to get canvas context");
+      
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       
       // Step 2-4: Send to worker for PNG encoding (off main thread)
-      const base64Data = await this.encodeInWorker(
-        imageBitmap,
-        canvas.width,
-        canvas.height
-      );
+      const base64Data = await this.encodeInWorker(imageData);
 
       // Step 5: Queue copy in Rust backend (fire-and-forget)
-      // This returns immediately - Rust handles the clipboard in background
       await invoke("queue_clipboard_copy_base64", {
         imageBase64: base64Data,
         version,
@@ -188,13 +184,9 @@ export class IOService {
   }
 
   /**
-   * Encode ImageBitmap to base64 PNG in a Web Worker
+   * Encode ImageData to base64 PNG in a Web Worker
    */
-  private encodeInWorker(
-    imageBitmap: ImageBitmap,
-    width: number,
-    height: number
-  ): Promise<string> {
+  private encodeInWorker(imageData: ImageData): Promise<string> {
     return new Promise((resolve, reject) => {
       const worker = this.getCopyWorker();
       
@@ -218,13 +210,20 @@ export class IOService {
       worker.addEventListener("message", handleMessage);
       worker.addEventListener("error", handleError);
       
-      // Transfer the ImageBitmap to the worker (zero-copy)
+      // Transfer the underlying ArrayBuffer to the worker (zero-copy)
       worker.postMessage(
-        { type: "copy", imageBitmap, width, height },
-        [imageBitmap]
+        { 
+          type: "copy", 
+          imageData: imageData.data,
+          width: imageData.width, 
+          height: imageData.height 
+        },
+        [imageData.data.buffer]
       );
     });
   }
+
+
 
   /**
    * Get the last copied version (for UI feedback)

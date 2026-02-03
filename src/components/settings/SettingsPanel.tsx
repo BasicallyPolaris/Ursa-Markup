@@ -243,26 +243,6 @@ export function SettingsPanel() {
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-text-secondary text-sm">
-                  Marker Corner Radius
-                </span>
-                <span className="text-text-muted text-sm">
-                  {settings.defaultMarkerBorderRadius}px
-                </span>
-              </div>
-              <Slider
-                value={[settings.defaultMarkerBorderRadius]}
-                onValueChange={([value]) =>
-                  updateDraft({ defaultMarkerBorderRadius: value })
-                }
-                min={0}
-                max={20}
-                step={1}
-              />
-            </div>
-
             {/* Marker Blend Mode Toggle */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">

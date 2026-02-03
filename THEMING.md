@@ -4,15 +4,14 @@ The OmniMark theme system provides centralized color management that is fully cu
 
 ## Quick Start
 
-All theming is controlled through **`public/config/theme.json`**. Edit this file to customize colors, add color palettes, or adjust tool defaults.
+All theming is controlled through **`theme.json`**. The app looks for this file in two locations:
+
+1. **User config** (primary): `~/.config/omnimark/theme.json`
+2. **Bundled default** (fallback): `public/config/theme.json`
+
+On first run, the bundled theme is automatically copied to the user config directory.
 
 ## Theme Configuration
-
-### Location
-
-```
-public/config/theme.json
-```
 
 ### Color Formats Supported
 
@@ -158,24 +157,26 @@ accent: "#005a9e";
 
 ### Files
 
+- **`src/services/ThemeManager.ts`**: Singleton service for loading and applying themes
+- **`src/contexts/ThemeContext.tsx`**: React context for theme state
 - **`src/lib/theme.ts`**: Theme types, defaults, color conversion utilities
-- **`src/hooks/useTheme.ts`**: React hook for loading and applying theme
+- **`src/hooks/useTheme.ts`**: React hook for accessing theme
 - **`src/App.css`**: CSS variable definitions and Tailwind theme mapping
-- **`public/config/theme.json`**: User-editable theme configuration
 
 ### How It Works
 
-1. **App Startup**: `useTheme` hook loads `theme.json`
-2. **Color Conversion**: All colors converted to HSL format
-3. **CSS Application**: Colors applied to CSS custom properties on `:root`
-4. **Component Rendering**: Components use Tailwind classes mapped to CSS variables
+1. **App Startup**: `ThemeManager` loads theme from user config (or bundled fallback)
+2. **Auto-Copy**: If user config doesn't exist, bundled theme is copied to `~/.config/omnimark/`
+3. **Color Conversion**: All colors converted to HSL format
+4. **CSS Application**: Colors applied to CSS custom properties on `:root`
+5. **Component Rendering**: Components use Tailwind classes mapped to CSS variables
 
 ### Color Conversion Flow
 
 ```
 theme.json (HEX/RGB/HSL)
     ↓
-[src/lib/theme.ts] toHslString()
+[ThemeManager] toHslString()
     ↓
 CSS Custom Properties (HSL format)
     ↓
@@ -189,7 +190,8 @@ Component classes (e.g., bg-toolbar-bg)
 ### Theme Not Loading
 
 - Check browser console for JSON parse errors
-- Verify `public/config/theme.json` exists and is valid JSON
+- Verify `~/.config/omnimark/theme.json` exists and is valid JSON
+- Delete user config to reset to bundled defaults
 - Invalid themes automatically fall back to defaults
 
 ### Colors Not Applied
@@ -202,10 +204,3 @@ Component classes (e.g., bg-toolbar-bg)
 
 - Ruler colors are read from CSS variables at render time
 - If colors appear wrong, ensure theme loaded before canvas renders
-
-## Future Enhancements
-
-- **Theme Switcher**: UI control to switch between light/dark/custom themes
-- **Live Reload**: Watch `theme.json` for changes and auto-apply
-- **Theme Editor**: Built-in UI for customizing colors
-- **Opacity Control**: Add opacity fields to theme config for more control

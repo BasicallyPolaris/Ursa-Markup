@@ -1,7 +1,7 @@
 /**
  * Web Worker for handling image copy operations off the main thread
  * 
- * This worker receives an ImageBitmap, draws it to an OffscreenCanvas,
+ * This worker receives raw RGBA pixel data, draws it to an OffscreenCanvas,
  * and converts it to a base64 PNG string for sending to Rust.
  * 
  * The heavy PNG encoding happens here instead of blocking the main UI thread.
@@ -10,7 +10,7 @@
 // Worker message types
 interface CopyWorkerMessage {
   type: 'copy';
-  imageBitmap: ImageBitmap;
+  imageData: Uint8ClampedArray;
   width: number;
   height: number;
 }
@@ -22,7 +22,7 @@ interface CopyWorkerResponse {
 }
 
 self.onmessage = async (event: MessageEvent<CopyWorkerMessage>) => {
-  const { type, imageBitmap, width, height } = event.data;
+  const { type, imageData, width, height } = event.data;
 
   if (type !== 'copy') {
     self.postMessage({ type: 'error', error: 'Unknown message type' } as CopyWorkerResponse);
@@ -39,11 +39,9 @@ self.onmessage = async (event: MessageEvent<CopyWorkerMessage>) => {
       return;
     }
 
-    // Draw the ImageBitmap to the OffscreenCanvas
-    ctx.drawImage(imageBitmap, 0, 0);
-    
-    // Close the ImageBitmap to free memory
-    imageBitmap.close();
+    // Create ImageData from the transferred buffer and draw to canvas
+    const imgData = new ImageData(new Uint8ClampedArray(imageData), width, height);
+    ctx.putImageData(imgData, 0, 0);
 
     // Convert to PNG blob (this is the expensive operation, now off main thread)
     const blob = await offscreen.convertToBlob({ type: 'image/png' });
@@ -66,16 +64,20 @@ self.onmessage = async (event: MessageEvent<CopyWorkerMessage>) => {
 };
 
 /**
- * Convert Uint8Array to base64 string
- * More efficient than using btoa with string conversion
+ * Convert Uint8Array to base64 string efficiently
+ * Uses chunked processing to avoid call stack issues and reduce string allocations
  */
 function uint8ArrayToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  // Process in chunks to avoid call stack issues with large arrays
+  const CHUNK_SIZE = 0x8000; // 32KB chunks
+  const chunks: string[] = [];
+  
+  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+    const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
+    chunks.push(String.fromCharCode.apply(null, chunk as unknown as number[]));
   }
-  return btoa(binary);
+  
+  return btoa(chunks.join(''));
 }
 
 // TypeScript needs this for module workers

@@ -4,36 +4,71 @@ A cross-platform image annotation tool inspired by the Windows Snipping Tool. Bu
 
 ## Features
 
-- **Pen Tool**: Draw freehand lines with adjustable size
-- **Highlighter Tool**: Semi-transparent highlighting for emphasizing areas
-- **Area Tool**: Rectangle/rounded rectangle highlighting with border
-- **Ruler Overlay**: Movable, rotatable ruler with Ctrl+R (scroll to rotate, drag to move)
-- **Undo/Redo**: Full history support (Ctrl+Z / Ctrl+Shift+Z)
+### Drawing Tools
+- **Pen Tool**: Freehand drawing with smooth anti-aliased strokes
+- **Highlighter/Marker Tool**: Semi-transparent highlighting with flat ends
+- **Area Tool**: Rectangle/rounded rectangle highlighting with optional border
+
+### Tool Settings
+- Adjustable size and opacity per tool
+- Border radius for area tool
+- Blend modes (Normal / Multiply)
+
+### Canvas Features
+- **Zoom**: 10% - 500% (Ctrl+Scroll, Ctrl+=, Ctrl+-)
+- **Pan**: Ctrl+Click and drag
+- **Fit/Stretch/Center**: Multiple view modes
+
+### Ruler Overlay
+- Toggle with Ctrl+R
+- Rotate with scroll wheel
+- Snap drawing to ruler edge with Shift+drag
+
+### Multi-Tab Support
+- Work on multiple images simultaneously
+- Configurable close behavior (prompt, auto-save, discard)
+
+### Other Features
+- **Undo/Redo**: Full history support per document
 - **Auto-Copy**: Automatically copies annotated image to clipboard after each stroke
-- **Save**: Save annotated images as PNG, JPEG, or WebP
+- **Save**: Export as PNG, JPEG, or WebP
+- **Customizable Hotkeys**: Rebind all keyboard shortcuts
+- **Theming**: Fully customizable colors via theme.json
 
 ## Keyboard Shortcuts
 
-| Shortcut       | Action                     |
-| -------------- | -------------------------- |
-| `Ctrl+O`       | Open image                 |
-| `Ctrl+S`       | Save image                 |
-| `Ctrl+C`       | Copy to clipboard          |
-| `Ctrl+Z`       | Undo                       |
-| `Ctrl+Shift+Z` | Redo                       |
-| `Ctrl+R`       | Toggle ruler               |
-| `1`            | Pen tool                   |
-| `2`            | Highlighter tool           |
-| `3`            | Area tool                  |
-| `Shift + drag` | Snap drawing to ruler line |
+All shortcuts can be customized in Settings → Shortcuts.
+
+| Shortcut           | Action                     |
+| ------------------ | -------------------------- |
+| `Ctrl+O`           | Open image                 |
+| `Ctrl+S`           | Save image                 |
+| `Ctrl+C`           | Copy to clipboard          |
+| `Ctrl+Z`           | Undo                       |
+| `Ctrl+Shift+Z`     | Redo                       |
+| `Ctrl+R`           | Toggle ruler               |
+| `1`                | Pen tool                   |
+| `2`                | Highlighter tool           |
+| `3`                | Area tool                  |
+| `Ctrl+1` - `Ctrl+7`| Quick color presets        |
+| `Ctrl+T`           | New tab                    |
+| `Ctrl+W`           | Close tab                  |
+| `Ctrl+Tab`         | Next tab                   |
+| `Ctrl+Shift+Tab`   | Previous tab               |
+| `Ctrl+=` / `Ctrl+-`| Zoom in/out                |
+| `Ctrl+0`           | Reset zoom to 100%         |
+| `Ctrl+Alt+F`       | Fit image to window        |
+| `Ctrl+F`           | Stretch to fill            |
+| `Ctrl+Alt+C`       | Center image               |
+| `Shift + drag`     | Snap drawing to ruler line |
 
 ## Tech Stack
 
 - **Framework**: Tauri 2.x (Rust backend + Web frontend)
 - **Frontend**: React 19 + TypeScript
-- **Styling**: TailwindCSS + ShadCN/ui components
-- **Canvas**: HTML5 Canvas API
-- **Build Target**: AppImage (Linux), .deb (Linux)
+- **Styling**: TailwindCSS 4
+- **Build Tool**: Vite
+- **Canvas**: HTML5 Canvas API with Web Workers for clipboard encoding
 
 ## Development
 
@@ -59,34 +94,48 @@ bun run tauri build
 ### Project Structure
 
 ```
-OmniMark/
-├── src-tauri/          # Rust backend
+omnimark/
+├── src-tauri/              # Rust backend
 │   ├── src/
-│   │   ├── main.rs
-│   │   └── lib.rs
+│   │   └── lib.rs          # Tauri commands & setup
+│   ├── capabilities/       # Tauri permission configs
 │   ├── Cargo.toml
 │   └── tauri.conf.json
-├── src/                # React frontend
+├── src/                    # React frontend
 │   ├── components/
-│   │   ├── canvas/     # Drawing canvas components
-│   │   ├── toolbar/    # Toolbar UI
-│   │   └── ui/         # ShadCN components
-│   ├── hooks/          # Custom React hooks
-│   ├── lib/            # Utilities
-│   ├── types/          # TypeScript types
+│   │   ├── canvas/         # Drawing canvas components
+│   │   ├── toolbar/        # Toolbar UI
+│   │   ├── tabs/           # Tab bar and dialogs
+│   │   ├── settings/       # Settings window
+│   │   └── ui/             # Base UI components
+│   ├── contexts/           # React contexts (settings, theme, tabs, etc.)
+│   ├── core/               # Domain logic (Document, BrushEngine, Ruler, etc.)
+│   ├── services/           # Singleton services (IO, Settings, Theme, Window)
+│   ├── hooks/              # Custom React hooks
+│   ├── workers/            # Web workers (clipboard encoding)
+│   ├── lib/                # Utilities
+│   ├── types/              # TypeScript types
 │   ├── App.tsx
 │   └── main.tsx
 ├── public/
 │   └── config/
-│       └── palette.json  # Color palette config
+│       └── theme.json      # Bundled theme configuration
 └── package.json
 ```
 
 ## Customization
 
+### Theming
+
+OmniMark supports full UI theming. See [THEMING.md](THEMING.md) for details.
+
+The theme file is located at:
+- **User config**: `~/.config/omnimark/theme.json` (created on first run)
+- **Bundled default**: `public/config/theme.json`
+
 ### Color Palettes
 
-Edit `public/config/palette.json` to customize color palettes:
+Edit the `palettes` section in `theme.json`:
 
 ```json
 {
@@ -95,13 +144,14 @@ Edit `public/config/palette.json` to customize color palettes:
       "name": "custom",
       "colors": ["#FF0000", "#00FF00", "#0000FF"]
     }
-  ]
+  ],
+  "defaultPalette": "custom"
 }
 ```
 
-### Default Settings
+### Tool Defaults
 
-Tool defaults can be configured in the same JSON file:
+Configure default tool settings in `theme.json`:
 
 ```json
 {
@@ -123,30 +173,15 @@ Tool defaults can be configured in the same JSON file:
 
 ## Building
 
-### AppImage (Linux)
+### Linux
 
 ```bash
 bun run tauri build
-# Output: src-tauri/target/release/bundle/appimage/*.AppImage
-```
-
-### .deb (Linux)
-
-```bash
-bun run tauri build
-# Output: src-tauri/target/release/bundle/deb/*.deb
+# Outputs:
+#   - AppImage: src-tauri/target/release/bundle/appimage/*.AppImage
+#   - .deb: src-tauri/target/release/bundle/deb/*.deb
 ```
 
 ## License
 
 MIT License - Feel free to use, modify, and distribute!
-
-## Future Features
-
-- Screenshot functionality
-- Circle area selection
-- Text annotations
-- Arrow annotations
-- Custom color picker
-- Config file in user directory
-- Multi-platform support (Windows, macOS)

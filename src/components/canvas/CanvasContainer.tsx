@@ -88,6 +88,9 @@ export function CanvasContainer({
   
   // Ref for debounced auto-copy timer
   const autoCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  
+  // State to trigger auto-copy after strokes are replayed (state forces re-render)
+  const [pendingAutoCopy, setPendingAutoCopy] = useState<{ version: number; shouldCopy: boolean }>({ version: -1, shouldCopy: false });
 
   // Get screen size of container
   const getScreenSize = useCallback(() => {
@@ -140,7 +143,23 @@ export function CanvasContainer({
       groups: strokeHistory.groups,
       currentIndex: strokeHistory.currentIndex,
     });
-  }, [strokeHistory.currentIndex, strokeHistory.groups, engine, document]);
+    
+    // Execute auto-copy if triggered (after strokes are definitely replayed)
+    if (pendingAutoCopy.shouldCopy && settings.autoCopyOnChange) {
+      const { version } = pendingAutoCopy;
+      // Reset the trigger
+      setPendingAutoCopy({ version: -1, shouldCopy: false });
+      
+      const canvas = engine.getCombinedCanvas();
+      if (canvas) {
+        // Register as auto-copy (silent - no toast on success)
+        registerPendingCopy(version, true);
+        services.ioService.copyToClipboard(canvas, version, { isAutoCopy: true }).catch((err) => {
+          console.error("Auto-copy to clipboard failed:", err);
+        });
+      }
+    }
+  }, [strokeHistory.currentIndex, strokeHistory.groups, engine, document, settings.autoCopyOnChange, pendingAutoCopy]);
 
   // Render when state changes (not continuous animation loop)
   useEffect(() => {
@@ -418,23 +437,16 @@ export function CanvasContainer({
       autoCopyTimerRef.current = null;
     }
     
-    if (settings.autoCopyOnChange && engine) {
+    if (settings.autoCopyOnChange) {
       // Capture version after markAsChanged incremented it
       const versionToCopy = document.version;
       
       // Debounce auto-copy by 500ms to avoid unnecessary copies on rapid drawing
+      // The actual copy happens in the replayStrokes effect after strokes are committed
       autoCopyTimerRef.current = setTimeout(() => {
-        // Use requestAnimationFrame to ensure rendering is complete
-        requestAnimationFrame(() => {
-          const canvas = engine.getCombinedCanvas();
-          if (canvas) {
-            // Register as auto-copy (silent - no toast on success)
-            registerPendingCopy(versionToCopy, true);
-            services.ioService.copyToClipboard(canvas, versionToCopy, { isAutoCopy: true }).catch((err) => {
-              console.error("Auto-copy to clipboard failed:", err);
-            });
-          }
-        });
+        // Set trigger state - this forces a re-render and the replayStrokes effect will execute the copy
+        // This ensures copy happens AFTER strokes are replayed to canvas
+        setPendingAutoCopy({ version: versionToCopy, shouldCopy: true });
         autoCopyTimerRef.current = null;
       }, 500);
     }
@@ -445,7 +457,6 @@ export function CanvasContainer({
     endStrokeGroup,
     document,
     settings.autoCopyOnChange,
-    engine,
   ]);
 
   // Mouse leave handler

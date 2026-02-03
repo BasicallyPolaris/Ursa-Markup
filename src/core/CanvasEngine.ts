@@ -586,15 +586,9 @@ export class CanvasEngine {
 
   /**
    * Get a combined canvas (base + multiply + draw) for saving/copying
-   * Uses the pre-composited canvas if available for better performance
+   * Always creates a fresh canvas to ensure all layers are properly composed
    */
   getCombinedCanvas(): HTMLCanvasElement | null {
-    // Use the pre-composited canvas if available
-    if (this.compositeCanvas && this.compositeCanvas.width > 0) {
-      return this.compositeCanvas;
-    }
-    
-    // Fallback: create a temporary canvas
     if (!this.baseCanvas || !this.drawCanvas) return null;
 
     const tempCanvas = document.createElement("canvas");

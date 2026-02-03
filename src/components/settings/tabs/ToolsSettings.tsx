@@ -99,22 +99,6 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
               step={5}
             />
           </SettingsSliderRow>
-
-          <SettingsSliderRow
-            label="Corner Radius"
-            value={settings.defaultMarkerBorderRadius}
-            unit="px"
-          >
-            <Slider
-              value={[settings.defaultMarkerBorderRadius]}
-              onValueChange={([value]) =>
-                updateDraft({ defaultMarkerBorderRadius: value })
-              }
-              min={0}
-              max={20}
-              step={1}
-            />
-          </SettingsSliderRow>
         </SettingsGroup>
 
         <div className="border-t border-toolbar-border/50 pt-4">

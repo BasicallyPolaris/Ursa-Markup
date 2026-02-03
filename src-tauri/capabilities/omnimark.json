@@ -1,5 +1,5 @@
 {
-  "$schema": "../../../gen/schemas/desktop-schema.json",
+  "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "omnimark:default",
   "description": "Default permissions for OmniMark",
   "windows": ["main", "settings"],
@@ -16,8 +16,6 @@
     "core:event:default",
     "cli:default",
     "cli:allow-cli-matches",
-    "opener:default",
-    "clipboard-manager:allow-write-image",
     "dialog:allow-open",
     "dialog:allow-save",
     {
@@ -36,14 +34,14 @@
       "identifier": "fs:allow-write-text-file",
       "allow": [{ "path": "$APPCONFIG/**" }]
     },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "$APPCONFIG/**" }, { "path": "$HOME/**" }]
+    },
     "store:default",
     "store:allow-get",
     "store:allow-set",
     "store:allow-save",
-    "store:allow-keys",
-    "store:allow-values",
-    "store:allow-entries",
-    "store:allow-length",
     "store:allow-load"
   ],
   "commands": {
