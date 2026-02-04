@@ -130,8 +130,14 @@ export function matchesHotkey(
   );
 }
 
+export type AutoCopyFormat = "png" | "jpeg";
+
 export interface AppSettings {
   autoCopyOnChange: boolean;
+  autoCopyFormat: AutoCopyFormat;
+  autoCopyJpegQuality: number;
+  manualCopyFormat: AutoCopyFormat;
+  manualCopyJpegQuality: number;
   colorPresets: string[];
   defaultTool: "pen" | "highlighter" | "area";
   defaultPenSize: number;
@@ -154,6 +160,10 @@ export interface AppSettings {
 
 export const DEFAULT_SETTINGS: AppSettings = {
   autoCopyOnChange: true,
+  autoCopyFormat: "jpeg",
+  autoCopyJpegQuality: 0.85,
+  manualCopyFormat: "png",
+  manualCopyJpegQuality: 0.95,
   colorPresets: [
     "#FF6B6B",
     "#FF9F43",

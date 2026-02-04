@@ -15,6 +15,10 @@ export interface CopyOptions {
   force?: boolean;
   /** Whether this is an auto-copy (affects toast behavior) */
   isAutoCopy?: boolean;
+  /** Image format for clipboard copy */
+  format?: "png" | "jpeg";
+  /** JPEG quality (0.0 - 1.0), only used when format is "jpeg" */
+  jpegQuality?: number;
 }
 
 /**
@@ -34,7 +38,7 @@ export interface CopyResult {
 export class IOService {
   /** Track the last version that was successfully queued for copy */
   private lastCopiedVersion: number = -1;
-  
+
   /** Web Worker for PNG encoding */
   private copyWorker: Worker | null = null;
 
@@ -133,15 +137,8 @@ export class IOService {
 
   /**
    * Copy canvas image to clipboard using Web Worker + Rust backend
-   * 
-   * Flow:
-   * 1. Get ImageData from canvas (raw pixels)
-   * 2. Transfer ImageData to Web Worker (transferable)
-   * 3. Worker converts to PNG and base64 (heavy work, off main thread)
-   * 4. Worker sends base64 string back
-   * 5. Main thread invokes Rust command (fire-and-forget)
-   * 6. Rust handles clipboard in background thread
-   * 
+   *
+   *
    * @param canvas The canvas to copy
    * @param version The document version (for deduplication)
    * @param options Copy options
@@ -158,16 +155,23 @@ export class IOService {
     }
 
     try {
-      // Step 1: Get raw pixel data from canvas
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Failed to get canvas context");
-      
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      
-      // Step 2-4: Send to worker for PNG encoding (off main thread)
-      const base64Data = await this.encodeInWorker(imageData);
+      let base64Data: string;
+      const format = options?.format ?? "png";
 
-      // Step 5: Queue copy in Rust backend (fire-and-forget)
+      if (format === "jpeg") {
+        // JPEG path: Fast encoding (hardware accelerated)
+        const quality = options?.jpegQuality ?? 0.85;
+        base64Data = await this.encodeAsJpeg(canvas, quality);
+      } else {
+        // PNG path: High quality via worker (slower)
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("Failed to get canvas context");
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        base64Data = await this.encodeInWorker(imageData);
+      }
+
+      // Queue copy in Rust backend (fire-and-forget)
       await invoke("queue_clipboard_copy_base64", {
         imageBase64: base64Data,
         version,
@@ -184,46 +188,85 @@ export class IOService {
   }
 
   /**
+   * Fast JPEG encoding for auto-copy (much faster than PNG)
+   * Uses canvas.toBlob which is hardware accelerated
+   */
+  private async encodeAsJpeg(
+    canvas: HTMLCanvasElement,
+    quality: number = 0.92,
+  ): Promise<string> {
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, "image/jpeg", quality);
+    });
+
+    if (!blob) {
+      throw new Error("Failed to create JPEG blob from canvas");
+    }
+
+    // Convert blob to base64
+    const arrayBuffer = await blob.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    return this.uint8ArrayToBase64(uint8Array);
+  }
+
+  /**
+   * Convert Uint8Array to base64 string efficiently
+   * Uses chunked processing to avoid call stack issues
+   */
+  private uint8ArrayToBase64(bytes: Uint8Array): string {
+    // Process in chunks to avoid call stack issues with large arrays
+    const CHUNK_SIZE = 0x8000; // 32KB chunks
+    const chunks: string[] = [];
+
+    for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+      const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
+      chunks.push(
+        String.fromCharCode.apply(null, chunk as unknown as number[]),
+      );
+    }
+
+    return btoa(chunks.join(""));
+  }
+
+  /**
    * Encode ImageData to base64 PNG in a Web Worker
    */
   private encodeInWorker(imageData: ImageData): Promise<string> {
     return new Promise((resolve, reject) => {
       const worker = this.getCopyWorker();
-      
+
       const handleMessage = (event: MessageEvent) => {
         worker.removeEventListener("message", handleMessage);
         worker.removeEventListener("error", handleError);
-        
+
         if (event.data.type === "success") {
           resolve(event.data.base64Data);
         } else {
           reject(new Error(event.data.error || "Worker failed"));
         }
       };
-      
+
       const handleError = (error: ErrorEvent) => {
         worker.removeEventListener("message", handleMessage);
         worker.removeEventListener("error", handleError);
         reject(new Error(error.message));
       };
-      
+
       worker.addEventListener("message", handleMessage);
       worker.addEventListener("error", handleError);
-      
+
       // Transfer the underlying ArrayBuffer to the worker (zero-copy)
       worker.postMessage(
-        { 
-          type: "copy", 
+        {
+          type: "copy",
           imageData: imageData.data,
-          width: imageData.width, 
-          height: imageData.height 
+          width: imageData.width,
+          height: imageData.height,
         },
-        [imageData.data.buffer]
+        [imageData.data.buffer],
       );
     });
   }
-
-
 
   /**
    * Get the last copied version (for UI feedback)

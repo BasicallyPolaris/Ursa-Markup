@@ -68,13 +68,20 @@ export function useFileActions() {
     if (!currentEngine || !activeDoc) return;
     
     const canvas = currentEngine.getCombinedCanvas();
-    if (canvas) {
-      const version = activeDoc.version;
-      // Register as manual copy (show toast on success)
-      registerPendingCopy(version, false);
-      // Force copy even if version matches (user explicitly requested it)
-      await services.ioService.copyToClipboard(canvas, version, { force: true, isAutoCopy: false });
-    }
+      if (canvas) {
+        const version = activeDoc.version;
+        // Register as manual copy (show toast on success)
+        registerPendingCopy(version, false);
+        // Use manual copy settings from app settings (format + jpeg quality)
+        const { manualCopyFormat, manualCopyJpegQuality } = services.settingsManager.settings;
+        // Force copy even if version matches (user explicitly requested it)
+        await services.ioService.copyToClipboard(canvas, version, {
+          force: true,
+          isAutoCopy: false,
+          format: manualCopyFormat,
+          jpegQuality: manualCopyJpegQuality,
+        });
+      }
   }, []);
 
   return { handleOpen, handleSave, handleCopy };

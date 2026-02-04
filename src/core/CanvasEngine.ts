@@ -325,8 +325,12 @@ export class CanvasEngine {
     }[];
     currentIndex: number;
   }): void {
-    if (!this.drawCtx || !this.drawCanvas) return;
-    if (!this.multiplyCtx || !this.multiplyCanvas) return;
+    if (!this.drawCtx || !this.drawCanvas) {
+      return;
+    }
+    if (!this.multiplyCtx || !this.multiplyCanvas) {
+      return;
+    }
 
     const { groups, currentIndex } = strokeHistory;
 
@@ -586,9 +590,17 @@ export class CanvasEngine {
 
   /**
    * Get a combined canvas (base + multiply + draw) for saving/copying
-   * Always creates a fresh canvas to ensure all layers are properly composed
+   * Creates a fresh composition to ensure all strokes are included
    */
   getCombinedCanvas(): HTMLCanvasElement | null {
+    return this.getFreshCombinedCanvas();
+  }
+
+  /**
+   * Get a fresh combined canvas by recompositing all layers
+   * Use this when you need a guaranteed fresh composition (e.g., after direct canvas manipulation)
+   */
+  getFreshCombinedCanvas(): HTMLCanvasElement | null {
     if (!this.baseCanvas || !this.drawCanvas) return null;
 
     const tempCanvas = document.createElement("canvas");

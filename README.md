@@ -5,30 +5,36 @@ A cross-platform image annotation tool inspired by the Windows Snipping Tool. Bu
 ## Features
 
 ### Drawing Tools
+
 - **Pen Tool**: Freehand drawing with smooth anti-aliased strokes
 - **Highlighter/Marker Tool**: Semi-transparent highlighting with flat ends
 - **Area Tool**: Rectangle/rounded rectangle highlighting with optional border
 
 ### Tool Settings
+
 - Adjustable size and opacity per tool
 - Border radius for area tool
 - Blend modes (Normal / Multiply)
 
 ### Canvas Features
+
 - **Zoom**: 10% - 500% (Ctrl+Scroll, Ctrl+=, Ctrl+-)
 - **Pan**: Ctrl+Click and drag
 - **Fit/Stretch/Center**: Multiple view modes
 
 ### Ruler Overlay
+
 - Toggle with Ctrl+R
 - Rotate with scroll wheel
 - Snap drawing to ruler edge with Shift+drag
 
 ### Multi-Tab Support
+
 - Work on multiple images simultaneously
 - Configurable close behavior (prompt, auto-save, discard)
 
 ### Other Features
+
 - **Undo/Redo**: Full history support per document
 - **Auto-Copy**: Automatically copies annotated image to clipboard after each stroke
 - **Save**: Export as PNG, JPEG, or WebP
@@ -39,34 +45,34 @@ A cross-platform image annotation tool inspired by the Windows Snipping Tool. Bu
 
 All shortcuts can be customized in Settings → Shortcuts.
 
-| Shortcut           | Action                     |
-| ------------------ | -------------------------- |
-| `Ctrl+O`           | Open image                 |
-| `Ctrl+S`           | Save image                 |
-| `Ctrl+C`           | Copy to clipboard          |
-| `Ctrl+Z`           | Undo                       |
-| `Ctrl+Shift+Z`     | Redo                       |
-| `Ctrl+R`           | Toggle ruler               |
-| `1`                | Pen tool                   |
-| `2`                | Highlighter tool           |
-| `3`                | Area tool                  |
-| `Ctrl+1` - `Ctrl+7`| Quick color presets        |
-| `Ctrl+T`           | New tab                    |
-| `Ctrl+W`           | Close tab                  |
-| `Ctrl+Tab`         | Next tab                   |
-| `Ctrl+Shift+Tab`   | Previous tab               |
-| `Ctrl+=` / `Ctrl+-`| Zoom in/out                |
-| `Ctrl+0`           | Reset zoom to 100%         |
-| `Ctrl+Alt+F`       | Fit image to window        |
-| `Ctrl+F`           | Stretch to fill            |
-| `Ctrl+Alt+C`       | Center image               |
-| `Shift + drag`     | Snap drawing to ruler line |
+| Shortcut            | Action                     |
+| ------------------- | -------------------------- |
+| `Ctrl+O`            | Open image                 |
+| `Ctrl+S`            | Save image                 |
+| `Ctrl+C`            | Copy to clipboard          |
+| `Ctrl+Z`            | Undo                       |
+| `Ctrl+Shift+Z`      | Redo                       |
+| `Ctrl+R`            | Toggle ruler               |
+| `1`                 | Pen tool                   |
+| `2`                 | Highlighter tool           |
+| `3`                 | Area tool                  |
+| `Ctrl+1` - `Ctrl+7` | Quick color presets        |
+| `Ctrl+T`            | New tab                    |
+| `Ctrl+W`            | Close tab                  |
+| `Ctrl+Tab`          | Next tab                   |
+| `Ctrl+Shift+Tab`    | Previous tab               |
+| `Ctrl+=` / `Ctrl+-` | Zoom in/out                |
+| `Ctrl+0`            | Reset zoom to 100%         |
+| `Ctrl+Alt+F`        | Fit image to window        |
+| `Ctrl+F`            | Stretch to fill            |
+| `Ctrl+Alt+C`        | Center image               |
+| `Shift + drag`      | Snap drawing to ruler line |
 
 ## Tech Stack
 
 - **Framework**: Tauri 2.x (Rust backend + Web frontend)
 - **Frontend**: React 19 + TypeScript
-- **Styling**: TailwindCSS 4
+- **Styling**: TailwindCSS 4 + ShadCN + BaseUI
 - **Build Tool**: Vite
 - **Canvas**: HTML5 Canvas API with Web Workers for clipboard encoding
 
@@ -130,6 +136,7 @@ omnimark/
 OmniMark supports full UI theming. See [THEMING.md](THEMING.md) for details.
 
 The theme file is located at:
+
 - **User config**: `~/.config/omnimark/theme.json` (created on first run)
 - **Bundled default**: `public/config/theme.json`
 

@@ -85,12 +85,15 @@ export function CanvasContainer({
   const lastPointRef = useRef<Point | null>(null);
   const previewPointsRef = useRef<Point[]>([]);
   const startPointSnappedRef = useRef(false); // Track if start point snapped to ruler (for area tool)
-  
+
   // Ref for debounced auto-copy timer
   const autoCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   // State to trigger auto-copy after strokes are replayed (state forces re-render)
-  const [pendingAutoCopy, setPendingAutoCopy] = useState<{ version: number; shouldCopy: boolean }>({ version: -1, shouldCopy: false });
+  const [pendingAutoCopy, setPendingAutoCopy] = useState<{
+    version: number;
+    shouldCopy: boolean;
+  }>({ version: -1, shouldCopy: false });
 
   // Get screen size of container
   const getScreenSize = useCallback(() => {
@@ -114,7 +117,7 @@ export function CanvasContainer({
         // Track on the Document object since component remounts on tab switch
         if (!document.hasAppliedInitialFit) {
           document.hasAppliedInitialFit = true;
-          
+
           if (settings.imageOpenBehavior === "fit") {
             stretchToFill(loadedSize);
           } else {
@@ -143,23 +146,41 @@ export function CanvasContainer({
       groups: strokeHistory.groups,
       currentIndex: strokeHistory.currentIndex,
     });
-    
+
     // Execute auto-copy if triggered (after strokes are definitely replayed)
     if (pendingAutoCopy.shouldCopy && settings.autoCopyOnChange) {
       const { version } = pendingAutoCopy;
       // Reset the trigger
       setPendingAutoCopy({ version: -1, shouldCopy: false });
-      
+
       const canvas = engine.getCombinedCanvas();
       if (canvas) {
         // Register as auto-copy (silent - no toast on success)
         registerPendingCopy(version, true);
-        services.ioService.copyToClipboard(canvas, version, { isAutoCopy: true }).catch((err) => {
-          console.error("Auto-copy to clipboard failed:", err);
-        });
+        // Use configured format and quality for auto-copy
+        const format = settings.autoCopyFormat;
+        const jpegQuality = settings.autoCopyJpegQuality;
+        services.ioService
+          .copyToClipboard(canvas, version, {
+            isAutoCopy: true,
+            format,
+            jpegQuality,
+          })
+          .catch((err) => {
+            console.error("Auto-copy to clipboard failed:", err);
+          });
       }
     }
-  }, [strokeHistory.currentIndex, strokeHistory.groups, engine, document, settings.autoCopyOnChange, pendingAutoCopy]);
+  }, [
+    strokeHistory.currentIndex,
+    strokeHistory.groups,
+    engine,
+    document,
+    settings.autoCopyOnChange,
+    settings.autoCopyFormat,
+    settings.autoCopyJpegQuality,
+    pendingAutoCopy,
+  ]);
 
   // Render when state changes (not continuous animation loop)
   useEffect(() => {
@@ -436,19 +457,18 @@ export function CanvasContainer({
       clearTimeout(autoCopyTimerRef.current);
       autoCopyTimerRef.current = null;
     }
-    
+
     if (settings.autoCopyOnChange) {
-      // Capture version after markAsChanged incremented it
-      const versionToCopy = document.version;
-      
-      // Debounce auto-copy by 500ms to avoid unnecessary copies on rapid drawing
-      // The actual copy happens in the replayStrokes effect after strokes are committed
+      // Debounce auto-copy to avoid unnecessary copies on rapid drawing.
+      // Capture the document version when the timer fires (not when it starts)
+      // so we always request the most recent canvas state.
+      const DEBOUNCE_MS = 200;
       autoCopyTimerRef.current = setTimeout(() => {
-        // Set trigger state - this forces a re-render and the replayStrokes effect will execute the copy
-        // This ensures copy happens AFTER strokes are replayed to canvas
+        const versionToCopy = document.version;
+        // Trigger the replay/copy flow in the replayStrokes effect
         setPendingAutoCopy({ version: versionToCopy, shouldCopy: true });
         autoCopyTimerRef.current = null;
-      }, 500);
+      }, DEBOUNCE_MS);
     }
   }, [
     ruler.isDragging,
@@ -503,7 +523,7 @@ export function CanvasContainer({
 
       // Scroll speed factor - smaller value = smoother scrolling
       const scrollSpeed = 0.4;
-      
+
       // Note: When Shift is pressed, some browsers swap deltaX and deltaY
       // We use deltaX when available for more natural horizontal scrolling
       const deltaY = e.deltaY;
@@ -519,8 +539,9 @@ export function CanvasContainer({
         // Shift + Scroll = Horizontal pan
         // Some browsers convert Shift+ScrollY to ScrollX, so we check both
         e.preventDefault();
-        const scrollDelta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
-        const scrollAmount = scrollDelta * scrollSpeed / zoom;
+        const scrollDelta =
+          Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+        const scrollAmount = (scrollDelta * scrollSpeed) / zoom;
         setViewOffset({
           x: viewOffset.x + scrollAmount,
           y: viewOffset.y,
@@ -535,7 +556,7 @@ export function CanvasContainer({
       } else {
         // Normal scroll (no ruler) = Vertical pan
         e.preventDefault();
-        const scrollAmount = deltaY * scrollSpeed / zoom;
+        const scrollAmount = (deltaY * scrollSpeed) / zoom;
         setViewOffset({
           x: viewOffset.x,
           y: viewOffset.y + scrollAmount,
@@ -549,7 +570,14 @@ export function CanvasContainer({
     });
     return () =>
       window.removeEventListener("wheel", handleWheel, { capture: true });
-  }, [zoom, viewOffset, ruler.visible, zoomAroundPoint, rotateRuler, setViewOffset]);
+  }, [
+    zoom,
+    viewOffset,
+    ruler.visible,
+    zoomAroundPoint,
+    rotateRuler,
+    setViewOffset,
+  ]);
 
   // Cleanup auto-copy timer on unmount
   useEffect(() => {
