@@ -1,8 +1,16 @@
+import { DEFAULT_THEME } from "../lib/theme";
+
 export type Tool = "pen" | "highlighter" | "area";
+export type BlendMode = "normal" | "multiply";
 
 export interface Point {
   x: number;
   y: number;
+}
+
+export interface Size {
+  width: number;
+  height: number;
 }
 
 export interface RulerState {
@@ -13,13 +21,11 @@ export interface RulerState {
   isDragging: boolean;
 }
 
-// Stroke data for history (stored per tab)
 export interface Stroke {
   id: string;
   tool: Tool;
   points: Point[];
-  brush: BrushSettings;
-  blendMode: "normal" | "color" | "multiply";
+  brushSettings: BrushSettings;
   timestamp: number;
 }
 
@@ -27,6 +33,11 @@ export interface StrokeGroup {
   id: string;
   strokes: Stroke[];
   timestamp: number;
+}
+
+export interface StrokeHistoryState {
+  groups: StrokeGroup[];
+  currentIndex: number;
 }
 
 // Tab state for multi-tab support
@@ -41,7 +52,6 @@ export interface Tab {
   rulerPosition: { x: number; y: number; angle: number };
   hasChanges: boolean;
   recentDir: string | null;
-  // Per-tab stroke history (Option A)
   strokeHistory: StrokeGroup[];
   strokeHistoryIndex: number;
 }
@@ -50,10 +60,10 @@ export interface BrushSettings {
   size: number;
   color: string;
   opacity: number;
-  borderRadius?: number; // For marker and area tools
-  borderWidth?: number; // For area tool border
-  borderEnabled?: boolean; // Toggle area border on/off
-  blendMode?: "normal" | "multiply"; // Blend mode for how colors mix with the image
+  blendMode: BlendMode;
+  borderRadius?: number;
+  borderWidth?: number;
+  borderEnabled?: boolean;
 }
 
 export interface CanvasState {
@@ -91,46 +101,68 @@ export interface AreaToolConfig {
   borderWidth: number;
 }
 
+export interface RulerState {
+  visible: boolean;
+  x: number;
+  y: number;
+  angle: number;
+  isDragging: boolean;
+}
+
+export interface RulerSnapInfo {
+  distance: number;
+  snapToFarSide: boolean;
+  inStickyZone: boolean;
+  onRuler: boolean;
+}
+
 export interface ToolConfig {
   pen: PenToolConfig;
   highlighter: HighlighterToolConfig;
   area: AreaToolConfig;
 }
 
-export const PASTEL_PALETTE: ColorPalette = {
-  name: "pastel",
-  colors: [
-    "#FFB3BA", // Pastel Red
-    "#FFDFBA", // Pastel Orange
-    "#FFFFBA", // Pastel Yellow
-    "#BAFFC9", // Pastel Green
-    "#BAE1FF", // Pastel Blue
-    "#E2BAFF", // Pastel Purple
-    "#FFB3E6", // Pastel Pink
-    "#C4C4C4", // Gray
-    "#333333", // Dark
-  ],
-};
+export interface DocumentState {
+  id: string;
+  filePath: string | null;
+  fileName: string | null;
+  imageSrc: string | null;
+  canvasSize: Size;
+  zoom: number;
+  viewOffset: Point;
+  rulerPosition: { x: number; y: number; angle: number };
+  hasChanges: boolean;
+  recentDir: string | null;
+  strokeHistory: StrokeGroup[];
+  strokeHistoryIndex: number;
+}
 
-export const DEFAULT_EDITOR_PALETTE: ColorPalette = {
-  name: "default",
-  colors: [
-    "#FF6B6B",
-    "#FF9F43",
-    "#FFE066",
-    "#6BCB77",
-    "#4D96FF",
-    "#9B59B6",
-    "#FF6B9D",
-  ],
-};
+export interface ViewState {
+  zoom: number;
+  viewOffset: Point;
+  canvasSize: Size;
+}
 
-export const DEFAULT_CONFIG = {
-  palettes: [DEFAULT_EDITOR_PALETTE, PASTEL_PALETTE],
-  defaultPalette: "default",
-  tools: {
-    pen: { minSize: 1, maxSize: 20, defaultSize: 3 },
-    highlighter: { opacity: 0.4, minSize: 5, maxSize: 50, defaultSize: 20 },
-    area: { opacity: 0.4, defaultSize: 2, borderRadius: 0, borderWidth: 2 },
-  },
-};
+export interface PreviewState {
+  tool: Tool;
+  startPoint: Point;
+  currentPoint: Point;
+  brush: BrushSettings;
+  points?: Point[];
+  blendMode?: BlendMode;
+}
+
+// Color types for blend modes
+export interface HSL {
+  h: number;
+  s: number;
+  l: number;
+}
+
+export interface RGB {
+  r: number;
+  g: number;
+  b: number;
+}
+
+export const DEFAULT_CONFIG = DEFAULT_THEME;

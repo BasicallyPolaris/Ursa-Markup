@@ -1,4 +1,4 @@
-import type { Point, BrushSettings } from "./types";
+import type { Point, BrushSettings } from "../types";
 
 /**
  * BrushEngine handles all brush rendering operations

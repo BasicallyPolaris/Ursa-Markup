@@ -10,7 +10,7 @@ import React, {
   useCallback,
 } from "react";
 import type { Document, StrokeHistory, Ruler } from "../core";
-import type { Point, Tool, BrushSettings } from "../core";
+import type { Point, Tool, BrushSettings } from "../types";
 
 interface DocumentContextValue {
   document: Document;
@@ -22,7 +22,12 @@ interface DocumentContextValue {
   };
   ruler: Ruler;
   startStrokeGroup: () => void;
-  startStroke: (tool: Tool, brush: BrushSettings, point: Point) => void;
+  startStroke: (
+    tool: Tool,
+    brush: BrushSettings,
+    point: Point,
+    blendMode?: "normal" | "color" | "multiply",
+  ) => void;
   addPointToStroke: (point: Point) => void;
   endStrokeGroup: () => void;
   undo: () => void;

@@ -10,7 +10,7 @@ import { registerPendingCopy } from "../../hooks/useClipboardEvents";
 import { formatHotkey } from "../../services/types";
 import { services } from "../../services";
 import { cn } from "../../lib/utils";
-import type { Point, ViewState } from "../../core/types";
+import type { Point, ViewState } from "../../types";
 
 interface CanvasContainerProps {
   className?: string;

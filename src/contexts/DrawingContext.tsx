@@ -1,7 +1,7 @@
 /**
  * DrawingContext - Shared state for drawing tools and brush settings
  * Connects Toolbar with CanvasContainer
- * 
+ *
  * Each tool maintains its own session settings that persist until app restart.
  * Switching between tools restores that tool's last-used settings.
  */
@@ -14,7 +14,7 @@ import React, {
   useEffect,
   useRef,
 } from "react";
-import type { Tool, BrushSettings } from "../core";
+import type { Tool, BrushSettings } from "../types";
 import { useSettings } from "./SettingsContext";
 
 type BlendMode = "normal" | "multiply";
@@ -59,48 +59,51 @@ export function DrawingProvider({
   const initialColor = settings.colorPresets[0] || "#FF6B6B";
 
   // Per-tool session configs - initialized from user settings, but maintained per-session
-  const [toolConfigs, setToolConfigs] = useState<Record<Tool, ToolConfig>>(() => ({
-    pen: {
-      size: settings.defaultPenSize,
-      opacity: settings.defaultPenOpacity,
-      blendMode: settings.defaultPenBlendMode ?? "normal",
-    },
-    highlighter: {
-      size: settings.defaultMarkerSize,
-      opacity: settings.defaultMarkerOpacity,
-      blendMode: settings.defaultMarkerBlendMode ?? "multiply",
-    },
-    area: {
-      size: 1, // Not used for area tool
-      opacity: settings.defaultAreaOpacity,
-      blendMode: settings.defaultAreaBlendMode ?? "multiply",
-      borderRadius: settings.defaultAreaBorderRadius,
-      borderWidth: settings.defaultAreaBorderWidth,
-    },
-  }));
+  const [toolConfigs, setToolConfigs] = useState<Record<Tool, ToolConfig>>(
+    () => ({
+      pen: {
+        size: settings.defaultPenSize,
+        opacity: settings.defaultPenOpacity,
+        blendMode: settings.defaultPenBlendMode ?? "normal",
+      },
+      highlighter: {
+        size: settings.defaultMarkerSize,
+        opacity: settings.defaultMarkerOpacity,
+        blendMode: settings.defaultMarkerBlendMode ?? "multiply",
+      },
+      area: {
+        size: 1, // Not used for area tool
+        opacity: settings.defaultAreaOpacity,
+        blendMode: settings.defaultAreaBlendMode ?? "multiply",
+        borderRadius: settings.defaultAreaBorderRadius,
+        borderWidth: settings.defaultAreaBorderWidth,
+      },
+    }),
+  );
 
   const [tool, setToolState] = useState<Tool>(initialTool);
-  
+
   // Current brush state derived from tool config + shared color
   const [color, setColor] = useState<string>(initialColor);
-  
+
   // Get current tool's config
   const currentConfig = toolConfigs[tool];
-  
+
   // Build brush from current tool config and shared color
   const brush: BrushSettings = {
     size: currentConfig.size,
     color: color,
+    blendMode: currentConfig.blendMode,
     opacity: currentConfig.opacity,
     borderRadius: currentConfig.borderRadius,
     borderWidth: currentConfig.borderWidth,
   };
-  
+
   const blendMode = currentConfig.blendMode;
 
   // Track if this is the first render to avoid resetting configs on settings change
   const isInitialized = useRef(false);
-  
+
   useEffect(() => {
     isInitialized.current = true;
   }, []);
@@ -114,41 +117,55 @@ export function DrawingProvider({
   }, [settings.colorPresets, color]);
 
   /** Update the current tool's config */
-  const updateToolConfig = useCallback((toolToUpdate: Tool, changes: Partial<ToolConfig>) => {
-    setToolConfigs(prev => ({
-      ...prev,
-      [toolToUpdate]: { ...prev[toolToUpdate], ...changes },
-    }));
-  }, []);
+  const updateToolConfig = useCallback(
+    (toolToUpdate: Tool, changes: Partial<ToolConfig>) => {
+      setToolConfigs((prev) => ({
+        ...prev,
+        [toolToUpdate]: { ...prev[toolToUpdate], ...changes },
+      }));
+    },
+    [],
+  );
 
-  const updateBrush = useCallback((changes: Partial<BrushSettings>) => {
-    // Update color separately (shared across tools)
-    if (changes.color !== undefined) {
-      setColor(changes.color);
-    }
-    
-    // Update tool-specific settings in the current tool's config
-    const toolConfigChanges: Partial<ToolConfig> = {};
-    if (changes.size !== undefined) toolConfigChanges.size = changes.size;
-    if (changes.opacity !== undefined) toolConfigChanges.opacity = changes.opacity;
-    if (changes.borderRadius !== undefined) toolConfigChanges.borderRadius = changes.borderRadius;
-    if (changes.borderWidth !== undefined) toolConfigChanges.borderWidth = changes.borderWidth;
-    
-    if (Object.keys(toolConfigChanges).length > 0) {
-      updateToolConfig(tool, toolConfigChanges);
-    }
-  }, [tool, updateToolConfig]);
+  const updateBrush = useCallback(
+    (changes: Partial<BrushSettings>) => {
+      // Update color separately (shared across tools)
+      if (changes.color !== undefined) {
+        setColor(changes.color);
+      }
 
-  const setBlendMode = useCallback((mode: BlendMode) => {
-    updateToolConfig(tool, { blendMode: mode });
-  }, [tool, updateToolConfig]);
+      // Update tool-specific settings in the current tool's config
+      const toolConfigChanges: Partial<ToolConfig> = {};
+      if (changes.size !== undefined) toolConfigChanges.size = changes.size;
+      if (changes.opacity !== undefined)
+        toolConfigChanges.opacity = changes.opacity;
+      if (changes.borderRadius !== undefined)
+        toolConfigChanges.borderRadius = changes.borderRadius;
+      if (changes.borderWidth !== undefined)
+        toolConfigChanges.borderWidth = changes.borderWidth;
 
-  const setBrush = useCallback((
-    brushOrFn: BrushSettings | ((prev: BrushSettings) => BrushSettings),
-  ) => {
-    const newBrush = typeof brushOrFn === 'function' ? brushOrFn(brush) : brushOrFn;
-    updateBrush(newBrush);
-  }, [brush, updateBrush]);
+      if (Object.keys(toolConfigChanges).length > 0) {
+        updateToolConfig(tool, toolConfigChanges);
+      }
+    },
+    [tool, updateToolConfig],
+  );
+
+  const setBlendMode = useCallback(
+    (mode: BlendMode) => {
+      updateToolConfig(tool, { blendMode: mode });
+    },
+    [tool, updateToolConfig],
+  );
+
+  const setBrush = useCallback(
+    (brushOrFn: BrushSettings | ((prev: BrushSettings) => BrushSettings)) => {
+      const newBrush =
+        typeof brushOrFn === "function" ? brushOrFn(brush) : brushOrFn;
+      updateBrush(newBrush);
+    },
+    [brush, updateBrush],
+  );
 
   /**
    * Switch tool and restore that tool's session settings.

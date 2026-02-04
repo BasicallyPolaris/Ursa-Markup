@@ -3,8 +3,9 @@ import type {
   Size,
   ViewState,
   PreviewState,
-  BrushSettings,
-} from "./types";
+  Stroke,
+  StrokeHistoryState,
+} from "../types";
 import { BrushEngine } from "./BrushEngine";
 import { Ruler } from "./Ruler";
 
@@ -320,16 +321,7 @@ export class CanvasEngine {
    * - If this is a new stroke being added (index increased by 1, groups increased by 1), only draw the new stroke
    * - If this is undo/redo or other change, do a full replay
    */
-  replayStrokes(strokeHistory: {
-    groups: {
-      strokes: {
-        tool: string;
-        points: Point[];
-        brush: BrushSettings;
-      }[];
-    }[];
-    currentIndex: number;
-  }): void {
+  replayStrokes(strokeHistory: StrokeHistoryState): void {
     if (!this.drawCtx || !this.drawCanvas) {
       return;
     }
@@ -405,17 +397,11 @@ export class CanvasEngine {
   /**
    * Replay a single stroke to the appropriate canvas
    */
-  private replayStroke(stroke: {
-    tool: string;
-    points: Point[];
-    brush: BrushSettings;
-    // accept legacy shape where callers might have used `blendMode` on stroke
-    blendMode?: "normal" | "color" | "multiply";
-  }): void {
+  private replayStroke(stroke: Stroke): void {
     // Route to multiply canvas if blend mode is multiply, otherwise to draw canvas
     // stroke.brush is canonical; allow stroke.blendMode for legacy data
-    const brush = stroke.brush;
-    const effectiveBlend = brush?.blendMode ?? stroke.blendMode ?? "normal";
+    const brushSettings = stroke.brushSettings;
+    const effectiveBlend = brushSettings?.blendMode ?? "normal";
     const isMultiply = effectiveBlend === "multiply";
     const ctx = isMultiply ? this.multiplyCtx : this.drawCtx;
     const canvas = isMultiply ? this.multiplyCanvas : this.drawCanvas;
@@ -431,21 +417,21 @@ export class CanvasEngine {
         this.brushEngine.drawPenStroke(
           ctx,
           stroke.points,
-          stroke.brush,
+          stroke.brushSettings,
         );
         break;
       case "highlighter":
         this.brushEngine.drawHighlighterStroke(
           ctx,
           stroke.points,
-          stroke.brush,
+          stroke.brushSettings,
         );
         break;
       case "area":
         if (stroke.points.length >= 2) {
           const start = stroke.points[0];
           const end = stroke.points[stroke.points.length - 1];
-          this.brushEngine.drawArea(ctx, start, end, stroke.brush);
+          this.brushEngine.drawArea(ctx, start, end, stroke.brushSettings);
         }
         break;
     }

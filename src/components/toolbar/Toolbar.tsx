@@ -39,7 +39,7 @@ import { useCanvasEngine } from "../../contexts/CanvasEngineContext";
 import { useDrawing } from "../../contexts/DrawingContext";
 import { useHotkeys, useFileActions } from "../../hooks/useKeyboardShortcuts";
 import { formatHotkey } from "../../services/types";
-import type { Tool, BrushSettings } from "../../core/types";
+import type { Tool, BrushSettings } from "../../types";
 import { cn } from "../../lib/utils";
 
 export function Toolbar() {

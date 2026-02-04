@@ -5,7 +5,7 @@ import type {
   Tool,
   BrushSettings,
   StrokeHistoryState,
-} from "./types";
+} from "../types";
 import { BrushEngine } from "./BrushEngine";
 
 /**
@@ -65,7 +65,7 @@ export class StrokeHistory {
   /**
    * Start a new stroke within the current group
    */
-  startStroke(tool: Tool, brush: BrushSettings, point: Point): void {
+  startStroke(tool: Tool, brushSettings: BrushSettings, point: Point): void {
     if (!this.isRecording || !this.currentGroup) {
       return;
     }
@@ -74,7 +74,7 @@ export class StrokeHistory {
       id: this.generateId(),
       tool,
       points: [point],
-      brush: brush,
+      brushSettings,
       timestamp: Date.now(),
     };
 
@@ -189,21 +189,21 @@ export class StrokeHistory {
         this.brushEngine.drawPenStroke(
           ctx,
           stroke.points,
-          stroke.brush,
+          stroke.brushSettings,
         );
         break;
       case "highlighter":
         this.brushEngine.drawHighlighterStroke(
           ctx,
           stroke.points,
-          stroke.brush,
+          stroke.brushSettings,
         );
         break;
       case "area":
         if (stroke.points.length >= 2) {
           const start = stroke.points[0];
           const end = stroke.points[stroke.points.length - 1];
-          this.brushEngine.drawArea(ctx, start, end, stroke.brush);
+          this.brushEngine.drawArea(ctx, start, end, stroke.brushSettings);
         }
         break;
     }
@@ -250,6 +250,6 @@ export class StrokeHistory {
    * Generate a unique ID
    */
   private generateId(): string {
-    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
   }
 }

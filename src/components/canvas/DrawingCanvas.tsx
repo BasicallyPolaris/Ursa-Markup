@@ -291,6 +291,7 @@ export function DrawingCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const baseCanvasRef = useRef<HTMLCanvasElement>(null);
   const drawCanvasRef = useRef<HTMLCanvasElement>(null);
+  const multiplyCanvasRef = useRef<HTMLCanvasElement>(null);
   const displayCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [isRulerHovered, setIsRulerHovered] = useState(false);
@@ -449,24 +450,40 @@ export function DrawingCanvas({
 
   const replayStrokesToCanvas = useCallback(() => {
     const drawCanvas = drawCanvasRef.current;
-    if (!drawCanvas || drawCanvas.width === 0) return;
+    const multiplyCanvas = multiplyCanvasRef.current;
+    if (
+      (!drawCanvas || drawCanvas.width === 0) &&
+      (!multiplyCanvas || multiplyCanvas.width === 0)
+    )
+      return;
 
-    const drawCtx = drawCanvas.getContext("2d");
-    if (!drawCtx) return;
+    const drawCtx = drawCanvas?.getContext("2d") || null;
+    const multiplyCtx = multiplyCanvas?.getContext("2d") || null;
+    if (!drawCtx && !multiplyCtx) return;
 
     // Get latest values from refs to avoid stale closure
     const currentHistory = strokeHistoryRef.current;
     const currentIndex = strokeHistoryIndexRef.current;
 
     // Clear and replay all strokes up to the current index
-    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    // Clear both canvases
+    if (drawCanvas && drawCtx)
+      drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+    if (multiplyCanvas && multiplyCtx)
+      multiplyCtx.clearRect(0, 0, multiplyCanvas.width, multiplyCanvas.height);
 
     for (let i = 0; i <= (currentIndex ?? -1); i++) {
       const group = currentHistory?.[i];
       if (!group) continue;
 
       for (const stroke of group.strokes) {
-        replayStroke(drawCtx, stroke);
+        const strokeBlend =
+          (stroke.brush && stroke.brush.blendMode) || "normal";
+        if (strokeBlend === "multiply") {
+          if (multiplyCtx) replayStroke(multiplyCtx, stroke);
+        } else {
+          if (drawCtx) replayStroke(drawCtx, stroke);
+        }
       }
     }
   }, [replayStroke]);
@@ -652,7 +669,7 @@ export function DrawingCanvas({
         const y = Math.min(startPoint.y, currentPoint.y);
         const width = Math.abs(currentPoint.x - startPoint.x);
         const height = Math.abs(currentPoint.y - startPoint.y);
-        
+
         // Only draw if area has some size
         if (width > 1 && height > 1) {
           displayCtx.save();
@@ -1363,7 +1380,7 @@ export function DrawingCanvas({
         // Shift + Scroll = Vertical pan (natural direction: scroll down moves view down)
         e.preventDefault();
         e.stopPropagation();
-        const scrollAmount = e.deltaY * scrollSpeed / currentZoom;
+        const scrollAmount = (e.deltaY * scrollSpeed) / currentZoom;
         onViewOffsetChange({
           x: currentViewOffset.x,
           y: currentViewOffset.y + scrollAmount,
@@ -1372,7 +1389,7 @@ export function DrawingCanvas({
         // Alt + Scroll = Horizontal pan (scroll down moves view right)
         e.preventDefault();
         e.stopPropagation();
-        const scrollAmount = e.deltaY * scrollSpeed / currentZoom;
+        const scrollAmount = (e.deltaY * scrollSpeed) / currentZoom;
         onViewOffsetChange({
           x: currentViewOffset.x + scrollAmount,
           y: currentViewOffset.y,
