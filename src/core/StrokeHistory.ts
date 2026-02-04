@@ -4,7 +4,6 @@ import type {
   Point,
   Tool,
   BrushSettings,
-  BlendMode,
   StrokeHistoryState,
 } from "./types";
 import { BrushEngine } from "./BrushEngine";
@@ -66,12 +65,7 @@ export class StrokeHistory {
   /**
    * Start a new stroke within the current group
    */
-  startStroke(
-    tool: Tool,
-    brush: BrushSettings,
-    point: Point,
-    blendMode: BlendMode = "normal",
-  ): void {
+  startStroke(tool: Tool, brush: BrushSettings, point: Point): void {
     if (!this.isRecording || !this.currentGroup) {
       return;
     }
@@ -80,8 +74,7 @@ export class StrokeHistory {
       id: this.generateId(),
       tool,
       points: [point],
-      brush: { ...brush },
-      blendMode,
+      brush: brush,
       timestamp: Date.now(),
     };
 
@@ -167,10 +160,7 @@ export class StrokeHistory {
   /**
    * Replay strokes up to the current index onto a canvas
    */
-  replayToCanvas(
-    canvas: HTMLCanvasElement,
-    baseImageData: ImageData | null,
-  ): void {
+  replayToCanvas(canvas: HTMLCanvasElement): void {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
@@ -183,7 +173,7 @@ export class StrokeHistory {
       if (!group) continue;
 
       for (const stroke of group.strokes) {
-        this.replayStroke(ctx, stroke, baseImageData, canvas.width);
+        this.replayStroke(ctx, stroke);
       }
     }
   }
@@ -191,12 +181,7 @@ export class StrokeHistory {
   /**
    * Replay a single stroke onto a canvas context
    */
-  replayStroke(
-    ctx: CanvasRenderingContext2D,
-    stroke: Stroke,
-    _baseImageData: ImageData | null,
-    _canvasWidth: number,
-  ): void {
+  replayStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
     if (stroke.points.length === 0) return;
 
     switch (stroke.tool) {
@@ -205,7 +190,6 @@ export class StrokeHistory {
           ctx,
           stroke.points,
           stroke.brush,
-          stroke.blendMode,
         );
         break;
       case "highlighter":
@@ -213,20 +197,13 @@ export class StrokeHistory {
           ctx,
           stroke.points,
           stroke.brush,
-          stroke.blendMode,
         );
         break;
       case "area":
         if (stroke.points.length >= 2) {
           const start = stroke.points[0];
           const end = stroke.points[stroke.points.length - 1];
-          this.brushEngine.drawArea(
-            ctx,
-            start,
-            end,
-            stroke.brush,
-            stroke.blendMode,
-          );
+          this.brushEngine.drawArea(ctx, start, end, stroke.brush);
         }
         break;
     }

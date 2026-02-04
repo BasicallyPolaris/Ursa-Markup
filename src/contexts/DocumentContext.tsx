@@ -10,24 +10,19 @@ import React, {
   useCallback,
 } from "react";
 import type { Document, StrokeHistory, Ruler } from "../core";
-import type { Point, Tool, BrushSettings, BlendMode } from "../core";
+import type { Point, Tool, BrushSettings } from "../core";
 
 interface DocumentContextValue {
   document: Document;
   strokeHistory: {
-    groups: StrokeHistory['groups'];
+    groups: StrokeHistory["groups"];
     currentIndex: number;
     canUndo: boolean;
     canRedo: boolean;
   };
   ruler: Ruler;
   startStrokeGroup: () => void;
-  startStroke: (
-    tool: Tool,
-    brush: BrushSettings,
-    point: Point,
-    blendMode: BlendMode,
-  ) => void;
+  startStroke: (tool: Tool, brush: BrushSettings, point: Point) => void;
   addPointToStroke: (point: Point) => void;
   endStrokeGroup: () => void;
   undo: () => void;
@@ -82,13 +77,8 @@ export function DocumentProvider({
   }, [document]);
 
   const startStroke = useCallback(
-    (
-      tool: Tool,
-      brush: BrushSettings,
-      point: Point,
-      blendMode: BlendMode = "normal",
-    ) => {
-      document.strokeHistory.startStroke(tool, brush, point, blendMode);
+    (tool: Tool, brush: BrushSettings, point: Point) => {
+      document.strokeHistory.startStroke(tool, brush, point);
       document.markAsChanged();
     },
     [document],

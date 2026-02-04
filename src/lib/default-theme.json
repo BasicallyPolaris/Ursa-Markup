@@ -1,5 +1,4 @@
 {
-  "_comment": "OmniMark Theme Configuration - Customize colors and palettes here. Colors support HEX, RGB, and HSL formats. Default dark theme matching original design.",
   "colors": {
     "app": {
       "background": "#1e1e1e",
@@ -49,6 +48,18 @@
     }
   },
   "palettes": [
+    {
+      "name": "default",
+      "colors": [
+        "#FF6B6B",
+        "#FF9F43",
+        "#FFE066",
+        "#6BCB77",
+        "#4D96FF",
+        "#9B59B6",
+        "#FF6B9D"
+      ]
+    },
     {
       "name": "pastel",
       "colors": [
@@ -106,7 +117,7 @@
       ]
     }
   ],
-  "defaultPalette": "pastel",
+  "defaultPalette": "default",
   "tools": {
     "pen": {
       "minSize": 1,
@@ -121,7 +132,9 @@
     },
     "area": {
       "opacity": 0.3,
-      "defaultSize": 2
+      "defaultSize": 2,
+      "borderRadius": 0,
+      "borderWidth": 2
     }
   }
 }

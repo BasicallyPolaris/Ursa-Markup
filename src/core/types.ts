@@ -30,7 +30,6 @@ export interface Stroke {
   tool: Tool;
   points: Point[];
   brush: BrushSettings;
-  blendMode: BlendMode;
   timestamp: number;
 }
 

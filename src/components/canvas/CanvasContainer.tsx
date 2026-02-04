@@ -308,7 +308,7 @@ export function CanvasContainer({
       previewPointsRef.current = [startDrawPoint];
 
       startStrokeGroup();
-      startStroke(tool, brush, startDrawPoint, blendMode);
+      startStroke(tool, brush, startDrawPoint);
     },
     [
       screenToCanvas,

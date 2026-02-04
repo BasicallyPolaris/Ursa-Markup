@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { readTextFile, writeTextFile, exists, BaseDirectory } from '@tauri-apps/plugin-fs';
-import { resolveResource, appConfigDir } from '@tauri-apps/api/path';
+import { appConfigDir } from '@tauri-apps/api/path';
 import type { ThemeConfig } from '../lib/theme';
 import type { ColorPalette } from '../types';
 import { 
@@ -63,27 +63,20 @@ export function useTheme(): UseThemeReturn {
             themeConfig = mergeThemeWithDefaults(parsed);
             loadedFrom = 'user config';
           } else {
-            // 2. Copy bundled theme to user config for future customization
-            const bundledPath = await resolveResource('config/theme.json');
-            const bundledContent = await readTextFile(bundledPath);
-            
+            // 2. Initialize user config with bundled defaults (from DEFAULT_THEME)
+            const content = JSON.stringify(DEFAULT_THEME, null, 2);
+
             // Write to user config dir
-            await writeTextFile('theme.json', bundledContent, { 
-              baseDir: BaseDirectory.AppConfig 
+            await writeTextFile('theme.json', content, {
+              baseDir: BaseDirectory.AppConfig,
             });
-            
-            const parsed = JSON.parse(bundledContent);
-            themeConfig = mergeThemeWithDefaults(parsed);
-            loadedFrom = 'bundled (copied to user config)';
+
+            themeConfig = DEFAULT_THEME;
+            loadedFrom = 'bundled (initialized user config)';
           }
         } else {
-          // Fallback for web/browser environment (development)
-          const response = await fetch('/config/theme.json');
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          const parsed = await response.json();
-          themeConfig = mergeThemeWithDefaults(parsed);
+          // Web/browser environment - use bundled defaults
+          themeConfig = DEFAULT_THEME;
           loadedFrom = 'bundled';
         }
       } catch (loadError) {

@@ -1,4 +1,10 @@
-import type { Point, Size, ViewState, PreviewState, BlendMode } from "./types";
+import type {
+  Point,
+  Size,
+  ViewState,
+  PreviewState,
+  BrushSettings,
+} from "./types";
 import { BrushEngine } from "./BrushEngine";
 import { Ruler } from "./Ruler";
 
@@ -133,10 +139,10 @@ export class CanvasEngine {
 
         this.canvasSize = { width: img.width, height: img.height };
         this.isImageLoading = false;
-        
+
         // Update the composite canvas with the loaded image
         this.updateComposite();
-        
+
         resolve();
       };
 
@@ -309,7 +315,7 @@ export class CanvasEngine {
   /**
    * Replay strokes to the appropriate canvases
    * Normal strokes go to drawCanvas, multiply strokes go to multiplyCanvas
-   * 
+   *
    * Supports incremental rendering:
    * - If this is a new stroke being added (index increased by 1, groups increased by 1), only draw the new stroke
    * - If this is undo/redo or other change, do a full replay
@@ -319,8 +325,7 @@ export class CanvasEngine {
       strokes: {
         tool: string;
         points: Point[];
-        brush: any;
-        blendMode: string;
+        brush: BrushSettings;
       }[];
     }[];
     currentIndex: number;
@@ -356,7 +361,12 @@ export class CanvasEngine {
     } else {
       // Full replay: clear canvases and redraw everything
       // This handles: undo, redo, tab switch, or any non-incremental change
-      this.drawCtx.clearRect(0, 0, this.drawCanvas.width, this.drawCanvas.height);
+      this.drawCtx.clearRect(
+        0,
+        0,
+        this.drawCanvas.width,
+        this.drawCanvas.height,
+      );
       this.multiplyCtx.clearRect(
         0,
         0,
@@ -378,7 +388,7 @@ export class CanvasEngine {
     // Update tracking state
     this.lastRenderedIndex = currentIndex;
     this.lastRenderedGroupCount = groups.length;
-    
+
     // Update the composite canvas after strokes change
     this.updateComposite();
   }
@@ -398,11 +408,15 @@ export class CanvasEngine {
   private replayStroke(stroke: {
     tool: string;
     points: Point[];
-    brush: any;
-    blendMode: string;
+    brush: BrushSettings;
+    // accept legacy shape where callers might have used `blendMode` on stroke
+    blendMode?: "normal" | "color" | "multiply";
   }): void {
     // Route to multiply canvas if blend mode is multiply, otherwise to draw canvas
-    const isMultiply = stroke.blendMode === "multiply";
+    // stroke.brush is canonical; allow stroke.blendMode for legacy data
+    const brush = stroke.brush;
+    const effectiveBlend = brush?.blendMode ?? stroke.blendMode ?? "normal";
+    const isMultiply = effectiveBlend === "multiply";
     const ctx = isMultiply ? this.multiplyCtx : this.drawCtx;
     const canvas = isMultiply ? this.multiplyCanvas : this.drawCanvas;
 
@@ -418,7 +432,6 @@ export class CanvasEngine {
           ctx,
           stroke.points,
           stroke.brush,
-          stroke.blendMode as BlendMode,
         );
         break;
       case "highlighter":
@@ -426,20 +439,13 @@ export class CanvasEngine {
           ctx,
           stroke.points,
           stroke.brush,
-          stroke.blendMode as BlendMode,
         );
         break;
       case "area":
         if (stroke.points.length >= 2) {
           const start = stroke.points[0];
           const end = stroke.points[stroke.points.length - 1];
-          this.brushEngine.drawArea(
-            ctx,
-            start,
-            end,
-            stroke.brush,
-            stroke.blendMode as BlendMode,
-          );
+          this.brushEngine.drawArea(ctx, start, end, stroke.brush);
         }
         break;
     }

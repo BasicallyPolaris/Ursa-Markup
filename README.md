@@ -124,8 +124,7 @@ omnimark/
 │   ├── App.tsx
 │   └── main.tsx
 ├── public/
-│   └── config/
-│       └── theme.json      # Bundled theme configuration
+│   └── (static assets)
 └── package.json
 ```
 
@@ -138,11 +137,11 @@ OmniMark supports full UI theming. See [THEMING.md](THEMING.md) for details.
 The theme file is located at:
 
 - **User config**: `~/.config/omnimark/theme.json` (created on first run)
-- **Bundled default**: `public/config/theme.json`
+- **Bundled default (developer)**: `src/lib/default-theme.json` (canonical defaults in source)
 
 ### Color Palettes
 
-Edit the `palettes` section in `theme.json`:
+Edit the `palettes` section in your user `~/.config/omnimark/theme.json` to customize palettes. For application defaults (developer), edit `src/lib/default-theme.json`.
 
 ```json
 {

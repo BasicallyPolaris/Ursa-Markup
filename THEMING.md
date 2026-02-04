@@ -7,9 +7,9 @@ The OmniMark theme system provides centralized color management that is fully cu
 All theming is controlled through **`theme.json`**. The app looks for this file in two locations:
 
 1. **User config** (primary): `~/.config/omnimark/theme.json`
-2. **Bundled default** (fallback): `public/config/theme.json`
+2. **Bundled default (developer)**: `src/lib/default-theme.json` (canonical defaults in source)
 
-On first run, the bundled theme is automatically copied to the user config directory.
+On first run, the bundled defaults are used to initialize the user config file.
 
 ## Theme Configuration
 

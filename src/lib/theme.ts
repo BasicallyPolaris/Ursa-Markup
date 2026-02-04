@@ -6,6 +6,8 @@
  */
 
 import type { ColorPalette, ToolConfig } from "../types";
+// Import JSON defaults as the canonical theme data
+import defaultThemeData from "./default-theme.json";
 
 // ============================================================================
 // TYPES
@@ -312,134 +314,7 @@ export function toRgbaString(color: string, alpha: number = 1): string {
 // DEFAULT THEME
 // ============================================================================
 
-export const DEFAULT_THEME: ThemeConfig = {
-  colors: {
-    app: {
-      background: "#1e1e1e",
-      foreground: "#ffffff",
-    },
-    toolbar: {
-      background: "#252525",
-      backgroundSecondary: "#1e1e1e",
-      border: "#2a2a2a",
-    },
-    panel: {
-      background: "#1e1e1e",
-      border: "#3d3d3d",
-    },
-    surface: {
-      background: "#252525",
-      backgroundHover: "#3a3a3a",
-      backgroundActive: "#4a4a4a",
-    },
-    text: {
-      primary: "#ffffff",
-      secondary: "#d1d5db", // gray-300
-      muted: "#9ca3af", // gray-400
-    },
-    accent: {
-      primary: "#005a9e",
-      primaryForeground: "#ffffff",
-      hover: "rgba(255, 255, 255, 0.1)",
-    },
-    toggle: {
-      checked: "#005a9e",
-      unchecked: "#3d3d3d",
-    },
-    canvas: {
-      background: "#1a1a1a",
-      pattern: "#2a2a2a",
-    },
-    ruler: {
-      background: "#c8c8c8",
-      border: "#646464",
-      tick: "#282828",
-      tickMajor: "#282828",
-      text: "#282828",
-      centerBackground: "#dcdcdc",
-      centerBorder: "#505050",
-      compass: "#b43232",
-    },
-  },
-  palettes: [
-    {
-      name: "pastel",
-      colors: [
-        "#FFB3BA", // Pastel Red
-        "#FFDFBA", // Pastel Orange
-        "#FFFFBA", // Pastel Yellow
-        "#BAFFC9", // Pastel Green
-        "#BAE1FF", // Pastel Blue
-        "#E2BAFF", // Pastel Purple
-        "#FFB3E6", // Pastel Pink
-        "#C4C4C4", // Gray
-        "#333333", // Dark
-      ],
-    },
-    {
-      name: "neon",
-      colors: [
-        "#FF6B6B",
-        "#4ECDC4",
-        "#45B7D1",
-        "#96CEB4",
-        "#FECA57",
-        "#FF9FF3",
-        "#54A0FF",
-        "#5F27CD",
-        "#000000",
-      ],
-    },
-    {
-      name: "ocean",
-      colors: [
-        "#001f3f",
-        "#0074D9",
-        "#7FDBFF",
-        "#39CCCC",
-        "#3D9970",
-        "#2ECC40",
-        "#01FF70",
-        "#AAAAAA",
-        "#111111",
-      ],
-    },
-    {
-      name: "warm",
-      colors: [
-        "#85144b",
-        "#F012BE",
-        "#FF4136",
-        "#FF851B",
-        "#FFDC00",
-        "#3D9970",
-        "#2ECC40",
-        "#AAAAAA",
-        "#111111",
-      ],
-    },
-  ],
-  defaultPalette: "pastel",
-  tools: {
-    pen: {
-      minSize: 1,
-      maxSize: 20,
-      defaultSize: 3,
-    },
-    highlighter: {
-      opacity: 0.4,
-      minSize: 5,
-      maxSize: 50,
-      defaultSize: 20,
-    },
-    area: {
-      opacity: 0.3,
-      defaultSize: 2,
-      borderRadius: 0,
-      borderWidth: 2,
-    },
-  },
-};
+export const DEFAULT_THEME: ThemeConfig = defaultThemeData as ThemeConfig;
 
 // ============================================================================
 // THEME APPLICATION

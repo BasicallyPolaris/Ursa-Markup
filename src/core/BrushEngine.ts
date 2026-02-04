@@ -1,4 +1,4 @@
-import type { Point, BrushSettings, BlendMode } from "./types";
+import type { Point, BrushSettings } from "./types";
 
 /**
  * BrushEngine handles all brush rendering operations
@@ -18,7 +18,6 @@ export class BrushEngine {
     ctx: CanvasRenderingContext2D,
     points: Point[],
     brush: BrushSettings,
-    _blendMode: BlendMode,
   ): void {
     if (points.length === 0) return;
 
@@ -69,8 +68,6 @@ export class BrushEngine {
     ctx: CanvasRenderingContext2D,
     points: Point[],
     brush: BrushSettings,
-    _blendMode: BlendMode,
-    _canvas?: HTMLCanvasElement,
   ): void {
     if (points.length === 0) return;
 
@@ -121,7 +118,6 @@ export class BrushEngine {
     start: Point,
     end: Point,
     brush: BrushSettings,
-    _blendMode: BlendMode,
   ): void {
     ctx.save();
 
@@ -129,7 +125,7 @@ export class BrushEngine {
     const y = Math.min(start.y, end.y);
     const width = Math.abs(end.x - start.x);
     const height = Math.abs(end.y - start.y);
-    
+
     // Clamp border radius to half of the smaller dimension
     // This prevents invalid rendering when radius exceeds the rect bounds
     const maxRadius = Math.min(width, height) / 2;

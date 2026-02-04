@@ -112,9 +112,22 @@ export const PASTEL_PALETTE: ColorPalette = {
   ],
 };
 
+export const DEFAULT_EDITOR_PALETTE: ColorPalette = {
+  name: "default",
+  colors: [
+    "#FF6B6B",
+    "#FF9F43",
+    "#FFE066",
+    "#6BCB77",
+    "#4D96FF",
+    "#9B59B6",
+    "#FF6B9D",
+  ],
+};
+
 export const DEFAULT_CONFIG = {
-  palettes: [PASTEL_PALETTE],
-  defaultPalette: "pastel",
+  palettes: [DEFAULT_EDITOR_PALETTE, PASTEL_PALETTE],
+  defaultPalette: "default",
   tools: {
     pen: { minSize: 1, maxSize: 20, defaultSize: 3 },
     highlighter: { opacity: 0.4, minSize: 5, maxSize: 50, defaultSize: 20 },
