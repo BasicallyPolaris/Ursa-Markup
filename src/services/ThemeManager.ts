@@ -213,8 +213,6 @@ export class ThemeManager {
 
       this.config = themeConfig;
 
-      // Don't auto-apply theme here - let App.tsx apply from saved settings
-      // Just store the first theme as default fallback
       this.activeTheme = themeConfig.themes[0] || getDefaultTheme();
 
       console.log(`Theme config loaded from: ${loadedFrom}`);
@@ -243,7 +241,6 @@ export class ThemeManager {
     const theme = this.config.themes.find((t) => t.name === themeName);
     if (!theme) {
       console.warn(`Theme not found: ${themeName}`);
-      // Fallback to first available theme
       const fallbackTheme = this.config.themes[0] || getDefaultTheme();
       this.activeTheme = fallbackTheme;
       applyThemeToCss(fallbackTheme);

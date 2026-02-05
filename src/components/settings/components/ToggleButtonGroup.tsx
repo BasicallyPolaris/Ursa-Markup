@@ -31,7 +31,7 @@ export function ToggleButtonGroup<T extends string>({
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors border",
+            "flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors border whitespace-nowrap",
             value === opt.value
               ? "bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm"
               : "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent",

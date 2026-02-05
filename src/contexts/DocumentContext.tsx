@@ -113,22 +113,23 @@ export function DocumentProvider({
   // Ruler actions
   const toggleRuler = useCallback(() => {
     document.ruler.toggle();
+    forceUpdate({});
   }, [document]);
 
   const showRuler = useCallback(() => {
     document.ruler.show();
-    document.markAsChanged();
+    forceUpdate({});
   }, [document]);
 
   const hideRuler = useCallback(() => {
     document.ruler.hide();
-    document.markAsChanged();
+    forceUpdate({});
   }, [document]);
 
   const rotateRuler = useCallback(
     (delta: number) => {
       document.ruler.rotate(delta);
-      document.markAsChanged();
+      forceUpdate({});
     },
     [document],
   );

@@ -30,7 +30,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
       >
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
-            label="Default Size"
+            label="Size"
             value={settings.defaultPenSize}
             unit="px"
           >
@@ -49,7 +49,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Blending">
             <SettingsRow
-              label="Default Blend"
+              label="Blend"
               description="How colors mix with the image"
             >
               <ToggleButtonGroup
@@ -73,7 +73,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
       >
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
-            label="Default Size"
+            label="Size"
             value={settings.defaultMarkerSize}
             unit="px"
           >
@@ -89,7 +89,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
           </SettingsSliderRow>
 
           <SettingsSliderRow
-            label="Default Opacity"
+            label="Opacity"
             value={Math.round(settings.defaultMarkerOpacity * 100)}
             unit="%"
           >
@@ -108,7 +108,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Blending">
             <SettingsRow
-              label="Default Blend"
+              label="Blend"
               description="How colors mix with the image"
             >
               <ToggleButtonGroup
@@ -132,7 +132,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
       >
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
-            label="Default Opacity"
+            label="Opacity"
             value={Math.round(settings.defaultAreaOpacity * 100)}
             unit="%"
           >
@@ -167,7 +167,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Blending">
             <SettingsRow
-              label="Default Blend"
+              label="Blend"
               description="How colors mix with the image"
             >
               <ToggleButtonGroup

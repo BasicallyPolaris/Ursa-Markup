@@ -9,6 +9,8 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { SettingsWindow } from "./components/settings/SettingsWindow";
 import { settingsManager, themeManager } from "./services";
 import type { AppSettings } from "./services/types";
+import { toast } from "sonner";
+import { Toaster } from "./components/ui/sonner";
 
 function SettingsApp() {
   const [settings, setSettings] = useState<AppSettings>(
@@ -79,12 +81,15 @@ function SettingsApp() {
     if (success) {
       // Emit event to main window that settings were saved with all changes
       await emit("settings-applied", settingsManager.saved);
+      toast.success("Settings saved.");
+    } else {
+      toast.error("Settings couldn't be saved.");
     }
+    
   }, []);
 
   const handleCancel = useCallback(async () => {
     settingsManager.cancel();
-    // Close the window
     const currentWindow = getCurrentWindow();
     await currentWindow.close();
   }, []);
@@ -102,14 +107,17 @@ function SettingsApp() {
   }
 
   return (
-    <SettingsWindow
-      settings={settings}
-      hasChanges={hasChanges}
-      updateDraft={updateDraft}
-      onSave={handleSave}
-      onCancel={handleCancel}
-      onReset={handleReset}
-    />
+    <>
+      <SettingsWindow
+        settings={settings}
+        hasChanges={hasChanges}
+        updateDraft={updateDraft}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        onReset={handleReset}
+      />
+      <Toaster offset={{ bottom: 68 }} />
+    </>
   );
 }
 

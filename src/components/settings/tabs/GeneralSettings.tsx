@@ -26,23 +26,12 @@ export function GeneralSettings({
 
   return (
     <div className="space-y-5">
-      {/* Display settings */}
+      {/* Close Tab Behavior */}
       <SettingsSection
-        title="Display"
-        description="Canvas and interface display options"
-        icon={<Eye className="w-4 h-4" />}
+        title="Tab Behavior"
+        description="What happens when closing a tab with unsaved changes"
+        icon={<FolderClosed className="w-4 h-4" />}
       >
-        <SettingsRow
-          label="Show debug info"
-          description="Display zoom level and ruler angle on canvas"
-        >
-          <Switch
-            checked={settings.showDebugInfo}
-            onCheckedChange={(checked: boolean) =>
-              updateDraft({ showDebugInfo: checked })
-            }
-          />
-        </SettingsRow>
         <SettingsRow
           label="Image open behavior"
           description="How images are positioned when opened"
@@ -56,6 +45,16 @@ export function GeneralSettings({
             onChange={(value) =>
               updateDraft({ imageOpenBehavior: value as any })
             }
+          />
+        </SettingsRow>
+        <SettingsRow
+          label="Tab closing behavior"
+          description="How images are positioned when opened"
+        >
+          <ToggleButtonGroup
+            options={closeTabOptions}
+            value={settings.closeTabBehavior}
+            onChange={(value) => updateDraft({ closeTabBehavior: value })}
           />
         </SettingsRow>
       </SettingsSection>
@@ -165,25 +164,23 @@ export function GeneralSettings({
         )}
       </SettingsSection>
 
-      {/* Close Tab Behavior */}
+      {/* Display settings */}
       <SettingsSection
-        title="Tab Behavior"
-        description="What happens when closing a tab with unsaved changes"
-        icon={<FolderClosed className="w-4 h-4" />}
+        title="Display"
+        description="Canvas and interface display options"
+        icon={<Eye className="w-4 h-4" />}
       >
-        <ToggleButtonGroup
-          options={closeTabOptions}
-          value={settings.closeTabBehavior}
-          onChange={(value) => updateDraft({ closeTabBehavior: value })}
-        />
-        <p className="text-xs text-text-muted">
-          {settings.closeTabBehavior === "prompt" &&
-            "Show a confirmation dialog before closing"}
-          {settings.closeTabBehavior === "auto-save" &&
-            "Automatically save changes when closing"}
-          {settings.closeTabBehavior === "discard" &&
-            "Close without saving changes"}
-        </p>
+        <SettingsRow
+          label="Show debug info"
+          description="Display zoom level and ruler angle on canvas"
+        >
+          <Switch
+            checked={settings.showDebugInfo}
+            onCheckedChange={(checked: boolean) =>
+              updateDraft({ showDebugInfo: checked })
+            }
+          />
+        </SettingsRow>
       </SettingsSection>
     </div>
   );

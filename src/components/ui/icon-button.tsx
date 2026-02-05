@@ -16,7 +16,7 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover",
           "border border-transparent hover:border-toolbar-border",
           "disabled:opacity-40 disabled:pointer-events-none",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 cursor-pointer",
           size === "default" ? "size-8" : "size-7",
           className,
         )}

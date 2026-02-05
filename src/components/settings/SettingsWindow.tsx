@@ -1,5 +1,13 @@
 import { useState, useCallback } from "react";
-import { Settings, Wrench, Keyboard, Palette, RotateCcw, Save, X } from "lucide-react";
+import {
+  Settings,
+  Wrench,
+  Keyboard,
+  Palette,
+  RotateCcw,
+  Save,
+  X,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { GeneralSettings } from "./tabs/GeneralSettings";
 import { ToolsSettings } from "./tabs/ToolsSettings";
@@ -87,10 +95,7 @@ export function SettingsWindow({
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {activeTab === "general" && (
-            <GeneralSettings
-              settings={settings}
-              updateDraft={updateDraft}
-            />
+            <GeneralSettings settings={settings} updateDraft={updateDraft} />
           )}
           {activeTab === "colors" && (
             <ColorsSettings settings={settings} updateDraft={updateDraft} />
@@ -113,7 +118,7 @@ export function SettingsWindow({
           onClick={onReset}
           className="text-text-muted hover:text-text-primary hover:bg-surface-bg-hover h-8"
         >
-          <RotateCcw className="w-4 h-4 mr-1.5" />
+          <RotateCcw className="size-4 mr-1.5" />
           Restore Defaults
         </Button>
 
@@ -125,18 +130,18 @@ export function SettingsWindow({
             onClick={onCancel}
             className="text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover h-8"
           >
-            <X className="w-4 h-4 mr-1.5" />
+            <X className="size-4 mr-1.5" />
             Cancel
           </Button>
           <Button
-            variant="secondary"
+            variant="accent"
             size="sm"
             onClick={handleSave}
             disabled={isSaving || !hasChanges}
             className="h-8 bg-accent-primary text-accent-primary-fg hover:bg-accent-primary/90 disabled:opacity-40"
           >
-            <Save className="w-4 h-4 mr-1.5" />
-            {isSaving ? "Saving..." : "Save"}
+            <Save className="size-4 mr-1.5" />
+            Save
           </Button>
         </div>
       </div>

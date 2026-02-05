@@ -1,11 +1,19 @@
 import { useState, useEffect } from "react";
-import { Moon, SwatchBook, Eye, ExternalLink, FileJson, RefreshCw } from "lucide-react";
+import {
+  Moon,
+  SwatchBook,
+  Eye,
+  ExternalLink,
+  FileJson,
+  RefreshCw,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../../ui/button";
 import { SettingsSection } from "../components/SettingsSection";
 import { ColorPreviewModal } from "../components/ColorPreviewModal";
 import type { AppSettings, ColorPalette, Theme } from "../../../services/types";
 import { themeManager } from "../../../services";
+import { IconButton } from "../../ui/icon-button";
 
 interface ColorsSettingsProps {
   settings: AppSettings;
@@ -126,8 +134,8 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
             className="shrink-0"
             title="Reload theme config"
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Reload
+            <RefreshCw className="size-4 mr-2" />
+            Refresh
           </Button>
         </div>
       </SettingsSection>
@@ -135,7 +143,7 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
       <SettingsSection
         title="Theme"
         description="Choose your preferred theme"
-        icon={<Moon className="w-4 h-4" />}
+        icon={<Moon className="size-4" />}
       >
         <div className="space-y-3">
           {availableThemes.map((theme) => (
@@ -168,16 +176,14 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
                   <p className="text-xs text-text-muted">{theme.description}</p>
                 </div>
                 {settings.theme === theme.name && (
-                  <div className="w-2 h-2 rounded-full bg-accent-primary" />
+                  <div className="size-2 rounded-full bg-accent-primary" />
                 )}
               </button>
-              <button
+              <IconButton
                 onClick={() => handlePreviewTheme(theme)}
-                className="p-1.5 rounded hover:bg-surface-bg-hover text-text-muted hover:text-text-primary shrink-0"
                 title="Preview theme colors"
-              >
-                <Eye className="w-4 h-4" />
-              </button>
+                icon={<Eye className="size-4" />}
+              />
             </div>
           ))}
         </div>
@@ -187,7 +193,7 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
       <SettingsSection
         title="Color Palette"
         description="Choose a color palette for drawing"
-        icon={<SwatchBook className="w-4 h-4" />}
+        icon={<SwatchBook className="size-4" />}
       >
         <div className="space-y-3">
           {availablePalettes.map((palette) => (
@@ -226,13 +232,11 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
                 )}
               </button>
 
-              <button
+              <IconButton
                 onClick={() => handlePreviewPalette(palette)}
-                className="p-1.5 rounded hover:bg-surface-bg-hover text-text-muted hover:text-text-primary"
                 title="Preview colors"
-              >
-                <Eye className="w-4 h-4" />
-              </button>
+                icon={<Eye className="size-4" />}
+              />
             </div>
           ))}
         </div>

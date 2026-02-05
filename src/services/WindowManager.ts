@@ -28,7 +28,7 @@ class WindowManager {
     // Create new settings window
     this.settingsWindow = new WebviewWindow("settings", {
       url: "/settings.html",
-      title: "Settings - OmniMark",
+      title: "OmniMark - Settings",
       width: 650,
       height: 580,
       minWidth: 550,

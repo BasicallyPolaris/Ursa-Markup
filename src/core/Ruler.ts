@@ -14,7 +14,7 @@ const RULER_HEIGHT = 60;
 /**
  * Distance in pixels for ruler snapping (in canvas coords)
  */
-const SNAP_DISTANCE = 100;
+const SNAP_DISTANCE = 50;
 
 /**
  * Ruler manages ruler state, geometry, and interactions

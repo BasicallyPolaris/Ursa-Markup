@@ -2,121 +2,133 @@
  * SettingsContext - Bridges SettingsManager with React
  */
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
-import { listen } from '@tauri-apps/api/event'
-import type { AppSettings } from '../services'
-import { settingsManager, windowManager } from '../services'
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
+import { listen } from "@tauri-apps/api/event";
+import type { AppSettings } from "../services";
+import { settingsManager, windowManager } from "../services";
 
 interface SettingsContextValue {
-  settings: AppSettings
-  hasChanges: boolean
-  isLoaded: boolean
-  isOpen: boolean
-  openSettings: () => void
-  closeSettings: () => void
-  updateDraft: (updates: Partial<AppSettings>) => void
-  save: () => Promise<boolean>
-  cancel: () => void
-  reset: () => void
+  settings: AppSettings;
+  hasChanges: boolean;
+  isLoaded: boolean;
+  isOpen: boolean;
+  openSettings: () => void;
+  closeSettings: () => void;
+  updateDraft: (updates: Partial<AppSettings>) => void;
+  save: () => Promise<boolean>;
+  cancel: () => void;
+  reset: () => void;
 }
 
-const SettingsContext = createContext<SettingsContextValue | null>(null)
+const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 interface SettingsProviderProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
-  const [settings, setSettings] = useState<AppSettings>(settingsManager.settings)
-  const [hasChanges, setHasChanges] = useState<boolean>(settingsManager.hasChanges)
-  const [isLoaded, setIsLoaded] = useState<boolean>(settingsManager.loaded)
-  const [isOpen, setIsOpen] = useState(false)
-  const unsubscribeRef = useRef<(() => void) | null>(null)
+  const [settings, setSettings] = useState<AppSettings>(
+    settingsManager.settings,
+  );
+  const [hasChanges, setHasChanges] = useState<boolean>(
+    settingsManager.hasChanges,
+  );
+  const [isLoaded, setIsLoaded] = useState<boolean>(settingsManager.loaded);
+  const [isOpen, setIsOpen] = useState(false);
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   // Initial load
   useEffect(() => {
-    let mounted = true
+    let mounted = true;
 
     const init = async () => {
       if (!settingsManager.loaded) {
-        await settingsManager.load()
+        await settingsManager.load();
       }
       if (mounted) {
-        setSettings({ ...settingsManager.settings })
-        setHasChanges(settingsManager.hasChanges)
-        setIsLoaded(settingsManager.loaded)
+        setSettings({ ...settingsManager.settings });
+        setHasChanges(settingsManager.hasChanges);
+        setIsLoaded(settingsManager.loaded);
       }
-    }
+    };
 
-    init()
+    init();
 
     return () => {
-      mounted = false
-    }
-  }, [])
+      mounted = false;
+    };
+  }, []);
 
   // Subscribe to settings changes
   useEffect(() => {
-    unsubscribeRef.current = settingsManager.on('settingsChanged', () => {
-      setSettings({ ...settingsManager.settings })
-      setHasChanges(settingsManager.hasChanges)
-    })
+    unsubscribeRef.current = settingsManager.on("settingsChanged", () => {
+      setSettings({ ...settingsManager.settings });
+      setHasChanges(settingsManager.hasChanges);
+    });
 
     return () => {
       if (unsubscribeRef.current) {
-        unsubscribeRef.current()
-        unsubscribeRef.current = null
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
       }
-    }
-  }, [])
+    };
+  }, []);
 
   // Listen for settings-saved event from settings window (cross-window communication)
   // This ensures settings are applied immediately without requiring a restart
   useEffect(() => {
-    let unlisten: (() => void) | null = null
+    let unlisten: (() => void) | null = null;
 
     const setupListener = async () => {
-      unlisten = await listen<AppSettings>('settings-saved', async () => {
+      unlisten = await listen<AppSettings>("settings-saved", async () => {
         // Reload settings from disk to get the latest saved values
-        await settingsManager.load()
-        setSettings({ ...settingsManager.settings })
-        setHasChanges(settingsManager.hasChanges)
-      })
-    }
+        await settingsManager.load();
+        setSettings({ ...settingsManager.settings });
+        setHasChanges(settingsManager.hasChanges);
+      });
+    };
 
-    setupListener()
+    setupListener();
 
     return () => {
       if (unlisten) {
-        unlisten()
+        unlisten();
       }
-    }
-  }, [])
+    };
+  }, []);
 
   const updateDraft = useCallback((updates: Partial<AppSettings>) => {
-    settingsManager.updateDraft(updates)
-  }, [])
+    settingsManager.updateDraft(updates);
+  }, []);
 
   const save = useCallback(async () => {
-    return await settingsManager.save()
-  }, [])
+    return await settingsManager.save();
+  }, []);
 
-  const cancel = useCallback(() => {
-    settingsManager.cancel()
-  }, [])
+  const cancel = useCallback(async () => {
+    settingsManager.cancel();
+    await windowManager.closeSettings();
+  }, []);
 
   const reset = useCallback(() => {
-    settingsManager.resetToDefaults()
-  }, [])
+    settingsManager.resetToDefaults();
+  }, []);
 
   const openSettings = useCallback(async () => {
-    await windowManager.openSettings()
-  }, [])
+    await windowManager.openSettings();
+  }, []);
 
   const closeSettings = useCallback(async () => {
-    await windowManager.closeSettings()
-    setIsOpen(false)
-  }, [])
+    await windowManager.closeSettings();
+    setIsOpen(false);
+  }, []);
 
   const value: SettingsContextValue = {
     settings,
@@ -129,21 +141,21 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     save,
     cancel,
     reset,
-  }
+  };
 
   return (
     <SettingsContext.Provider value={value}>
       {children}
     </SettingsContext.Provider>
-  )
+  );
 }
 
 export function useSettings(): SettingsContextValue {
-  const context = useContext(SettingsContext)
+  const context = useContext(SettingsContext);
   if (!context) {
-    throw new Error('useSettings must be used within a SettingsProvider')
+    throw new Error("useSettings must be used within a SettingsProvider");
   }
-  return context
+  return context;
 }
 
-export { SettingsContext }
+export { SettingsContext };
