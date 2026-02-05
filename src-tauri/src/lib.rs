@@ -50,12 +50,10 @@ async fn queue_clipboard_copy_base64(
 ) -> Result<(), String> {
     // Spawn a background task - returns immediately to frontend
     tokio::spawn(async move {
-        let result = tokio::task::spawn_blocking(move || {
-            copy_png_to_clipboard(&image_base64)
-        })
-        .await
-        .map_err(|e| format!("Task join error: {}", e))
-        .and_then(|r| r);
+        let result = tokio::task::spawn_blocking(move || copy_png_to_clipboard(&image_base64))
+            .await
+            .map_err(|e| format!("Task join error: {}", e))
+            .and_then(|r| r);
 
         // Emit result back to frontend for toast notification
         let _ = app.emit(
@@ -101,18 +99,12 @@ fn copy_png_to_clipboard(image_base64: &str) -> Result<(), String> {
             match clipboard.set_image(img_data) {
                 Ok(()) => return Ok(()),
                 Err(e) => {
-                    eprintln!(
-                        "arboard clipboard failed: {}, trying wl-copy fallback",
-                        e
-                    );
+                    eprintln!("arboard clipboard failed: {}, trying wl-copy fallback", e);
                 }
             }
         }
         Err(e) => {
-            eprintln!(
-                "Failed to create clipboard: {}, trying wl-copy fallback",
-                e
-            );
+            eprintln!("Failed to create clipboard: {}, trying wl-copy fallback", e);
         }
     }
 
@@ -153,6 +145,7 @@ fn get_pending_file(state: State<PendingFile>) -> Option<String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_store::Builder::new().build())
@@ -209,6 +202,23 @@ pub fn run() {
             });
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app, event| {
+            match event {
+                // Check if a window requested to close
+                tauri::RunEvent::WindowEvent {
+                    label,
+                    event: tauri::WindowEvent::CloseRequested { .. },
+                    ..
+                } => {
+                    // If the window is our "main" window...
+                    if label == "main" {
+                        // ...exit the entire app (closes all other windows like settings)
+                        app.exit(0);
+                    }
+                }
+                _ => {}
+            }
+        });
 }

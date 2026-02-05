@@ -17,15 +17,15 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
           "border border-transparent hover:border-toolbar-border",
           "disabled:opacity-40 disabled:pointer-events-none",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-          size === "default" ? "h-8 w-8" : "h-7 w-7",
-          className
+          size === "default" ? "size-8" : "size-7",
+          className,
         )}
         {...props}
       >
         {icon}
       </button>
     );
-  }
+  },
 );
 IconButton.displayName = "IconButton";
 

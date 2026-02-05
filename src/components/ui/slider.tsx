@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Slider as BaseSlider } from "@base-ui-components/react/slider"
-import { cn } from "../../lib/utils"
+import * as React from "react";
+import { Slider as BaseSlider } from "@base-ui-components/react/slider";
+import { cn } from "../../lib/utils";
 
 interface SliderProps {
-  className?: string
-  defaultValue?: number[]
-  value?: number[]
-  min?: number
-  max?: number
-  step?: number
-  disabled?: boolean
-  onValueChange?: (value: number[]) => void
-  onValueCommit?: (value: number[]) => void
+  className?: string;
+  defaultValue?: number[];
+  value?: number[];
+  min?: number;
+  max?: number;
+  step?: number;
+  disabled?: boolean;
+  onValueChange?: (value: number[]) => void;
+  onValueCommit?: (value: number[]) => void;
 }
 
 function Slider({
@@ -32,10 +32,10 @@ function Slider({
       Array.isArray(value)
         ? value
         : Array.isArray(defaultValue)
-        ? defaultValue
-        : [min],
-    [value, defaultValue, min]
-  )
+          ? defaultValue
+          : [min],
+    [value, defaultValue, min],
+  );
 
   return (
     <BaseSlider.Root
@@ -48,16 +48,20 @@ function Slider({
       disabled={disabled}
       onValueChange={(newValue) => {
         // newValue could be number or readonly number[]
-        const valuesArray = Array.isArray(newValue) ? [...newValue] : [newValue]
-        onValueChange?.(valuesArray)
+        const valuesArray = Array.isArray(newValue)
+          ? [...newValue]
+          : [newValue];
+        onValueChange?.(valuesArray);
       }}
       onValueCommitted={(newValue) => {
-        const valuesArray = Array.isArray(newValue) ? [...newValue] : [newValue]
-        onValueCommit?.(valuesArray)
+        const valuesArray = Array.isArray(newValue)
+          ? [...newValue]
+          : [newValue];
+        onValueCommit?.(valuesArray);
       }}
       className={cn(
         "relative flex w-full touch-none items-center select-none data-[disabled]:opacity-50",
-        className
+        className,
       )}
     >
       <BaseSlider.Control className="relative flex w-full items-center h-4">
@@ -74,12 +78,12 @@ function Slider({
           <BaseSlider.Thumb
             data-slot="slider-thumb"
             key={index}
-            className="block h-4 w-4 rounded-full border border-slider-thumb-border bg-surface-bg shadow-md hover:scale-110 hover:bg-surface-bg-hover hover:transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+            className="block size-4 rounded-full border border-slider-thumb-border bg-surface-bg shadow-md hover:scale-110 hover:bg-surface-bg-hover hover:transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
           />
         ))}
       </BaseSlider.Control>
     </BaseSlider.Root>
-  )
+  );
 }
 
-export { Slider }
+export { Slider };

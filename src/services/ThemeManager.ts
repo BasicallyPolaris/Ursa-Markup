@@ -2,9 +2,10 @@ import {
   readTextFile,
   writeTextFile,
   exists,
+  mkdir,
 } from "@tauri-apps/plugin-fs";
 import { appConfigDir } from "@tauri-apps/api/path";
-import { open } from "@tauri-apps/plugin-shell";
+import { openPath } from "@tauri-apps/plugin-opener";
 import type { ThemeConfig, Theme } from "../lib/theme";
 import type { ColorPalette } from "../types";
 import {
@@ -15,6 +16,7 @@ import {
   toRgbaString,
 } from "../lib/theme";
 import type { ServiceEvents } from "./types";
+import { isTauri } from "@tauri-apps/api/core";
 
 type EventCallback<T> = (payload: T) => void;
 
@@ -27,6 +29,7 @@ export class ThemeManager {
   private config: ThemeConfig = DEFAULT_CONFIG;
   private activeTheme: Theme = getDefaultTheme();
   private selectedPaletteName: string = "default";
+  private configFileName: string = "theme.json";
   private isLoading = true;
   private error: string | null = null;
   private listeners: {
@@ -80,7 +83,7 @@ export class ThemeManager {
    */
   async getConfigPath(): Promise<string> {
     const configDir = await appConfigDir();
-    return `${configDir}/theme.json`;
+    return `${configDir}/${this.configFileName}`;
   }
 
   /**
@@ -90,16 +93,33 @@ export class ThemeManager {
     try {
       const configPath = await this.getConfigPath();
       const configExists = await exists(configPath);
-      
+
       if (!configExists) {
         // Create config file with defaults if it doesn't exist
         await this.initializeUserConfig();
       }
-      
+
       // Open the file
-      await open(configPath);
+      await openPath(configPath);
     } catch (err) {
       console.error("Failed to open theme config:", err);
+      throw err;
+    }
+  }
+
+  /**
+   * Ensure the user config exists and is populated with defaults.
+   * Public method so UI can create/populate the file before opening it.
+   */
+  async ensureUserConfig(): Promise<void> {
+    try {
+      const configPath = await this.getConfigPath();
+      const configExists = await exists(configPath);
+      if (!configExists) {
+        await this.initializeUserConfig();
+      }
+    } catch (err) {
+      console.error("Failed to ensure user config:", err);
       throw err;
     }
   }
@@ -108,10 +128,31 @@ export class ThemeManager {
    * Initialize user config with default themes and palettes
    */
   private async initializeUserConfig(): Promise<void> {
-    const content = JSON.stringify(DEFAULT_CONFIG, null, 2);
-    const configPath = await this.getConfigPath();
-    await writeTextFile(configPath, content);
-    console.log("Initialized user theme config with defaults at:", configPath);
+    console.log("Initializing User Config");
+    try {
+      // Ensure the config directory exists before writing
+      const configDir = await appConfigDir();
+      try {
+        await mkdir(configDir, { recursive: true });
+      } catch (mkdirError) {
+        // Directory may already exist or other error - log but continue
+        console.log(
+          "Config directory creation (may already exist):",
+          mkdirError,
+        );
+      }
+
+      const content = JSON.stringify(DEFAULT_CONFIG, null, 2);
+      const configPath = await this.getConfigPath();
+      await writeTextFile(configPath, content);
+      console.log(
+        "Initialized user theme config with defaults at:",
+        configPath,
+      );
+    } catch (error) {
+      console.error("Failed to initialize user config:", error);
+      throw error;
+    }
   }
 
   /**
@@ -128,15 +169,15 @@ export class ThemeManager {
 
       try {
         // In Tauri environment
-        if (typeof window !== "undefined" && "__TAURI__" in window) {
+        if (isTauri()) {
           const configPath = await this.getConfigPath();
           const userConfigExists = await exists(configPath);
-
+          // Inside ThemeManager.load()
           if (userConfigExists) {
             // Load from user config
             const content = await readTextFile(configPath);
             const parsed = JSON.parse(content);
-            
+
             // Validate the config
             const validation = validateTheme(parsed);
             if (!validation.valid) {
@@ -162,13 +203,16 @@ export class ThemeManager {
         }
       } catch (loadError) {
         console.warn("Failed to load theme.json, using defaults:", loadError);
-        this.error = loadError instanceof Error ? loadError.message : "Failed to load theme config";
+        this.error =
+          loadError instanceof Error
+            ? loadError.message
+            : "Failed to load theme config";
         themeConfig = DEFAULT_CONFIG;
         loadedFrom = "defaults (error fallback)";
       }
 
       this.config = themeConfig;
-      
+
       // Don't auto-apply theme here - let App.tsx apply from saved settings
       // Just store the first theme as default fallback
       this.activeTheme = themeConfig.themes[0] || getDefaultTheme();

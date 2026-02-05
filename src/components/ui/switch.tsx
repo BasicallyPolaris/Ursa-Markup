@@ -1,23 +1,26 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Switch as BaseSwitch } from "@base-ui-components/react/switch"
-import { cn } from "../../lib/utils"
+import * as React from "react";
+import { Switch as BaseSwitch } from "@base-ui-components/react/switch";
+import { cn } from "../../lib/utils";
 
 interface SwitchProps {
-  className?: string
-  checked?: boolean
-  defaultChecked?: boolean
-  onCheckedChange?: (checked: boolean) => void
-  disabled?: boolean
-  required?: boolean
-  name?: string
-  value?: string
-  id?: string
+  className?: string;
+  checked?: boolean;
+  defaultChecked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  disabled?: boolean;
+  required?: boolean;
+  name?: string;
+  value?: string;
+  id?: string;
 }
 
 const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
-  ({ className, checked, defaultChecked, onCheckedChange, disabled, ...props }, ref) => (
+  (
+    { className, checked, defaultChecked, onCheckedChange, disabled, ...props },
+    ref,
+  ) => (
     <BaseSwitch.Root
       ref={ref}
       checked={checked}
@@ -26,18 +29,18 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
       disabled={disabled}
       className={cn(
         "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[checked]:bg-toggle-checked data-[unchecked]:bg-toggle-unchecked",
-        className
+        className,
       )}
       {...props}
     >
       <BaseSwitch.Thumb
         className={cn(
-          "pointer-events-none block h-5 w-5 rounded-full bg-text-primary shadow-lg ring-0 transition-transform data-[checked]:translate-x-5 data-[unchecked]:translate-x-0"
+          "pointer-events-none block size-5 rounded-full bg-text-primary shadow-lg ring-0 transition-transform data-[checked]:translate-x-5 data-[unchecked]:translate-x-0",
         )}
       />
     </BaseSwitch.Root>
-  )
-)
-Switch.displayName = "Switch"
+  ),
+);
+Switch.displayName = "Switch";
 
-export { Switch }
+export { Switch };

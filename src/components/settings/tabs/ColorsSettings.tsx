@@ -1,13 +1,9 @@
 import { useState, useEffect } from "react";
-import { Moon, SwatchBook, Eye, ExternalLink } from "lucide-react";
+import { Moon, SwatchBook, Eye, ExternalLink, FileJson } from "lucide-react";
 import { Button } from "../../ui/button";
 import { SettingsSection } from "../components/SettingsSection";
 import { ColorPreviewModal } from "../components/ColorPreviewModal";
-import type {
-  AppSettings,
-  ColorPalette,
-  Theme,
-} from "../../../services/types";
+import type { AppSettings, ColorPalette, Theme } from "../../../services/types";
 import { themeManager } from "../../../services";
 
 interface ColorsSettingsProps {
@@ -16,11 +12,15 @@ interface ColorsSettingsProps {
 }
 
 export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
-  const [availablePalettes, setAvailablePalettes] = useState<ColorPalette[]>([]);
+  const [availablePalettes, setAvailablePalettes] = useState<ColorPalette[]>(
+    [],
+  );
   const [availableThemes, setAvailableThemes] = useState<Theme[]>([]);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewTheme, setPreviewTheme] = useState<Theme | null>(null);
-  const [previewPalette, setPreviewPalette] = useState<ColorPalette | null>(null);
+  const [previewPalette, setPreviewPalette] = useState<ColorPalette | null>(
+    null,
+  );
 
   useEffect(() => {
     // Load themes and palettes from theme manager (user config)
@@ -40,7 +40,7 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
   useEffect(() => {
     const root = document.documentElement;
     const currentTheme = availableThemes.find((t) => t.name === settings.theme);
-    
+
     if (currentTheme) {
       // Apply light/dark class based on theme name
       if (settings.theme === "light") {
@@ -67,6 +67,10 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
 
   const handleOpenConfig = async () => {
     try {
+      // Ensure the user config file exists and is populated before opening
+      if (typeof themeManager.ensureUserConfig === "function") {
+        await themeManager.ensureUserConfig();
+      }
       await themeManager.openConfigFile();
     } catch (err) {
       console.error("Failed to open theme config:", err);
@@ -82,6 +86,23 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
 
   return (
     <div className="space-y-5">
+      <SettingsSection
+        title="Theme Configuration"
+        description="Customize themes and palettes by editing the theme.json config file
+        directly. Changes will be applied after restarting the app."
+        icon={<FileJson className="size-4" />}
+      >
+        {/* Open Config Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleOpenConfig}
+          className="mt-3 w-full border-dashed border-toolbar-border hover:border-text-muted hover:cursor-pointer"
+        >
+          <ExternalLink className="w-4 h-4 mr-2" />
+          Open Theme Config
+        </Button>
+      </SettingsSection>
       {/* Theme Selection */}
       <SettingsSection
         title="Theme"
@@ -103,7 +124,7 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
                 className="flex items-center gap-3 flex-1 text-left"
               >
                 <div
-                  className="w-10 h-10 rounded-md border border-toolbar-border flex-shrink-0"
+                  className="w-10 h-10 rounded-md border border-toolbar-border shrink-0"
                   style={{ backgroundColor: theme.colors.app.background }}
                 />
                 <div className="flex-1">
@@ -124,7 +145,7 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
               </button>
               <button
                 onClick={() => handlePreviewTheme(theme)}
-                className="p-1.5 rounded hover:bg-surface-bg-hover text-text-muted hover:text-text-primary flex-shrink-0"
+                className="p-1.5 rounded hover:bg-surface-bg-hover text-text-muted hover:text-text-primary shrink-0"
                 title="Preview theme colors"
               >
                 <Eye className="w-4 h-4" />
@@ -187,21 +208,6 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
             </div>
           ))}
         </div>
-
-        {/* Open Config Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleOpenConfig}
-          className="mt-3 w-full border-dashed border-toolbar-border hover:border-text-muted"
-        >
-          <ExternalLink className="w-4 h-4 mr-2" />
-          Open Theme Config
-        </Button>
-        <p className="text-xs text-text-muted mt-2">
-          Customize themes and palettes by editing the theme.json config file directly.
-          Changes will be applied after restarting the app.
-        </p>
       </SettingsSection>
 
       {/* Color Preview Modal */}

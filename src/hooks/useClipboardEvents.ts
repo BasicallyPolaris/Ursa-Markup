@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { toast } from "sonner";
+import { settingsManager } from "../services";
 
 /**
  * Payload from the Rust backend clipboard-copy-result event
@@ -62,10 +63,13 @@ async function setupGlobalListener(): Promise<void> {
           lastCopyWasManual = false;
         }
         
-        // Show toast for manual copies or errors
+        // Get current settings to check auto-copy toast preference
+        const shouldShowToastForAutoCopy = settingsManager.settings.autoCopyShowToast;
+        
+        // Show toast for manual copies or when auto-copy toast is enabled, or errors
         if (success) {
-          // Only show success toast for manual copies
-          if (isRecentManualCopy) {
+          // Show success toast for manual copies OR when auto-copy toast setting is enabled
+          if (isRecentManualCopy || shouldShowToastForAutoCopy) {
             toast.success("Copied to clipboard", {
               duration: 2000,
             });

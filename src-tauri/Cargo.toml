@@ -1,10 +1,16 @@
 [package]
 name = "omnimark"
 version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+description = "An opinionated cross-platform tool for marking up and highlighting images"
+authors = ["BasicallyPolaris"]
 edition = "2021"
 
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+incremental = false
+strip = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
@@ -31,3 +37,4 @@ tokio = { version = "1", features = ["time"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 arboard = { version = "3", features = ["wayland-data-control"] }
 tauri-plugin-shell = "2.3.5"
+tauri-plugin-opener = "2.5.3"

@@ -2,7 +2,11 @@ import { Clipboard, FolderClosed, Eye } from "lucide-react";
 import { Switch } from "../../ui/switch";
 import { Slider } from "../../ui/slider";
 import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
-import { SettingsSection, SettingsRow, SettingsSliderRow } from "../components/SettingsSection";
+import {
+  SettingsSection,
+  SettingsRow,
+  SettingsSliderRow,
+} from "../components/SettingsSection";
 import type { AppSettings, CloseTabBehavior } from "../../../services/types";
 
 interface GeneralSettingsProps {
@@ -49,7 +53,9 @@ export function GeneralSettings({
               { value: "center", label: "Center" },
             ]}
             value={settings.imageOpenBehavior}
-            onChange={(value) => updateDraft({ imageOpenBehavior: value as any })}
+            onChange={(value) =>
+              updateDraft({ imageOpenBehavior: value as any })
+            }
           />
         </SettingsRow>
       </SettingsSection>
@@ -71,7 +77,20 @@ export function GeneralSettings({
             }
           />
         </SettingsRow>
-        
+        {settings.autoCopyOnChange && (
+          <SettingsRow
+            label="Confirm auto-copy with toast"
+            description="Show a notification when auto-copy completes"
+          >
+            <Switch
+              checked={settings.autoCopyShowToast}
+              onCheckedChange={(checked: boolean) =>
+                updateDraft({ autoCopyShowToast: checked })
+              }
+            />
+          </SettingsRow>
+        )}
+
         {settings.autoCopyOnChange && (
           <>
             <SettingsRow
@@ -80,14 +99,16 @@ export function GeneralSettings({
             >
               <ToggleButtonGroup
                 options={[
-                  { value: "jpeg", label: "JPEG (Fast)" },
-                  { value: "png", label: "PNG (Quality)" },
+                  { value: "jpeg", label: "JPEG" },
+                  { value: "png", label: "PNG" },
                 ]}
                 value={settings.autoCopyFormat}
-                onChange={(value) => updateDraft({ autoCopyFormat: value as any })}
+                onChange={(value) =>
+                  updateDraft({ autoCopyFormat: value as any })
+                }
               />
             </SettingsRow>
-            
+
             {settings.autoCopyFormat === "jpeg" && (
               <SettingsSliderRow
                 label="JPEG quality"
@@ -115,11 +136,13 @@ export function GeneralSettings({
         >
           <ToggleButtonGroup
             options={[
-              { value: "jpeg", label: "JPEG (Fast)" },
-              { value: "png", label: "PNG (Quality)" },
+              { value: "jpeg", label: "JPEG" },
+              { value: "png", label: "PNG" },
             ]}
             value={settings.manualCopyFormat}
-            onChange={(value) => updateDraft({ manualCopyFormat: value as any })}
+            onChange={(value) =>
+              updateDraft({ manualCopyFormat: value as any })
+            }
           />
         </SettingsRow>
 
@@ -162,7 +185,6 @@ export function GeneralSettings({
             "Close without saving changes"}
         </p>
       </SettingsSection>
-
     </div>
   );
 }

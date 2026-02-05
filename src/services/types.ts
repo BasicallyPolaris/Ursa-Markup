@@ -138,6 +138,7 @@ export interface AppSettings {
   autoCopyOnChange: boolean;
   autoCopyFormat: AutoCopyFormat;
   autoCopyJpegQuality: number;
+  autoCopyShowToast: boolean;
   manualCopyFormat: AutoCopyFormat;
   manualCopyJpegQuality: number;
   colorPresets: string[];
@@ -166,6 +167,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoCopyOnChange: true,
   autoCopyFormat: "jpeg",
   autoCopyJpegQuality: 0.85,
+  autoCopyShowToast: false,
   manualCopyFormat: "png",
   manualCopyJpegQuality: 0.95,
   colorPresets: [

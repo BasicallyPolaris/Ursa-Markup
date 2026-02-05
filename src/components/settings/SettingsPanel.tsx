@@ -70,7 +70,7 @@ export function SettingsPanel() {
               variant="ghost"
               size="icon"
               onClick={handleClose}
-              className="h-9 w-9 rounded-full text-text-muted hover:text-panel-bg hover:bg-accent-hover transition-all"
+              className="size-9 rounded-full text-text-muted hover:text-panel-bg hover:bg-accent-hover transition-all"
             >
               <X className="w-5 h-5" />
             </Button>

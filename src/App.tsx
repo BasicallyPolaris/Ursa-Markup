@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, RefObject } from "react";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   SettingsProvider,
   ThemeProvider,
@@ -152,7 +153,10 @@ function AppContent({ containerRef, canvasContainerRef }: AppContentProps) {
     >
       {activeDocument ? (
         <DocumentProvider key={activeDocument.id} document={activeDocument}>
-          <CanvasEngineProvider containerRef={canvasContainerRef} document={activeDocument}>
+          <CanvasEngineProvider
+            containerRef={canvasContainerRef}
+            document={activeDocument}
+          >
             <DocumentContent canvasContainerRef={canvasContainerRef} />
           </CanvasEngineProvider>
         </DocumentProvider>
@@ -170,26 +174,30 @@ function AppContent({ containerRef, canvasContainerRef }: AppContentProps) {
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
-  const [settings, setSettings] = useState<AppSettings>(services.settingsManager.settings);
+  const [settings, setSettings] = useState<AppSettings>(
+    services.settingsManager.settings,
+  );
 
-  // Set up clipboard event listener at the app level (singleton)
-  // This ensures only one listener exists regardless of document changes
   useClipboardEvents();
 
   // Initialize services on mount
   useEffect(() => {
     const init = async () => {
-      await services.settingsManager.load();
-      await services.themeManager.load();
-      services.tabManager.loadInitialState();
-      
-      // Apply saved theme from settings
-      const savedSettings = services.settingsManager.settings;
-      if (savedSettings.theme) {
-        services.themeManager.setTheme(savedSettings.theme);
+      try {
+        await Promise.all([
+          services.settingsManager.load(),
+          services.themeManager.load(),
+        ]);
+
+        services.tabManager.loadInitialState();
+
+        const savedSettings = services.settingsManager.settings;
+        setSettings({ ...savedSettings });
+      } catch (error) {
+        console.error("Failed to initialize services:", error);
+      } finally {
+        await getCurrentWindow().show();
       }
-      
-      setSettings({ ...savedSettings });
     };
 
     init();
@@ -206,17 +214,20 @@ function App() {
   // Listen for settings applied events from settings window
   useEffect(() => {
     const setupListener = async () => {
-      const unlisten = await listen<AppSettings>("settings-applied", (event) => {
-        const savedSettings = event.payload;
-        
-        // Apply theme through ThemeManager (applies CSS variables and class)
-        services.themeManager.setTheme(savedSettings.theme);
-        
-        // Reload settings from disk to ensure consistency
-        services.settingsManager.load().then(() => {
-          setSettings({ ...services.settingsManager.settings });
-        });
-      });
+      const unlisten = await listen<AppSettings>(
+        "settings-applied",
+        (event) => {
+          const savedSettings = event.payload;
+
+          // Apply theme through ThemeManager
+          services.themeManager.setTheme(savedSettings.theme);
+
+          // Reload settings from disk to ensure consistency
+          services.settingsManager.load().then(() => {
+            setSettings({ ...services.settingsManager.settings });
+          });
+        },
+      );
       return unlisten;
     };
 

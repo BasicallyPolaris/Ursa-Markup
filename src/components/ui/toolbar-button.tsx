@@ -7,25 +7,28 @@ const toolbarButtonVariants = cva(
   {
     variants: {
       variant: {
-        default: "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover",
+        default:
+          "text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover",
         active: "bg-surface-bg-active text-text-primary",
-        ghost: "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover",
+        ghost:
+          "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover",
       },
       size: {
         default: "h-8 px-3 py-2 rounded-md",
-        icon: "h-8 w-8 rounded-md",
-        sm: "h-7 w-7 rounded-md",
+        icon: "size-8 rounded-md",
+        sm: "size-7 rounded-md",
       },
     },
     defaultVariants: {
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
 
 export interface ToolbarButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof toolbarButtonVariants> {
   asChild?: boolean;
 }
@@ -39,7 +42,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         {...props}
       />
     );
-  }
+  },
 );
 ToolbarButton.displayName = "ToolbarButton";
 

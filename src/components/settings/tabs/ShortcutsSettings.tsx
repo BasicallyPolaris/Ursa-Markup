@@ -289,7 +289,7 @@ export function ShortcutsSettings({
                           e.stopPropagation();
                           handleResetHotkey(action);
                         }}
-                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary"
+                        className="size-6 p-0 opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary"
                         title="Reset to default"
                       >
                         <RotateCcw className="w-3 h-3" />
@@ -304,7 +304,7 @@ export function ShortcutsSettings({
                           e.stopPropagation();
                           handleClearHotkey(action);
                         }}
-                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 text-text-muted hover:text-destructive"
+                        className="size-6 p-0 opacity-0 group-hover:opacity-100 text-text-muted hover:text-destructive"
                         title="Unbind hotkey"
                       >
                         <X className="w-3 h-3" />

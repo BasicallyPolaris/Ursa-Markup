@@ -40,19 +40,6 @@ function SettingsApp() {
     init();
   }, []);
 
-  // Apply theme class to document when theme changes
-  useEffect(() => {
-    const root = document.documentElement;
-
-    if (settings.theme === "light") {
-      root.classList.add("light");
-      root.classList.remove("dark");
-    } else {
-      root.classList.add("dark");
-      root.classList.remove("light");
-    }
-  }, [settings.theme]);
-
   // Subscribe to settings changes
   useEffect(() => {
     const unsubscribe = settingsManager.on("settingsChanged", () => {

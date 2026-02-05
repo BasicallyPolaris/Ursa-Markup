@@ -181,7 +181,7 @@ export function Toolbar() {
                   onClick={handleOpen}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover"
                 >
-                  <FolderOpen className="h-4 w-4 mr-1.5" />
+                  <FolderOpen className="size-4 mr-1.5" />
                   <span className="text-sm">Open</span>
                 </Button>
               </TooltipTrigger>
@@ -199,7 +199,7 @@ export function Toolbar() {
                   disabled={!hasImage}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <Copy className="h-4 w-4 mr-1.5" />
+                  <Copy className="size-4 mr-1.5" />
                   <span className="text-sm">Copy</span>
                 </Button>
               </TooltipTrigger>
@@ -217,7 +217,7 @@ export function Toolbar() {
                   disabled={!hasImage}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  <Save className="h-4 w-4 mr-1.5" />
+                  <Save className="size-4 mr-1.5" />
                   <span className="text-sm">Save</span>
                 </Button>
               </TooltipTrigger>
@@ -232,7 +232,7 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
-                  icon={<Undo2 className="h-4 w-4" />}
+                  icon={<Undo2 className="size-4" />}
                   onClick={handleUndo}
                   disabled={!canUndo}
                 />
@@ -245,7 +245,7 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
-                  icon={<Redo2 className="h-4 w-4" />}
+                  icon={<Redo2 className="size-4" />}
                   onClick={handleRedo}
                   disabled={!canRedo}
                 />
@@ -262,7 +262,7 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
-                  icon={<Settings className="h-4 w-4" />}
+                  icon={<Settings className="size-4" />}
                   onClick={handleSettings}
                 />
               </TooltipTrigger>
@@ -279,7 +279,7 @@ export function Toolbar() {
               <TooltipTrigger asChild>
                 <ToolButton
                   active={tool === "pen"}
-                  icon={<Pencil className="h-4 w-4" />}
+                  icon={<Pencil className="size-4" />}
                   onClick={() => handleToolChange("pen")}
                 />
               </TooltipTrigger>
@@ -292,7 +292,7 @@ export function Toolbar() {
               <TooltipTrigger asChild>
                 <ToolButton
                   active={tool === "highlighter"}
-                  icon={<Highlighter className="h-4 w-4" />}
+                  icon={<Highlighter className="size-4" />}
                   onClick={() => handleToolChange("highlighter")}
                 />
               </TooltipTrigger>
@@ -305,7 +305,7 @@ export function Toolbar() {
               <TooltipTrigger asChild>
                 <ToolButton
                   active={tool === "area"}
-                  icon={<Square className="h-4 w-4" />}
+                  icon={<Square className="size-4" />}
                   onClick={() => handleToolChange("area")}
                 />
               </TooltipTrigger>
@@ -458,12 +458,12 @@ export function Toolbar() {
                   <span className="flex items-center gap-1.5">
                     {blendMode === "normal" ? (
                       <>
-                        <Layers className="h-3 w-3" />
+                        <Layers className="size-3" />
                         Normal
                       </>
                     ) : (
                       <>
-                        <Blend className="h-3 w-3" />
+                        <Blend className="size-3" />
                         Multiply
                       </>
                     )}
@@ -473,13 +473,13 @@ export function Toolbar() {
               <SelectContent>
                 <SelectItem value="normal">
                   <span className="flex items-center gap-1.5">
-                    <Layers className="h-3 w-3" />
+                    <Layers className="size-3" />
                     Normal
                   </span>
                 </SelectItem>
                 <SelectItem value="multiply">
                   <span className="flex items-center gap-1.5">
-                    <Blend className="h-3 w-3" />
+                    <Blend className="size-3" />
                     Multiply
                   </span>
                 </SelectItem>
@@ -492,7 +492,7 @@ export function Toolbar() {
             <TooltipTrigger asChild>
               <ToolButton
                 active={ruler.visible}
-                icon={<Ruler className="h-4 w-4" />}
+                icon={<Ruler className="size-4" />}
                 onClick={handleToggleRuler}
               />
             </TooltipTrigger>
@@ -509,7 +509,7 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
-                  icon={<Minus className="h-3 w-3" />}
+                  icon={<Minus className="size-3" />}
                   size="sm"
                   onClick={() => handleZoomChange(Math.max(0.1, zoom / 1.2))}
                 />
@@ -533,7 +533,7 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
-                  icon={<Plus className="h-3 w-3" />}
+                  icon={<Plus className="size-3" />}
                   size="sm"
                   onClick={() => handleZoomChange(Math.min(5, zoom * 1.2))}
                 />
@@ -548,7 +548,7 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
-                  icon={<Expand className="h-3 w-3" />}
+                  icon={<Expand className="size-3" />}
                   size="sm"
                   onClick={handleStretchToFill}
                 />
@@ -561,7 +561,7 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
-                  icon={<Maximize className="h-3 w-3" />}
+                  icon={<Maximize className="size-3" />}
                   size="sm"
                   onClick={handleCenterImage}
                 />
