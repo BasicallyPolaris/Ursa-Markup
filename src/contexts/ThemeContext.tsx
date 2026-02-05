@@ -10,13 +10,17 @@ import React, {
   useCallback,
   useRef,
 } from "react";
-import type { ThemeConfig, ColorPalette } from "../services";
+import type { ThemeConfig, Theme, ColorPalette } from "../services";
 import { themeManager } from "../services";
 
 interface ThemeContextValue {
-  theme: ThemeConfig;
+  config: ThemeConfig;
+  currentTheme: Theme;
+  availableThemes: Theme[];
+  availablePalettes: ColorPalette[];
   isLoading: boolean;
   error: string | null;
+  setTheme: (themeName: string) => boolean;
   getActivePalette: () => ColorPalette;
   getCanvasColor: (colorPath: string, alpha?: number) => string;
   reload: () => Promise<void>;
@@ -29,7 +33,8 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<ThemeConfig>(themeManager.current);
+  const [config, setConfig] = useState<ThemeConfig>(themeManager.configData);
+  const [currentTheme, setCurrentTheme] = useState<Theme>(themeManager.currentTheme);
   const [isLoading, setIsLoading] = useState<boolean>(themeManager.loading);
   const [error, setError] = useState<string | null>(themeManager.loadError);
   const unsubscribeRef = useRef<(() => void) | null>(null);
@@ -39,11 +44,12 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     let mounted = true;
 
     const init = async () => {
-      if (!themeManager.loading && !themeManager.current) {
+      if (!themeManager.loading) {
         await themeManager.load();
       }
       if (mounted) {
-        setTheme({ ...themeManager.current });
+        setConfig({ ...themeManager.configData });
+        setCurrentTheme(themeManager.currentTheme);
         setIsLoading(themeManager.loading);
         setError(themeManager.loadError);
       }
@@ -59,7 +65,8 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   // Subscribe to theme changes
   useEffect(() => {
     unsubscribeRef.current = themeManager.on("themeLoaded", () => {
-      setTheme({ ...themeManager.current });
+      setConfig({ ...themeManager.configData });
+      setCurrentTheme(themeManager.currentTheme);
       setIsLoading(themeManager.loading);
       setError(themeManager.loadError);
     });
@@ -70,6 +77,14 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
         unsubscribeRef.current = null;
       }
     };
+  }, []);
+
+  const setTheme = useCallback((themeName: string): boolean => {
+    const success = themeManager.setTheme(themeName);
+    if (success) {
+      setCurrentTheme(themeManager.currentTheme);
+    }
+    return success;
   }, []);
 
   const getActivePalette = useCallback(() => {
@@ -89,9 +104,13 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
   }, []);
 
   const value: ThemeContextValue = {
-    theme,
+    config,
+    currentTheme,
+    availableThemes: themeManager.availableThemes,
+    availablePalettes: themeManager.availablePalettes,
     isLoading,
     error,
+    setTheme,
     getActivePalette,
     getCanvasColor,
     reload,

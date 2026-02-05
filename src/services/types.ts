@@ -133,6 +133,8 @@ export function matchesHotkey(
 export type AutoCopyFormat = "png" | "jpeg";
 
 export interface AppSettings {
+  theme: string;
+  selectedPalette: string;
   autoCopyOnChange: boolean;
   autoCopyFormat: AutoCopyFormat;
   autoCopyJpegQuality: number;
@@ -159,6 +161,8 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  theme: "dark",
+  selectedPalette: "default",
   autoCopyOnChange: true,
   autoCopyFormat: "jpeg",
   autoCopyJpegQuality: 0.85,
@@ -194,10 +198,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
 
 // Import theme types from their sources
 import type { ColorPalette } from "../types";
-import type { ThemeConfig, ThemeColors } from "../lib/theme";
+import type { ThemeConfig, ThemeColors, Theme } from "../lib/theme";
 
 // Re-export for convenience
-export type { ColorPalette, ThemeConfig, ThemeColors };
+export type { ColorPalette, ThemeConfig, ThemeColors, Theme };
 
 // Event listener types
 export type EventCallback<T = void> = (payload: T) => void;
@@ -205,7 +209,7 @@ export type EventCallback<T = void> = (payload: T) => void;
 export interface ServiceEvents {
   settingsChanged: AppSettings;
   settingsSaved: AppSettings;
-  themeLoaded: ThemeConfig;
+  themeLoaded: Theme;
   documentChanged: { id: string };
   activeDocumentChanged: { id: string | null };
   documentClosed: { id: string };

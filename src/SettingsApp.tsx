@@ -7,7 +7,7 @@ import { useState, useEffect, useCallback } from "react";
 import { listen, emit } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { SettingsWindow } from "./components/settings/SettingsWindow";
-import { settingsManager } from "./services";
+import { settingsManager, themeManager } from "./services";
 import type { AppSettings } from "./services/types";
 
 function SettingsApp() {
@@ -23,12 +23,35 @@ function SettingsApp() {
       if (!settingsManager.loaded) {
         await settingsManager.load();
       }
-      setSettings({ ...settingsManager.settings });
+
+      // Load theme config
+      await themeManager.load();
+
+      // Apply saved theme
+      const savedSettings = settingsManager.settings;
+      if (savedSettings.theme) {
+        themeManager.setTheme(savedSettings.theme);
+      }
+
+      setSettings({ ...savedSettings });
       setHasChanges(settingsManager.hasChanges);
       setIsLoaded(true);
     };
     init();
   }, []);
+
+  // Apply theme class to document when theme changes
+  useEffect(() => {
+    const root = document.documentElement;
+
+    if (settings.theme === "light") {
+      root.classList.add("light");
+      root.classList.remove("dark");
+    } else {
+      root.classList.add("dark");
+      root.classList.remove("light");
+    }
+  }, [settings.theme]);
 
   // Subscribe to settings changes
   useEffect(() => {
@@ -64,18 +87,11 @@ function SettingsApp() {
     settingsManager.updateDraft(updates);
   }, []);
 
-  const updateColorPreset = useCallback((index: number, color: string) => {
-    settingsManager.updateColorPreset(index, color);
-  }, []);
-
   const handleSave = useCallback(async () => {
     const success = await settingsManager.save();
     if (success) {
-      // Emit event to main window that settings were saved
-      await emit("settings-saved", settingsManager.settings);
-      // Close the window after save
-      const currentWindow = getCurrentWindow();
-      await currentWindow.close();
+      // Emit event to main window that settings were saved with all changes
+      await emit("settings-applied", settingsManager.saved);
     }
   }, []);
 
@@ -103,7 +119,6 @@ function SettingsApp() {
       settings={settings}
       hasChanges={hasChanges}
       updateDraft={updateDraft}
-      updateColorPreset={updateColorPreset}
       onSave={handleSave}
       onCancel={handleCancel}
       onReset={handleReset}

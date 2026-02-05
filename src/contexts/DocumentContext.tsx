@@ -113,7 +113,6 @@ export function DocumentProvider({
   // Ruler actions
   const toggleRuler = useCallback(() => {
     document.ruler.toggle();
-    document.markAsChanged();
   }, [document]);
 
   const showRuler = useCallback(() => {

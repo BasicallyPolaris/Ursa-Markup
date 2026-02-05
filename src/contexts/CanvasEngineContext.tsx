@@ -11,7 +11,7 @@ import React, {
 } from "react";
 import type { CanvasEngine, Document } from "../core";
 import { CanvasEngine as CanvasEngineClass } from "../core";
-import type { Point, Size } from "../core";
+import type { Point, Size } from "../types";
 
 interface CanvasEngineContextValue {
   engine: CanvasEngine | null;
@@ -71,109 +71,127 @@ export function CanvasEngineProvider({
     };
   }, [containerRef, engine]);
 
-  const setZoom = useCallback((newZoom: number) => {
-    const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
-    setZoomState(clampedZoom);
-    document.zoom = clampedZoom; // Persist to document
-  }, [document]);
+  const setZoom = useCallback(
+    (newZoom: number) => {
+      const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
+      setZoomState(clampedZoom);
+      document.zoom = clampedZoom; // Persist to document
+    },
+    [document],
+  );
 
-  const setViewOffset = useCallback((offset: Point) => {
-    setViewOffsetState(offset);
-    document.viewOffset = offset; // Persist to document
-  }, [document]);
+  const setViewOffset = useCallback(
+    (offset: Point) => {
+      setViewOffsetState(offset);
+      document.viewOffset = offset; // Persist to document
+    },
+    [document],
+  );
 
-  const setCanvasSizeValue = useCallback((size: Size) => {
-    setCanvasSize(size);
-    document.canvasSize = size; // Persist to document
-  }, [document]);
+  const setCanvasSizeValue = useCallback(
+    (size: Size) => {
+      setCanvasSize(size);
+      document.canvasSize = size; // Persist to document
+    },
+    [document],
+  );
 
-  const fitToWindow = useCallback((size?: Size) => {
-    const container = containerRef.current;
-    if (!container) return;
-    
-    const targetSize = size || canvasSize;
-    if (targetSize.width === 0 || targetSize.height === 0) return;
+  const fitToWindow = useCallback(
+    (size?: Size) => {
+      const container = containerRef.current;
+      if (!container) return;
 
-    const rect = container.getBoundingClientRect();
-    const containerWidth = rect.width;
-    const containerHeight = rect.height;
-    const padding = 40;
+      const targetSize = size || canvasSize;
+      if (targetSize.width === 0 || targetSize.height === 0) return;
 
-    const availableWidth = containerWidth - padding * 2;
-    const availableHeight = containerHeight - padding * 2;
+      const rect = container.getBoundingClientRect();
+      const containerWidth = rect.width;
+      const containerHeight = rect.height;
+      const padding = 40;
 
-    const scaleX = availableWidth / targetSize.width;
-    const scaleY = availableHeight / targetSize.height;
-    const newZoom = Math.min(scaleX, scaleY, 1);
-    const finalZoom = Math.max(0.1, newZoom);
+      const availableWidth = containerWidth - padding * 2;
+      const availableHeight = containerHeight - padding * 2;
 
-    const imageScreenWidth = targetSize.width * finalZoom;
-    const imageScreenHeight = targetSize.height * finalZoom;
+      const scaleX = availableWidth / targetSize.width;
+      const scaleY = availableHeight / targetSize.height;
+      const newZoom = Math.min(scaleX, scaleY, 1);
+      const finalZoom = Math.max(0.1, newZoom);
 
-    const panX = (containerWidth - imageScreenWidth) / 2;
-    const panY = (containerHeight - imageScreenHeight) / 2;
-    const newOffset = { x: -panX / finalZoom, y: -panY / finalZoom };
+      const imageScreenWidth = targetSize.width * finalZoom;
+      const imageScreenHeight = targetSize.height * finalZoom;
 
-    setZoomState(finalZoom);
-    setViewOffsetState(newOffset);
-    document.zoom = finalZoom;
-    document.viewOffset = newOffset;
-  }, [containerRef, canvasSize, document]);
+      const panX = (containerWidth - imageScreenWidth) / 2;
+      const panY = (containerHeight - imageScreenHeight) / 2;
+      const newOffset = { x: -panX / finalZoom, y: -panY / finalZoom };
 
-  const stretchToFill = useCallback((size?: Size) => {
-    const container = containerRef.current;
-    if (!container) return;
+      setZoomState(finalZoom);
+      setViewOffsetState(newOffset);
+      document.zoom = finalZoom;
+      document.viewOffset = newOffset;
+    },
+    [containerRef, canvasSize, document],
+  );
 
-    const targetSize = size || canvasSize;
-    if (targetSize.width === 0 || targetSize.height === 0) return;
+  const stretchToFill = useCallback(
+    (size?: Size) => {
+      const container = containerRef.current;
+      if (!container) return;
 
-    const rect = container.getBoundingClientRect();
-    const containerWidth = rect.width;
-    const containerHeight = rect.height;
-    const padding = 40;
+      const targetSize = size || canvasSize;
+      if (targetSize.width === 0 || targetSize.height === 0) return;
 
-    const availableWidth = containerWidth - padding * 2;
-    const availableHeight = containerHeight - padding * 2;
+      const rect = container.getBoundingClientRect();
+      const containerWidth = rect.width;
+      const containerHeight = rect.height;
+      const padding = 40;
 
-    const scaleX = availableWidth / targetSize.width;
-    const scaleY = availableHeight / targetSize.height;
-    // Zoom in or out to fill the canvas (max 500% to match other zoom limits)
-    const finalZoom = Math.max(0.1, Math.min(5, Math.min(scaleX, scaleY)));
+      const availableWidth = containerWidth - padding * 2;
+      const availableHeight = containerHeight - padding * 2;
 
-    const imageScreenWidth = targetSize.width * finalZoom;
-    const imageScreenHeight = targetSize.height * finalZoom;
+      const scaleX = availableWidth / targetSize.width;
+      const scaleY = availableHeight / targetSize.height;
+      // Zoom in or out to fill the canvas (max 500% to match other zoom limits)
+      const finalZoom = Math.max(0.1, Math.min(5, Math.min(scaleX, scaleY)));
 
-    const panX = (containerWidth - imageScreenWidth) / 2;
-    const panY = (containerHeight - imageScreenHeight) / 2;
-    const newOffset = { x: -panX / finalZoom, y: -panY / finalZoom };
+      const imageScreenWidth = targetSize.width * finalZoom;
+      const imageScreenHeight = targetSize.height * finalZoom;
 
-    setZoomState(finalZoom);
-    setViewOffsetState(newOffset);
-    document.zoom = finalZoom;
-    document.viewOffset = newOffset;
-  }, [containerRef, canvasSize, document]);
+      const panX = (containerWidth - imageScreenWidth) / 2;
+      const panY = (containerHeight - imageScreenHeight) / 2;
+      const newOffset = { x: -panX / finalZoom, y: -panY / finalZoom };
 
-  const centerImage = useCallback((size?: Size) => {
-    const container = containerRef.current;
-    if (!container) return;
+      setZoomState(finalZoom);
+      setViewOffsetState(newOffset);
+      document.zoom = finalZoom;
+      document.viewOffset = newOffset;
+    },
+    [containerRef, canvasSize, document],
+  );
 
-    const targetSize = size || canvasSize;
-    if (targetSize.width === 0 || targetSize.height === 0) return;
+  const centerImage = useCallback(
+    (size?: Size) => {
+      const container = containerRef.current;
+      if (!container) return;
 
-    const rect = container.getBoundingClientRect();
-    const containerWidth = rect.width;
-    const containerHeight = rect.height;
+      const targetSize = size || canvasSize;
+      if (targetSize.width === 0 || targetSize.height === 0) return;
 
-    // Center the image at current zoom level (don't change zoom)
-    const imageScreenWidth = targetSize.width * zoom;
-    const imageScreenHeight = targetSize.height * zoom;
-    const panX = (containerWidth - imageScreenWidth) / 2;
-    const panY = (containerHeight - imageScreenHeight) / 2;
-    const newOffset = { x: -panX / zoom, y: -panY / zoom };
+      const rect = container.getBoundingClientRect();
+      const containerWidth = rect.width;
+      const containerHeight = rect.height;
 
-    setViewOffsetState(newOffset);
-    document.viewOffset = newOffset;
-  }, [containerRef, canvasSize, zoom, document]);
+      // Center the image at current zoom level (don't change zoom)
+      const imageScreenWidth = targetSize.width * zoom;
+      const imageScreenHeight = targetSize.height * zoom;
+      const panX = (containerWidth - imageScreenWidth) / 2;
+      const panY = (containerHeight - imageScreenHeight) / 2;
+      const newOffset = { x: -panX / zoom, y: -panY / zoom };
+
+      setViewOffsetState(newOffset);
+      document.viewOffset = newOffset;
+    },
+    [containerRef, canvasSize, zoom, document],
+  );
 
   const zoomAroundPoint = useCallback(
     (
@@ -195,7 +213,7 @@ export function CanvasEngineProvider({
 
       const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
       const newOffset = { x: newViewOffsetX, y: newViewOffsetY };
-      
+
       setZoomState(clampedZoom);
       setViewOffsetState(newOffset);
       document.zoom = clampedZoom;
@@ -211,12 +229,11 @@ export function CanvasEngineProvider({
     canvasSize,
     setZoom,
     setViewOffset,
-      setCanvasSize: setCanvasSizeValue,
-      fitToWindow,
-      stretchToFill,
-      centerImage,
-      zoomAroundPoint,
-
+    setCanvasSize: setCanvasSizeValue,
+    fitToWindow,
+    stretchToFill,
+    centerImage,
+    zoomAroundPoint,
   };
 
   return (

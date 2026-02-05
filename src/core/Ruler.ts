@@ -4,7 +4,7 @@ import type {
   RulerState,
   RulerSnapInfo,
   ViewState,
-} from "./types";
+} from "../types";
 
 /**
  * Ruler height in pixels (constant screen size)

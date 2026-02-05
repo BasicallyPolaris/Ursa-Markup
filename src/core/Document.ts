@@ -1,4 +1,4 @@
-import type { DocumentState, Point, Size } from "./types";
+import type { DocumentState, Point, Size } from "../types";
 import { StrokeHistory } from "./StrokeHistory";
 import { Ruler } from "./Ruler";
 import { BrushEngine } from "./BrushEngine";
@@ -32,7 +32,7 @@ export class Document {
   // Status
   hasChanges: boolean;
   recentDir: string | null;
-  
+
   // Track if initial fit behavior has been applied (only do it once per document)
   hasAppliedInitialFit: boolean;
 

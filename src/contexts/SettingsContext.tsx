@@ -15,7 +15,6 @@ interface SettingsContextValue {
   openSettings: () => void
   closeSettings: () => void
   updateDraft: (updates: Partial<AppSettings>) => void
-  updateColorPreset: (index: number, color: string) => void
   save: () => Promise<boolean>
   cancel: () => void
   reset: () => void
@@ -98,10 +97,6 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     settingsManager.updateDraft(updates)
   }, [])
 
-  const updateColorPreset = useCallback((index: number, color: string) => {
-    settingsManager.updateColorPreset(index, color)
-  }, [])
-
   const save = useCallback(async () => {
     return await settingsManager.save()
   }, [])
@@ -131,7 +126,6 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     openSettings,
     closeSettings,
     updateDraft,
-    updateColorPreset,
     save,
     cancel,
     reset,

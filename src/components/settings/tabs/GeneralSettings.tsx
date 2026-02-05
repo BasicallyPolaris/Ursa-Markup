@@ -1,19 +1,18 @@
-import { Clipboard, FolderClosed, Palette, Eye } from "lucide-react";
+import { Clipboard, FolderClosed, Eye } from "lucide-react";
 import { Switch } from "../../ui/switch";
+import { Slider } from "../../ui/slider";
 import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
-import { SettingsSection, SettingsRow } from "../components/SettingsSection";
+import { SettingsSection, SettingsRow, SettingsSliderRow } from "../components/SettingsSection";
 import type { AppSettings, CloseTabBehavior } from "../../../services/types";
 
 interface GeneralSettingsProps {
   settings: AppSettings;
   updateDraft: (updates: Partial<AppSettings>) => void;
-  updateColorPreset: (index: number, color: string) => void;
 }
 
 export function GeneralSettings({
   settings,
   updateDraft,
-  updateColorPreset,
 }: GeneralSettingsProps) {
   const closeTabOptions: { value: CloseTabBehavior; label: string }[] = [
     { value: "prompt", label: "Ask me" },
@@ -90,20 +89,21 @@ export function GeneralSettings({
             </SettingsRow>
             
             {settings.autoCopyFormat === "jpeg" && (
-              <SettingsRow
+              <SettingsSliderRow
                 label="JPEG quality"
-                description={`${Math.round(settings.autoCopyJpegQuality * 100)}% quality - lower is faster`}
+                value={Math.round(settings.autoCopyJpegQuality * 100)}
+                unit="%"
               >
-                <input
-                  type="range"
-                  min="0.3"
-                  max="1"
-                  step="0.05"
-                  value={settings.autoCopyJpegQuality}
-                  onChange={(e) => updateDraft({ autoCopyJpegQuality: parseFloat(e.target.value) })}
-                  className="w-32 accent-accent-primary"
+                <Slider
+                  value={[Math.round(settings.autoCopyJpegQuality * 100)]}
+                  onValueChange={([value]) =>
+                    updateDraft({ autoCopyJpegQuality: value / 100 })
+                  }
+                  min={30}
+                  max={100}
+                  step={5}
                 />
-              </SettingsRow>
+              </SettingsSliderRow>
             )}
           </>
         )}
@@ -124,20 +124,21 @@ export function GeneralSettings({
         </SettingsRow>
 
         {settings.manualCopyFormat === "jpeg" && (
-          <SettingsRow
+          <SettingsSliderRow
             label="Manual copy JPEG quality"
-            description={`${Math.round(settings.manualCopyJpegQuality * 100)}% quality - lower is faster`}
+            value={Math.round(settings.manualCopyJpegQuality * 100)}
+            unit="%"
           >
-            <input
-              type="range"
-              min="0.3"
-              max="1"
-              step="0.05"
-              value={settings.manualCopyJpegQuality}
-              onChange={(e) => updateDraft({ manualCopyJpegQuality: parseFloat(e.target.value) })}
-              className="w-32 accent-accent-primary"
+            <Slider
+              value={[Math.round(settings.manualCopyJpegQuality * 100)]}
+              onValueChange={([value]) =>
+                updateDraft({ manualCopyJpegQuality: value / 100 })
+              }
+              min={30}
+              max={100}
+              step={5}
             />
-          </SettingsRow>
+          </SettingsSliderRow>
         )}
       </SettingsSection>
 
@@ -162,30 +163,6 @@ export function GeneralSettings({
         </p>
       </SettingsSection>
 
-      {/* Color Presets */}
-      <SettingsSection
-        title="Color Presets"
-        description="Quick access colors using Ctrl+1 through Ctrl+7"
-        icon={<Palette className="w-4 h-4" />}
-      >
-        <div className="grid grid-cols-7 gap-3">
-          {settings.colorPresets.map((color, index) => (
-            <div key={index} className="flex flex-col items-center gap-1.5">
-              <div className="relative group">
-                <input
-                  type="color"
-                  value={color}
-                  onChange={(e) => updateColorPreset(index, e.target.value)}
-                  className="w-10 h-10 rounded-lg cursor-pointer border-2 border-toolbar-border hover:border-text-muted transition-colors"
-                />
-              </div>
-              <kbd className="text-[10px] text-text-muted px-1.5 py-0.5 rounded bg-surface-bg border border-toolbar-border">
-                Ctrl+{index + 1}
-              </kbd>
-            </div>
-          ))}
-        </div>
-      </SettingsSection>
     </div>
   );
 }

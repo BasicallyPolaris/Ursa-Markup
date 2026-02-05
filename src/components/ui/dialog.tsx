@@ -82,7 +82,7 @@ function DialogOverlay({
   return (
     <BaseDialog.Backdrop
       className={cn(
-        "fixed inset-0 z-50 bg-black/60",
+        "fixed inset-0 z-50 bg-overlay/60",
         "data-[starting-style]:opacity-0 data-[ending-style]:opacity-0",
         "transition-opacity duration-150",
         className

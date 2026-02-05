@@ -14,7 +14,6 @@ export function SettingsPanel() {
     isOpen,
     closeSettings,
     updateDraft,
-    updateColorPreset,
     save,
     cancel,
     reset,
@@ -159,26 +158,6 @@ export function SettingsPanel() {
               {settings.closeTabBehavior === "discard" &&
                 "Close without saving changes"}
             </p>
-          </div>
-
-          {/* Color Presets */}
-          <div className="space-y-3">
-            <Label className="text-text-primary text-sm">
-              Color Presets (Ctrl+1 to Ctrl+7)
-            </Label>
-            <div className="grid grid-cols-7 gap-2">
-              {settings.colorPresets.map((color, index) => (
-                <div key={index} className="flex flex-col items-center gap-1">
-                  <input
-                    type="color"
-                    value={color}
-                    onChange={(e) => updateColorPreset(index, e.target.value)}
-                    className="w-9 h-9 rounded cursor-pointer border-2 border-panel-border"
-                  />
-                  <span className="text-xs text-text-muted">{index + 1}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Default Tool Settings */}

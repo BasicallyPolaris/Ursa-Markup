@@ -478,7 +478,7 @@ export function DrawingCanvas({
 
       for (const stroke of group.strokes) {
         const strokeBlend =
-          (stroke.brush && stroke.brush.blendMode) || "normal";
+          (stroke.brushSettings && stroke.brushSettings.blendMode) || "normal";
         if (strokeBlend === "multiply") {
           if (multiplyCtx) replayStroke(multiplyCtx, stroke);
         } else {

@@ -1,5 +1,3 @@
-import { DEFAULT_THEME } from "../lib/theme";
-
 export type Tool = "pen" | "highlighter" | "area";
 export type BlendMode = "normal" | "multiply";
 
@@ -165,4 +163,4 @@ export interface RGB {
   b: number;
 }
 
-export const DEFAULT_CONFIG = DEFAULT_THEME;
+

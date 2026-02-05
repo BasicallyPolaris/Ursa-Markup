@@ -18,6 +18,8 @@ import {
   Blend,
 } from "lucide-react";
 import { Button } from "../ui/button";
+import { ToolButton } from "../ui/tool-button";
+import { IconButton } from "../ui/icon-button";
 import { Slider } from "../ui/slider";
 import {
   Select,
@@ -45,7 +47,7 @@ import { cn } from "../../lib/utils";
 export function Toolbar() {
   // Get contexts
   const { settings, openSettings } = useSettings();
-  const { activeDocument, documents: _documents } = useTabManager();
+  const { activeDocument } = useTabManager();
   const { strokeHistory, ruler, toggleRuler, undo, redo } = useDocument();
   const { zoom, setZoom, stretchToFill, centerImage } = useCanvasEngine();
   const hotkeys = useHotkeys();
@@ -193,24 +195,6 @@ export function Toolbar() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={handleSave}
-                  disabled={!hasImage}
-                  className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <Save className="h-4 w-4 mr-1.5" />
-                  <span className="text-sm">Save</span>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {formatHotkey(hotkeys["file.save"])}
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
                   onClick={handleCopy}
                   disabled={!hasImage}
                   className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
@@ -223,21 +207,35 @@ export function Toolbar() {
                 {formatHotkey(hotkeys["file.copy"])}
               </TooltipContent>
             </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={!hasImage}
+                  className="h-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Save className="h-4 w-4 mr-1.5" />
+                  <span className="text-sm">Save</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {formatHotkey(hotkeys["file.save"])}
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           <div className="flex items-center gap-1">
             {/* Undo/Redo */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <IconButton
+                  icon={<Undo2 className="h-4 w-4" />}
                   onClick={handleUndo}
                   disabled={!canUndo}
-                  className="h-8 w-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 border border-transparent hover:border-toolbar-border"
-                >
-                  <Undo2 className="h-4 w-4" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 Undo ({formatHotkey(hotkeys["edit.undo"])})
@@ -246,15 +244,11 @@ export function Toolbar() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <IconButton
+                  icon={<Redo2 className="h-4 w-4" />}
                   onClick={handleRedo}
                   disabled={!canRedo}
-                  className="h-8 w-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover disabled:opacity-40 border border-transparent hover:border-toolbar-border"
-                >
-                  <Redo2 className="h-4 w-4" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 Redo ({formatHotkey(hotkeys["edit.redo"])})
@@ -267,14 +261,10 @@ export function Toolbar() {
             {/* Settings */}
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <IconButton
+                  icon={<Settings className="h-4 w-4" />}
                   onClick={handleSettings}
-                  className="h-8 w-8 text-text-secondary hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>Settings</TooltipContent>
             </Tooltip>
@@ -287,19 +277,11 @@ export function Toolbar() {
           <div className="flex items-center gap-1 bg-surface-bg rounded-lg p-1 border border-toolbar-border">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant={tool === "pen" ? "secondary" : "ghost"}
-                  size="icon"
+                <ToolButton
+                  active={tool === "pen"}
+                  icon={<Pencil className="h-4 w-4" />}
                   onClick={() => handleToolChange("pen")}
-                  className={cn(
-                    "h-8 w-8 border",
-                    tool === "pen"
-                      ? "bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm hover:bg-surface-bg-hover"
-                      : "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent",
-                  )}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 Pen ({formatHotkey(hotkeys["tool.pen"])})
@@ -308,19 +290,11 @@ export function Toolbar() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant={tool === "highlighter" ? "secondary" : "ghost"}
-                  size="icon"
+                <ToolButton
+                  active={tool === "highlighter"}
+                  icon={<Highlighter className="h-4 w-4" />}
                   onClick={() => handleToolChange("highlighter")}
-                  className={cn(
-                    "h-8 w-8 border",
-                    tool === "highlighter"
-                      ? "bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm hover:bg-surface-bg-hover"
-                      : "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent",
-                  )}
-                >
-                  <Highlighter className="h-4 w-4" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 Marker ({formatHotkey(hotkeys["tool.marker"])})
@@ -329,19 +303,11 @@ export function Toolbar() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant={tool === "area" ? "secondary" : "ghost"}
-                  size="icon"
+                <ToolButton
+                  active={tool === "area"}
+                  icon={<Square className="h-4 w-4" />}
                   onClick={() => handleToolChange("area")}
-                  className={cn(
-                    "h-8 w-8 border",
-                    tool === "area"
-                      ? "bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm hover:bg-surface-bg-hover"
-                      : "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent",
-                  )}
-                >
-                  <Square className="h-4 w-4" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 Area ({formatHotkey(hotkeys["tool.area"])})
@@ -352,7 +318,7 @@ export function Toolbar() {
           <div className="w-px h-8 bg-text-secondary/20" />
 
           {/* Color Palette with smooth anti-aliased circles */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 overflow-visible">
             {colorPresets.slice(0, 7).map((color: string, index: number) => (
               <Tooltip key={`${color}-${index}`}>
                 <TooltipTrigger asChild>
@@ -361,15 +327,11 @@ export function Toolbar() {
                     className={cn(
                       "w-6 h-6 rounded-full transition-all",
                       brush.color === color
-                        ? "ring-2 ring-text-primary/60 ring-offset-2 ring-offset-toolbar-bg-secondary scale-110"
+                        ? "ring-2 ring-text-primary/60 ring-offset-1 ring-offset-toolbar-bg-secondary scale-110"
                         : "hover:scale-105 hover:ring-2 hover:ring-text-primary/30",
                     )}
                     style={{
                       backgroundColor: color,
-                      boxShadow:
-                        brush.color === color
-                          ? "0 2px 8px rgba(0,0,0,0.3)"
-                          : "none",
                     }}
                   />
                 </TooltipTrigger>
@@ -528,19 +490,11 @@ export function Toolbar() {
           {/* Ruler Toggle - icon only */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant={ruler.visible ? "secondary" : "ghost"}
-                size="icon"
+              <ToolButton
+                active={ruler.visible}
+                icon={<Ruler className="h-4 w-4" />}
                 onClick={handleToggleRuler}
-                className={cn(
-                  "h-8 w-8 border",
-                  ruler.visible
-                    ? "bg-surface-bg-active text-text-primary border-toolbar-border shadow-sm hover:bg-surface-bg-hover"
-                    : "text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border-transparent",
-                )}
-              >
-                <Ruler className="h-4 w-4" />
-              </Button>
+              />
             </TooltipTrigger>
             <TooltipContent>
               Ruler ({formatHotkey(hotkeys["nav.ruler"])})
@@ -554,14 +508,11 @@ export function Toolbar() {
           <div className="flex items-center gap-1 bg-surface-bg rounded-lg p-1 border border-toolbar-border">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <IconButton
+                  icon={<Minus className="h-3 w-3" />}
+                  size="sm"
                   onClick={() => handleZoomChange(Math.max(0.1, zoom / 1.2))}
-                  className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 Zoom Out ({formatHotkey(hotkeys["nav.zoomOut"])})
@@ -581,14 +532,11 @@ export function Toolbar() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <IconButton
+                  icon={<Plus className="h-3 w-3" />}
+                  size="sm"
                   onClick={() => handleZoomChange(Math.min(5, zoom * 1.2))}
-                  className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 Zoom In ({formatHotkey(hotkeys["nav.zoomIn"])})
@@ -599,14 +547,11 @@ export function Toolbar() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <IconButton
+                  icon={<Expand className="h-3 w-3" />}
+                  size="sm"
                   onClick={handleStretchToFill}
-                  className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
-                >
-                  <Expand className="h-3 w-3" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 Fit to Canvas ({formatHotkey(hotkeys["nav.stretchToFill"])})
@@ -615,14 +560,11 @@ export function Toolbar() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <IconButton
+                  icon={<Maximize className="h-3 w-3" />}
+                  size="sm"
                   onClick={handleCenterImage}
-                  className="h-7 w-7 text-text-muted hover:text-text-primary hover:bg-surface-bg-hover border border-transparent hover:border-toolbar-border"
-                >
-                  <Maximize className="h-3 w-3" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 Center Canvas ({formatHotkey(hotkeys["nav.centerImage"])})

@@ -52,20 +52,20 @@ export function CloseTabDialog() {
           <Button
             onClick={handleCancel}
             variant="secondary"
-            className="bg-toolbar-bg text-toolbar-text hover:bg-toolbar-hover"
+            className="bg-toolbar-bg text-text-secondary hover:bg-surface-bg-hover"
           >
             Cancel
           </Button>
           <Button
             onClick={handleDiscard}
             variant="secondary"
-            className="bg-toolbar-bg text-toolbar-text hover:bg-toolbar-hover"
+            className="bg-toolbar-bg text-text-secondary hover:bg-surface-bg-hover"
           >
             Don't Save
           </Button>
           <Button
             onClick={handleSave}
-            className="bg-accent-blue text-white hover:bg-accent-blue-hover"
+            className="bg-accent-primary text-accent-primary-fg hover:bg-accent-primary-hover"
           >
             Save
           </Button>

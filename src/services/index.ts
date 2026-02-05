@@ -5,6 +5,9 @@
 
 export * from "./types";
 
+// Re-export types from lib/theme
+export type { Theme, ThemeConfig, ThemeColors } from "../lib/theme";
+
 // Import and re-export classes
 export { SettingsManager } from "./SettingsManager";
 export { ThemeManager } from "./ThemeManager";

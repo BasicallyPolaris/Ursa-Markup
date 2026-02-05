@@ -42,7 +42,8 @@
     "store:allow-get",
     "store:allow-set",
     "store:allow-save",
-    "store:allow-load"
+    "store:allow-load",
+    "shell:allow-open"
   ],
   "commands": {
     "allow": ["get_pending_file", "queue_clipboard_copy_base64"]

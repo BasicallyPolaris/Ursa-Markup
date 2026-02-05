@@ -63,18 +63,18 @@ function Slider({
       <BaseSlider.Control className="relative flex w-full items-center h-4">
         <BaseSlider.Track
           data-slot="slider-track"
-          className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-white/20"
+          className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-slider-track"
         >
           <BaseSlider.Indicator
             data-slot="slider-range"
-            className="absolute left-0 h-full bg-white/80"
+            className="absolute left-0 h-full bg-slider-indicator"
           />
         </BaseSlider.Track>
         {_values.map((_, index) => (
           <BaseSlider.Thumb
             data-slot="slider-thumb"
             key={index}
-            className="block h-4 w-4 rounded-full border border-white/50 bg-[#2a2a2a] shadow-md hover:scale-110 hover:bg-[#333] hover:transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 disabled:pointer-events-none disabled:opacity-50"
+            className="block h-4 w-4 rounded-full border border-slider-thumb-border bg-surface-bg shadow-md hover:scale-110 hover:bg-surface-bg-hover hover:transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
           />
         ))}
       </BaseSlider.Control>

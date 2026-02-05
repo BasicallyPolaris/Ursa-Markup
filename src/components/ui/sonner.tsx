@@ -14,17 +14,17 @@ function Toaster(props: ToasterProps) {
         unstyled: true,
         classNames: {
           toast:
-            "flex items-center gap-3 w-full px-4 py-3 rounded-lg shadow-2xl border bg-[hsl(0_0%_22%)] border-[hsl(0_0%_32%)]",
-          title: "text-white font-medium text-sm",
-          description: "text-[hsl(0_0%_70%)] text-xs mt-0.5",
+            "flex items-center gap-3 w-full px-4 py-3 rounded-lg shadow-2xl border bg-surface-bg border-toolbar-border",
+          title: "text-text-primary font-medium text-sm",
+          description: "text-text-muted text-xs mt-0.5",
           success:
-            "border-[hsl(142_70%_40%/0.5)] [&>svg]:text-[hsl(142_70%_50%)] [&>svg]:w-5 [&>svg]:h-5 [&>svg]:shrink-0",
+            "border-success/50 [&>svg]:text-success [&>svg]:w-5 [&>svg]:h-5 [&>svg]:shrink-0",
           error:
-            "border-[hsl(0_70%_50%/0.5)] [&>svg]:text-[hsl(0_70%_60%)] [&>svg]:w-5 [&>svg]:h-5 [&>svg]:shrink-0",
+            "border-destructive/50 [&>svg]:text-destructive [&>svg]:w-5 [&>svg]:h-5 [&>svg]:shrink-0",
           actionButton:
-            "bg-accent-primary text-white hover:bg-accent-primary/90 px-3 py-1.5 rounded text-xs font-medium",
+            "bg-accent-primary text-accent-primary-fg hover:bg-accent-primary/90 px-3 py-1.5 rounded text-xs font-medium",
           cancelButton:
-            "bg-[hsl(0_0%_28%)] text-[hsl(0_0%_70%)] hover:bg-[hsl(0_0%_32%)] px-3 py-1.5 rounded text-xs",
+            "bg-toolbar-bg-secondary text-text-muted hover:bg-surface-bg-hover px-3 py-1.5 rounded text-xs",
         },
       }}
       {...props}

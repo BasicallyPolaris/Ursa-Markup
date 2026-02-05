@@ -1,6 +1,7 @@
 import { Store } from "@tauri-apps/plugin-store";
 import type { AppSettings, ServiceEvents } from "./types";
 import { DEFAULT_SETTINGS } from "./types";
+import { themeManager } from "./ThemeManager";
 
 type EventCallback<T> = (payload: T) => void;
 
@@ -76,6 +77,25 @@ export class SettingsManager {
     if (!this.store) return false;
 
     try {
+      // If a palette is selected, apply its colors to colorPresets before saving
+      if (this.draftSettings.selectedPalette) {
+        const palette = themeManager.getActivePalette(
+          this.draftSettings.selectedPalette,
+        );
+        if (palette) {
+          // Take up to 7 colors from the palette
+          const newPresets = palette.colors.slice(0, 7);
+          // Pad with default colors if palette has fewer than 7
+          while (newPresets.length < 7) {
+            newPresets.push(DEFAULT_SETTINGS.colorPresets[newPresets.length]);
+          }
+          this.draftSettings = {
+            ...this.draftSettings,
+            colorPresets: newPresets,
+          };
+        }
+      }
+
       await this.store.set("appSettings", this.draftSettings);
       await this.store.save();
       this.savedSettings = { ...this.draftSettings };
@@ -100,6 +120,7 @@ export class SettingsManager {
    */
   resetToDefaults(): void {
     this.draftSettings = { ...DEFAULT_SETTINGS };
+
     this.emit("settingsChanged", this.draftSettings);
   }
 
@@ -108,16 +129,6 @@ export class SettingsManager {
    */
   updateDraft(updates: Partial<AppSettings>): void {
     this.draftSettings = { ...this.draftSettings, ...updates };
-    this.emit("settingsChanged", this.draftSettings);
-  }
-
-  /**
-   * Update a specific color preset
-   */
-  updateColorPreset(index: number, color: string): void {
-    const newPresets = [...this.draftSettings.colorPresets];
-    newPresets[index] = color;
-    this.draftSettings = { ...this.draftSettings, colorPresets: newPresets };
     this.emit("settingsChanged", this.draftSettings);
   }
 

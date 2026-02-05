@@ -28,19 +28,23 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         description="Freehand drawing with solid strokes"
         icon={<Pencil className="w-4 h-4" />}
       >
-        <SettingsSliderRow
-          label="Default Size"
-          value={settings.defaultPenSize}
-          unit="px"
-        >
-          <Slider
-            value={[settings.defaultPenSize]}
-            onValueChange={([value]) => updateDraft({ defaultPenSize: value })}
-            min={1}
-            max={20}
-            step={1}
-          />
-        </SettingsSliderRow>
+        <SettingsGroup title="Appearance">
+          <SettingsSliderRow
+            label="Default Size"
+            value={settings.defaultPenSize}
+            unit="px"
+          >
+            <Slider
+              value={[settings.defaultPenSize]}
+              onValueChange={([value]) =>
+                updateDraft({ defaultPenSize: value })
+              }
+              min={1}
+              max={20}
+              step={1}
+            />
+          </SettingsSliderRow>
+        </SettingsGroup>
 
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Blending">
@@ -159,29 +163,6 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
             />
           </SettingsSliderRow>
         </SettingsGroup>
-
-        <div className="border-t border-toolbar-border/50 pt-4">
-          <SettingsGroup title="Border">
-            <SettingsSliderRow
-              label="Border Width"
-              value={settings.defaultAreaBorderWidth}
-              unit={settings.defaultAreaBorderWidth === 0 ? "" : "px"}
-            >
-              <Slider
-                value={[settings.defaultAreaBorderWidth]}
-                onValueChange={([value]) =>
-                  updateDraft({ defaultAreaBorderWidth: value })
-                }
-                min={0}
-                max={10}
-                step={1}
-              />
-            </SettingsSliderRow>
-            <p className="text-xs text-text-muted -mt-1">
-              Set to 0 for no border
-            </p>
-          </SettingsGroup>
-        </div>
 
         <div className="border-t border-toolbar-border/50 pt-4">
           <SettingsGroup title="Blending">

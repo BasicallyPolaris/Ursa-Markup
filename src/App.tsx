@@ -1,4 +1,5 @@
-import { useRef, useEffect, RefObject } from "react";
+import { useRef, useEffect, useState, RefObject } from "react";
+import { listen } from "@tauri-apps/api/event";
 import {
   SettingsProvider,
   ThemeProvider,
@@ -16,6 +17,7 @@ import { TabBar } from "./components/tabs/TabBar";
 import { CloseTabDialog } from "./components/tabs/CloseTabDialog";
 import { CanvasContainer } from "./components/canvas/CanvasContainer";
 import { Toaster } from "./components/ui/sonner";
+import type { AppSettings } from "./services/types";
 
 interface AppContentProps {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -168,6 +170,7 @@ function AppContent({ containerRef, canvasContainerRef }: AppContentProps) {
 function App() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const [settings, setSettings] = useState<AppSettings>(services.settingsManager.settings);
 
   // Set up clipboard event listener at the app level (singleton)
   // This ensures only one listener exists regardless of document changes
@@ -179,10 +182,55 @@ function App() {
       await services.settingsManager.load();
       await services.themeManager.load();
       services.tabManager.loadInitialState();
+      
+      // Apply saved theme from settings
+      const savedSettings = services.settingsManager.settings;
+      if (savedSettings.theme) {
+        services.themeManager.setTheme(savedSettings.theme);
+      }
+      
+      setSettings({ ...savedSettings });
     };
 
     init();
   }, []);
+
+  // Subscribe to settings changes for theme updates
+  useEffect(() => {
+    const unsubscribe = services.settingsManager.on("settingsChanged", () => {
+      setSettings({ ...services.settingsManager.settings });
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Listen for settings applied events from settings window
+  useEffect(() => {
+    const setupListener = async () => {
+      const unlisten = await listen<AppSettings>("settings-applied", (event) => {
+        const savedSettings = event.payload;
+        
+        // Apply theme through ThemeManager (applies CSS variables and class)
+        services.themeManager.setTheme(savedSettings.theme);
+        
+        // Reload settings from disk to ensure consistency
+        services.settingsManager.load().then(() => {
+          setSettings({ ...services.settingsManager.settings });
+        });
+      });
+      return unlisten;
+    };
+
+    const unlistenPromise = setupListener();
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
+  // Apply theme when theme changes
+  useEffect(() => {
+    // Apply theme through ThemeManager (applies CSS variables and class)
+    services.themeManager.setTheme(settings.theme);
+  }, [settings.theme]);
 
   return (
     <SettingsProvider>

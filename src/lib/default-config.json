@@ -1,0 +1,206 @@
+{
+  "themes": [
+    {
+      "name": "dark",
+      "label": "Dark",
+      "description": "Default dark theme",
+      "colors": {
+        "app": {
+          "background": "#1e1e1e",
+          "foreground": "#ffffff"
+        },
+        "toolbar": {
+          "background": "#252525",
+          "backgroundSecondary": "#1e1e1e",
+          "border": "#2a2a2a"
+        },
+        "panel": {
+          "background": "#1e1e1e",
+          "border": "#3d3d3d"
+        },
+        "surface": {
+          "background": "#252525",
+          "backgroundHover": "#3a3a3a",
+          "backgroundActive": "#4a4a4a"
+        },
+        "text": {
+          "primary": "#ffffff",
+          "secondary": "#d1d5db",
+          "muted": "#9ca3af"
+        },
+        "accent": {
+          "primary": "#005a9e",
+          "primaryForeground": "#ffffff",
+          "hover": "rgba(255, 255, 255, 0.1)"
+        },
+        "toggle": {
+          "checked": "#005a9e",
+          "unchecked": "#3d3d3d"
+        },
+        "canvas": {
+          "background": "#1a1a1a",
+          "pattern": "#2a2a2a"
+        },
+        "ruler": {
+          "background": "#c8c8c8",
+          "border": "#646464",
+          "tick": "#282828",
+          "tickMajor": "#282828",
+          "text": "#282828",
+          "centerBackground": "#dcdcdc",
+          "centerBorder": "#505050",
+          "compass": "#b43232"
+        },
+        "status": {
+          "success": "#2a9d4a",
+          "successForeground": "#ffffff",
+          "warning": "#ffb300",
+          "warningForeground": "#000000",
+          "unsaved": "#ffffff"
+        },
+        "overlay": "#000000",
+        "slider": {
+          "track": "#000000",
+          "indicator": "rgba(255, 255, 255, 0.8)",
+          "thumbBorder": "rgba(255, 255, 255, 0.5)"
+        },
+        "shadow": "rgba(0, 0, 0, 0.3)",
+        "accentHover": {
+          "primary": "#004a82"
+        }
+      }
+    },
+    {
+      "name": "light",
+      "label": "Light",
+      "description": "Clean light theme",
+      "colors": {
+        "app": {
+          "background": "#f8f9fa",
+          "foreground": "#1a1a2e"
+        },
+        "toolbar": {
+          "background": "#e9ecef",
+          "backgroundSecondary": "#f8f9fa",
+          "border": "#dee2e6"
+        },
+        "panel": {
+          "background": "#ffffff",
+          "border": "#dee2e6"
+        },
+        "surface": {
+          "background": "#e9ecef",
+          "backgroundHover": "#dee2e6",
+          "backgroundActive": "#ced4da"
+        },
+        "text": {
+          "primary": "#1a1a2e",
+          "secondary": "#495057",
+          "muted": "#6c757d"
+        },
+        "accent": {
+          "primary": "#0056b3",
+          "primaryForeground": "#ffffff",
+          "hover": "rgba(0, 0, 0, 0.05)"
+        },
+        "toggle": {
+          "checked": "#0056b3",
+          "unchecked": "#adb5bd"
+        },
+        "canvas": {
+          "background": "#f0f0f0",
+          "pattern": "#d9d9d9"
+        },
+        "ruler": {
+          "background": "#e0e0e0",
+          "border": "#999999",
+          "tick": "#333333",
+          "tickMajor": "#333333",
+          "text": "#333333",
+          "centerBackground": "#f0f0f0",
+          "centerBorder": "#666666",
+          "compass": "#c73e3e"
+        },
+        "status": {
+          "success": "#28a745",
+          "successForeground": "#ffffff",
+          "warning": "#ffc107",
+          "warningForeground": "#000000",
+          "unsaved": "#ffc107"
+        },
+        "overlay": "#000000",
+        "slider": {
+          "track": "#F5F5F5",
+          "indicator": "#171717",
+          "thumbBorder": "rgba(255, 255, 255, 0.5)"
+        },
+        "shadow": "rgba(0, 0, 0, 0.01)",
+        "accentHover": {
+          "primary": "#004494"
+        }
+      }
+    }
+  ],
+  "palettes": [
+    {
+      "name": "default",
+      "colors": [
+        "#FF6B6B",
+        "#FF9F43",
+        "#FFE066",
+        "#6BCB77",
+        "#4D96FF",
+        "#9B59B6",
+        "#FF6B9D"
+      ]
+    },
+    {
+      "name": "pastel",
+      "colors": [
+        "#FFB3BA",
+        "#FFDFBA",
+        "#FFFFBA",
+        "#BAFFC9",
+        "#BAE1FF",
+        "#E2BAFF",
+        "#FFB3E6"
+      ]
+    },
+    {
+      "name": "neon",
+      "colors": [
+        "#FF6B6B",
+        "#4ECDC4",
+        "#45B7D1",
+        "#96CEB4",
+        "#FECA57",
+        "#FF9FF3",
+        "#54A0FF"
+      ]
+    },
+    {
+      "name": "ocean",
+      "colors": [
+        "#001f3f",
+        "#0074D9",
+        "#7FDBFF",
+        "#39CCCC",
+        "#3D9970",
+        "#2ECC40",
+        "#01FF70"
+      ]
+    },
+    {
+      "name": "warm",
+      "colors": [
+        "#85144b",
+        "#F012BE",
+        "#FF4136",
+        "#FF851B",
+        "#FFDC00",
+        "#3D9970",
+        "#2ECC40"
+      ]
+    }
+  ]
+}

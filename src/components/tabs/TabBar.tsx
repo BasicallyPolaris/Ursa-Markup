@@ -41,7 +41,7 @@ export function TabBar() {
               "group flex items-center gap-2 px-3 py-1.5 min-w-30 max-w-50 rounded-t-md cursor-pointer select-none transition-all relative",
               isActive
                 ? "bg-surface-bg-active text-text-primary"
-                : "bg-toolbar-bg text-text-muted hover:bg-toolbar-hover hover:text-text-secondary",
+                : "bg-toolbar-bg text-text-muted hover:bg-surface-bg-hover hover:text-text-secondary",
             )}
           >
             {/* Active tab bottom border indicator */}
@@ -52,7 +52,7 @@ export function TabBar() {
             <span className="flex-1 truncate text-sm">
               {tab.getDisplayTitle()}
               {tab.hasChanges && (
-                <span className="ml-1 text-accent-yellow">●</span>
+                <span className="ml-1 text-status-unsaved">●</span>
               )}
             </span>
 
@@ -65,7 +65,7 @@ export function TabBar() {
                 }}
                 className={cn(
                   "p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity",
-                  "hover:bg-toolbar-hover",
+                  "hover:bg-surface-bg-hover",
                 )}
               >
                 <X className="w-3.5 h-3.5" />
@@ -79,7 +79,7 @@ export function TabBar() {
       {!shouldHideAddButton && (
         <button
           onClick={handleAddTab}
-          className="p-1.5 rounded-md hover:bg-toolbar-hover transition-colors text-toolbar-text"
+          className="p-1.5 rounded-md hover:bg-surface-bg-hover transition-colors text-text-secondary"
           title="New Tab"
         >
           <Plus className="w-4 h-4" />

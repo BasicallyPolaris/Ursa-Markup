@@ -1,13 +1,14 @@
 import { useState, useCallback } from "react";
-import { Settings, Wrench, Keyboard, RotateCcw, Save, X } from "lucide-react";
+import { Settings, Wrench, Keyboard, Palette, RotateCcw, Save, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { GeneralSettings } from "./tabs/GeneralSettings";
 import { ToolsSettings } from "./tabs/ToolsSettings";
 import { ShortcutsSettings } from "./tabs/ShortcutsSettings";
+import { ColorsSettings } from "./tabs/ColorsSettings";
 import { cn } from "../../lib/utils";
 import type { AppSettings } from "../../services/types";
 
-type TabId = "general" | "tools" | "shortcuts";
+type TabId = "general" | "colors" | "tools" | "shortcuts";
 
 interface Tab {
   id: TabId;
@@ -17,6 +18,7 @@ interface Tab {
 
 const tabs: Tab[] = [
   { id: "general", label: "General", icon: <Settings className="w-4 h-4" /> },
+  { id: "colors", label: "Colors", icon: <Palette className="w-4 h-4" /> },
   { id: "tools", label: "Tool Defaults", icon: <Wrench className="w-4 h-4" /> },
   {
     id: "shortcuts",
@@ -29,7 +31,6 @@ interface SettingsWindowProps {
   settings: AppSettings;
   hasChanges: boolean;
   updateDraft: (updates: Partial<AppSettings>) => void;
-  updateColorPreset: (index: number, color: string) => void;
   onSave: () => Promise<void>;
   onCancel: () => void;
   onReset: () => void;
@@ -39,7 +40,6 @@ export function SettingsWindow({
   settings,
   hasChanges,
   updateDraft,
-  updateColorPreset,
   onSave,
   onCancel,
   onReset,
@@ -90,8 +90,10 @@ export function SettingsWindow({
             <GeneralSettings
               settings={settings}
               updateDraft={updateDraft}
-              updateColorPreset={updateColorPreset}
             />
+          )}
+          {activeTab === "colors" && (
+            <ColorsSettings settings={settings} updateDraft={updateDraft} />
           )}
           {activeTab === "tools" && (
             <ToolsSettings settings={settings} updateDraft={updateDraft} />
