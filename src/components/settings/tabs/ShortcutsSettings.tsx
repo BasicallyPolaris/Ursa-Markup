@@ -49,7 +49,7 @@ const shortcutGroups: ShortcutGroup[] = [
     icon: <Brush className="w-4 h-4" />,
     shortcuts: [
       { action: "tool.pen", description: "Pen tool" },
-      { action: "tool.marker", description: "Marker tool" },
+      { action: "tool.highlighter", description: "Highlighter tool" },
       { action: "tool.area", description: "Area tool" },
     ],
   },

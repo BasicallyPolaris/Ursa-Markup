@@ -162,5 +162,3 @@ export interface RGB {
   g: number;
   b: number;
 }
-
-

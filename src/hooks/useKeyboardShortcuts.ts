@@ -187,7 +187,7 @@ export function useKeyboardShortcuts() {
         "edit.undo": handleUndo,
         "edit.redo": handleRedo,
         "tool.pen": () => handleToolChange("pen"),
-        "tool.marker": () => handleToolChange("highlighter"),
+        "tool.highlighter": () => handleToolChange("highlighter"),
         "tool.area": () => handleToolChange("area"),
         "color.1": () => handleColorChange(0),
         "color.2": () => handleColorChange(1),

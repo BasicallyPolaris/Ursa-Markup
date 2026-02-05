@@ -16,7 +16,7 @@ export type HotkeyAction =
   | "edit.redo"
   // Tool selection
   | "tool.pen"
-  | "tool.marker"
+  | "tool.highlighter"
   | "tool.area"
   // Quick colors
   | "color.1"
@@ -61,7 +61,7 @@ export const DEFAULT_HOTKEYS: HotkeySettings = {
   "edit.redo": { key: "z", ctrl: true, shift: true },
   // Tool selection (no modifiers)
   "tool.pen": { key: "1" },
-  "tool.marker": { key: "2" },
+  "tool.highlighter": { key: "2" },
   "tool.area": { key: "3" },
   // Quick colors (Ctrl + number)
   "color.1": { key: "1", ctrl: true },
@@ -144,11 +144,11 @@ export interface AppSettings {
   colorPresets: string[];
   defaultTool: "pen" | "highlighter" | "area";
   defaultPenSize: number;
-  defaultMarkerSize: number;
+  defaultHighlighterSize: number;
   defaultPenOpacity: number;
-  defaultMarkerOpacity: number;
-  defaultMarkerBorderRadius: number;
-  defaultMarkerBlendMode: "normal" | "multiply";
+  defaultHighlighterOpacity: number;
+  defaultHighlighterBorderRadius: number;
+  defaultHighlighterBlendMode: "normal" | "multiply";
   defaultPenBlendMode: "normal" | "multiply";
   defaultAreaOpacity: number;
   defaultAreaBorderRadius: number;
@@ -181,11 +181,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   ],
   defaultTool: "pen",
   defaultPenSize: 3,
-  defaultMarkerSize: 20,
+  defaultHighlighterSize: 20,
   defaultPenOpacity: 1,
-  defaultMarkerOpacity: 1,
-  defaultMarkerBorderRadius: 4,
-  defaultMarkerBlendMode: "multiply",
+  defaultHighlighterOpacity: 1,
+  defaultHighlighterBorderRadius: 4,
+  defaultHighlighterBlendMode: "multiply",
   defaultPenBlendMode: "normal",
   defaultAreaOpacity: 1,
   defaultAreaBorderRadius: 0,

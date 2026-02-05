@@ -65,22 +65,22 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         </div>
       </SettingsSection>
 
-      {/* Marker Settings */}
+      {/* Highlighter Settings */}
       <SettingsSection
-        title="Marker Tool Defaults"
+        title="Highlighter Tool Defaults"
         description="Highlighter with customizable blend modes"
         icon={<Highlighter className="w-4 h-4" />}
       >
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
             label="Size"
-            value={settings.defaultMarkerSize}
+            value={settings.defaultHighlighterSize}
             unit="px"
           >
             <Slider
-              value={[settings.defaultMarkerSize]}
+              value={[settings.defaultHighlighterSize]}
               onValueChange={([value]) =>
-                updateDraft({ defaultMarkerSize: value })
+                updateDraft({ defaultHighlighterSize: value })
               }
               min={5}
               max={50}
@@ -90,13 +90,13 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
 
           <SettingsSliderRow
             label="Opacity"
-            value={Math.round(settings.defaultMarkerOpacity * 100)}
+            value={Math.round(settings.defaultHighlighterOpacity * 100)}
             unit="%"
           >
             <Slider
-              value={[settings.defaultMarkerOpacity * 100]}
+              value={[settings.defaultHighlighterOpacity * 100]}
               onValueChange={([value]) =>
-                updateDraft({ defaultMarkerOpacity: value / 100 })
+                updateDraft({ defaultHighlighterOpacity: value / 100 })
               }
               min={10}
               max={100}
@@ -113,9 +113,9 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
             >
               <ToggleButtonGroup
                 options={blendModeOptions}
-                value={settings.defaultMarkerBlendMode}
+                value={settings.defaultHighlighterBlendMode}
                 onChange={(value) =>
-                  updateDraft({ defaultMarkerBlendMode: value })
+                  updateDraft({ defaultHighlighterBlendMode: value })
                 }
                 className="w-40"
               />

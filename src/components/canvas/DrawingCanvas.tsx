@@ -299,7 +299,7 @@ export function DrawingCanvas({
   const [startPoint, setStartPoint] = useState<Point | null>(null);
   const [currentPoint, setCurrentPoint] = useState<Point | null>(null);
   const lastPointRef = useRef<Point | null>(null);
-  const lastMarkerPointRef = useRef<Point | null>(null);
+  const lastHighlighterPointRef = useRef<Point | null>(null);
   const requestRef = useRef<number | null>(null);
   const panStartRef = useRef({ x: 0, y: 0 });
   const zoomRef = useRef(zoom);
@@ -936,11 +936,11 @@ export function DrawingCanvas({
 
       const distAlong = dx * Math.cos(angleRad) + dy * Math.sin(angleRad);
 
-      const markerHeight = brushSize;
-      const markerWidth = brushSize * 0.3;
+      const highlighterHeight = brushSize;
+      const highlighterWidth = brushSize * 0.3;
       const perpExtent =
-        Math.abs(Math.cos(angleRad)) * (markerHeight / 2) +
-        Math.abs(Math.sin(angleRad)) * (markerWidth / 2);
+        Math.abs(Math.cos(angleRad)) * (highlighterHeight / 2) +
+        Math.abs(Math.sin(angleRad)) * (highlighterWidth / 2);
 
       const edgeOffset = snapToFarSide
         ? -RULER_HEIGHT / 2 - perpExtent
@@ -985,7 +985,7 @@ export function DrawingCanvas({
       setIsDrawing(true);
       setStartPoint(canvasPoint);
       lastPointRef.current = canvasPoint;
-      lastMarkerPointRef.current = canvasPoint;
+      lastHighlighterPointRef.current = canvasPoint;
 
       const canvas = drawCanvasRef.current;
       if (!canvas) return;
@@ -1032,7 +1032,7 @@ export function DrawingCanvas({
           ctx.globalAlpha = brush.opacity;
         }
 
-        // Draw initial marker
+        // Draw initial highlighter
         const startGridX = Math.floor(canvasPoint.x - halfWidth);
         const endGridX = Math.ceil(canvasPoint.x + halfWidth);
         const startGridY = Math.floor(canvasPoint.y - halfHeight);
@@ -1137,7 +1137,7 @@ export function DrawingCanvas({
           ctx.lineTo(drawPoint.x, drawPoint.y);
           ctx.stroke();
         } else if (tool === "highlighter") {
-          if (lastMarkerPointRef.current) {
+          if (lastHighlighterPointRef.current) {
             const height = brush.size;
             const width = brush.size * 0.3;
             const halfWidth = width / 2;
@@ -1157,7 +1157,7 @@ export function DrawingCanvas({
               ctx.globalAlpha = brush.opacity;
             }
 
-            const lastPoint = lastMarkerPointRef.current;
+            const lastPoint = lastHighlighterPointRef.current;
             const dx = drawPoint.x - lastPoint.x;
             const dy = drawPoint.y - lastPoint.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -1211,7 +1211,7 @@ export function DrawingCanvas({
         // Record stroke for history
         onAddPointToStroke(drawPoint);
         lastPointRef.current = drawPoint;
-        lastMarkerPointRef.current = drawPoint;
+        lastHighlighterPointRef.current = drawPoint;
       } else if (tool === "area") {
         setCurrentPoint(canvasPoint);
       }
@@ -1307,7 +1307,7 @@ export function DrawingCanvas({
       setStartPoint(null);
       setCurrentPoint(null);
       lastPointRef.current = null;
-      lastMarkerPointRef.current = null;
+      lastHighlighterPointRef.current = null;
       onEndStrokeGroup();
     },
     [
@@ -1340,7 +1340,7 @@ export function DrawingCanvas({
       setStartPoint(null);
       setCurrentPoint(null);
       lastPointRef.current = null;
-      lastMarkerPointRef.current = null;
+      lastHighlighterPointRef.current = null;
       if (tool !== "area") {
         onEndStrokeGroup();
       }

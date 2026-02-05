@@ -30,7 +30,7 @@ export const replayStroke = (ctx: CanvasRenderingContext2D, stroke: Stroke) => {
     }
     ctx.stroke();
   } else if (stroke.tool === "highlighter") {
-    // Replay marker stroke with pixel-based filling and blend mode support
+    // Replay highlighter stroke with pixel-based filling and blend mode support
     if (blendMode === "multiply") {
       ctx.globalCompositeOperation = "multiply";
     } else {
@@ -60,7 +60,7 @@ export const replayStroke = (ctx: CanvasRenderingContext2D, stroke: Stroke) => {
         const interpX = p1.x + dx * t;
         const interpY = p1.y + dy * t;
 
-        // Check all pixels under the marker at this position
+        // Check all pixels under the highlighter at this position
         const startGridX = Math.floor(interpX - halfWidth);
         const endGridX = Math.ceil(interpX + halfWidth);
         const startGridY = Math.floor(interpY - halfHeight);

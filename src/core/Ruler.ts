@@ -243,11 +243,11 @@ export class Ruler {
 
     const distAlong = dx * Math.cos(angleRad) + dy * Math.sin(angleRad);
 
-    const markerHeight = brushSize;
-    const markerWidth = brushSize * 0.3;
+    const highlighterHeight = brushSize;
+    const highlighterWidth = brushSize * 0.3;
     const perpExtent =
-      Math.abs(Math.cos(angleRad)) * (markerHeight / 2) +
-      Math.abs(Math.sin(angleRad)) * (markerWidth / 2);
+      Math.abs(Math.cos(angleRad)) * (highlighterHeight / 2) +
+      Math.abs(Math.sin(angleRad)) * (highlighterWidth / 2);
 
     const edgeOffset = snapToFarSide
       ? -rulerHeightCanvas / 2 - perpExtent

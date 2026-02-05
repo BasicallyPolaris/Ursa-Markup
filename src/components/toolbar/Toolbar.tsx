@@ -297,7 +297,7 @@ export function Toolbar() {
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Marker ({formatHotkey(hotkeys["tool.marker"])})
+                Highlighter ({formatHotkey(hotkeys["tool.highlighter"])})
               </TooltipContent>
             </Tooltip>
 

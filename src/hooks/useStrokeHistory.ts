@@ -152,7 +152,7 @@ export function useStrokeHistory() {
       }
       ctx.stroke();
     } else if (stroke.tool === "highlighter") {
-      // Replay marker stroke with pixel-based filling (each pixel drawn once for correct opacity)
+      // Replay highlighter stroke with pixel-based filling (each pixel drawn once for correct opacity)
       ctx.globalCompositeOperation = "source-over";
 
       const height = stroke.brush.size;
@@ -178,7 +178,7 @@ export function useStrokeHistory() {
           const interpX = p1.x + dx * t;
           const interpY = p1.y + dy * t;
 
-          // Check all pixels under the marker at this position
+          // Check all pixels under the highlighter at this position
           const startGridX = Math.floor(interpX - halfWidth);
           const endGridX = Math.ceil(interpX + halfWidth);
           const startGridY = Math.floor(interpY - halfHeight);

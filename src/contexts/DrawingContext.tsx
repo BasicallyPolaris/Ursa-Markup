@@ -67,9 +67,9 @@ export function DrawingProvider({
         blendMode: settings.defaultPenBlendMode ?? "normal",
       },
       highlighter: {
-        size: settings.defaultMarkerSize,
-        opacity: settings.defaultMarkerOpacity,
-        blendMode: settings.defaultMarkerBlendMode ?? "multiply",
+        size: settings.defaultHighlighterSize,
+        opacity: settings.defaultHighlighterOpacity,
+        blendMode: settings.defaultHighlighterBlendMode ?? "multiply",
       },
       area: {
         size: 1, // Not used for area tool

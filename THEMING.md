@@ -7,7 +7,7 @@ The OmniMark theme system provides centralized color management that is fully cu
 All theming is controlled through **`theme.json`**. The app looks for this file in two locations:
 
 1. **User config** (primary): `~/.config/omnimark/theme.json`
-2. **Bundled default (developer)**: `src/lib/default-theme.json` (canonical defaults in source)
+2. **Bundled default (developer)**: `src/lib/default-config.json` (canonical defaults in source)
 
 On first run, the bundled defaults are used to initialize the user config file.
 
@@ -39,7 +39,7 @@ All colors are automatically converted to HSL internally for CSS variable compat
 
 ### Drawing Palettes (`palettes`)
 
-Each palette has a `name` and array of `colors`. The `defaultPalette` field specifies which palette is active.
+Each palette has a `name` and array of `colors`.
 
 ```json
 {
@@ -49,17 +49,14 @@ Each palette has a `name` and array of `colors`. The `defaultPalette` field spec
       "colors": ["#FFB3BA", "#FFDFBA", "#FFFFBA", ...]
     }
   ],
-  "defaultPalette": "pastel"
 }
 ```
 
-### Tool Configuration (`tools`)
+### Tool Configuration
 
-Default settings for each drawing tool:
+Tool defaults (size, opacity, border radius) are managed by the application settings UI (`Settings → Tools`) and are not stored in the theme JSON. Theme files control colors, palettes, and UI styles only.
 
-- `pen`: `minSize`, `maxSize`, `defaultSize`
-- `highlighter`: `opacity`, `minSize`, `maxSize`, `defaultSize`
-- `area`: `opacity`, `defaultSize`
+If you need per-tool defaults in the future, they should be introduced as an explicit, opt-in extension and documented here. For now, remove any `tools` blocks from theme files.
 
 ## CSS Variables
 

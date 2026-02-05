@@ -7,8 +7,8 @@ A cross-platform image annotation tool inspired by the Windows Snipping Tool. Bu
 ### Drawing Tools
 
 - **Pen Tool**: Freehand drawing with smooth anti-aliased strokes
-- **Highlighter/Marker Tool**: Semi-transparent highlighting with flat ends
-- **Area Tool**: Rectangle/rounded rectangle highlighting with optional border
+- **Highlighter Tool**: Highlighting with flat ends
+- **Area Tool**: Rectangle/rounded rectangle highlighting
 
 ### Tool Settings
 
@@ -26,11 +26,10 @@ A cross-platform image annotation tool inspired by the Windows Snipping Tool. Bu
 
 - Toggle with Ctrl+R
 - Rotate with scroll wheel
-- Snap drawing to ruler edge with Shift+drag
 
 ### Multi-Tab Support
 
-- Work on multiple images simultaneously
+- Work on multiple images simultaneously with isolated ruler state
 - Configurable close behavior (prompt, auto-save, discard)
 
 ### Other Features
@@ -45,28 +44,27 @@ A cross-platform image annotation tool inspired by the Windows Snipping Tool. Bu
 
 All shortcuts can be customized in Settings → Shortcuts.
 
-| Shortcut            | Action                     |
-| ------------------- | -------------------------- |
-| `Ctrl+O`            | Open image                 |
-| `Ctrl+S`            | Save image                 |
-| `Ctrl+C`            | Copy to clipboard          |
-| `Ctrl+Z`            | Undo                       |
-| `Ctrl+Shift+Z`      | Redo                       |
-| `Ctrl+R`            | Toggle ruler               |
-| `1`                 | Pen tool                   |
-| `2`                 | Highlighter tool           |
-| `3`                 | Area tool                  |
-| `Ctrl+1` - `Ctrl+7` | Quick color presets        |
-| `Ctrl+T`            | New tab                    |
-| `Ctrl+W`            | Close tab                  |
-| `Ctrl+Tab`          | Next tab                   |
-| `Ctrl+Shift+Tab`    | Previous tab               |
-| `Ctrl+=` / `Ctrl+-` | Zoom in/out                |
-| `Ctrl+0`            | Reset zoom to 100%         |
-| `Ctrl+Alt+F`        | Fit image to window        |
-| `Ctrl+F`            | Stretch to fill            |
-| `Ctrl+Alt+C`        | Center image               |
-| `Shift + drag`      | Snap drawing to ruler line |
+| Shortcut            | Action              |
+| ------------------- | ------------------- |
+| `Ctrl+O`            | Open image          |
+| `Ctrl+S`            | Save image          |
+| `Ctrl+C`            | Copy to clipboard   |
+| `Ctrl+Z`            | Undo                |
+| `Ctrl+Shift+Z`      | Redo                |
+| `Ctrl+R`            | Toggle ruler        |
+| `1`                 | Pen tool            |
+| `2`                 | Highlighter tool    |
+| `3`                 | Area tool           |
+| `Ctrl+1` - `Ctrl+7` | Quick color presets |
+| `Ctrl+T`            | New tab             |
+| `Ctrl+W`            | Close tab           |
+| `Ctrl+Tab`          | Next tab            |
+| `Ctrl+Shift+Tab`    | Previous tab        |
+| `Ctrl+=` / `Ctrl+-` | Zoom in/out         |
+| `Ctrl+0`            | Reset zoom to 100%  |
+| `Ctrl+Alt+F`        | Fit image to window |
+| `Ctrl+F`            | Stretch to fill     |
+| `Ctrl+Alt+C`        | Center image        |
 
 ## Tech Stack
 
@@ -137,11 +135,11 @@ OmniMark supports full UI theming. See [THEMING.md](THEMING.md) for details.
 The theme file is located at:
 
 - **User config**: `~/.config/omnimark/theme.json` (created on first run)
-- **Bundled default (developer)**: `src/lib/default-theme.json` (canonical defaults in source)
+- **Bundled default (developer)**: `src/lib/default-config.json` (canonical defaults in source)
 
 ### Color Palettes
 
-Edit the `palettes` section in your user `~/.config/omnimark/theme.json` to customize palettes. For application defaults (developer), edit `src/lib/default-theme.json`.
+Edit the `palettes` section in your user `~/.config/omnimark/theme.json` to customize palettes. For application defaults (developer), edit `src/lib/default-config.json`.
 
 ```json
 {
@@ -150,44 +148,10 @@ Edit the `palettes` section in your user `~/.config/omnimark/theme.json` to cust
       "name": "custom",
       "colors": ["#FF0000", "#00FF00", "#0000FF"]
     }
-  ],
-  "defaultPalette": "custom"
+  ]
 }
-```
-
-### Tool Defaults
-
-Configure default tool settings in `theme.json`:
-
-```json
-{
-  "tools": {
-    "pen": {
-      "minSize": 1,
-      "maxSize": 20,
-      "defaultSize": 3
-    },
-    "highlighter": {
-      "opacity": 0.4,
-      "minSize": 5,
-      "maxSize": 50,
-      "defaultSize": 20
-    }
-  }
-}
-```
-
-## Building
-
-### Linux
-
-```bash
-bun run tauri build
-# Outputs:
-#   - AppImage: src-tauri/target/release/bundle/appimage/*.AppImage
-#   - .deb: src-tauri/target/release/bundle/deb/*.deb
 ```
 
 ## License
 
-MIT License - Feel free to use, modify, and distribute!
+GPLv3 License
