@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Moon, SwatchBook, Eye, ExternalLink, FileJson } from "lucide-react";
+import { Moon, SwatchBook, Eye, ExternalLink, FileJson, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "../../ui/button";
 import { SettingsSection } from "../components/SettingsSection";
 import { ColorPreviewModal } from "../components/ColorPreviewModal";
@@ -77,6 +78,20 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
     }
   };
 
+  const handleReloadConfig = async () => {
+    try {
+      await themeManager.reload();
+      if (themeManager.loadError) {
+        toast.error(`Reload failed: ${themeManager.loadError}`);
+      } else {
+        toast.success("Theme config reloaded");
+      }
+    } catch (err) {
+      console.error("Failed to reload theme config:", err);
+      toast.error("Failed to reload theme config");
+    }
+  };
+
   const handleThemeSelect = (themeName: string) => {
     // Update draft settings
     updateDraft({ theme: themeName });
@@ -92,16 +107,29 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
         directly. Changes will be applied after restarting the app."
         icon={<FileJson className="size-4" />}
       >
-        {/* Open Config Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleOpenConfig}
-          className="mt-3 w-full border-dashed border-toolbar-border hover:border-text-muted hover:cursor-pointer"
-        >
-          <ExternalLink className="w-4 h-4 mr-2" />
-          Open Theme Config
-        </Button>
+        {/* Open + Reload Config Buttons */}
+        <div className="mt-3 w-full flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleOpenConfig}
+            className="flex-1 border-dashed border-toolbar-border hover:border-text-muted hover:cursor-pointer"
+          >
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Open Theme Config
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReloadConfig}
+            className="shrink-0"
+            title="Reload theme config"
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Reload
+          </Button>
+        </div>
       </SettingsSection>
       {/* Theme Selection */}
       <SettingsSection
