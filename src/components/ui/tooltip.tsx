@@ -76,9 +76,9 @@ function TooltipContent({
           data-slot="tooltip-content"
           className={cn(
             "z-50 overflow-hidden rounded-md bg-panel-bg border border-panel-border px-3 py-1.5 text-xs text-text-primary shadow-lg",
-            "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
-            "data-[ending-style]:opacity-0 data-[ending-style]:scale-95",
-            "origin-[var(--transform-origin)] transition-[opacity,transform] duration-150",
+            "data-starting-style:opacity-0 data-starting-style:scale-95",
+            "data-ending-style:opacity-0 data-ending-style:scale-95",
+            "origin-(--transform-origin) transition-[opacity,transform] duration-150",
             className
           )}
           {...props}

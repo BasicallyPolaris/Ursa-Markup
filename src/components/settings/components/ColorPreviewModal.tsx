@@ -110,7 +110,7 @@ export function ColorPreviewModal({
                   className="flex items-center gap-2 p-2 rounded-lg bg-surface-bg hover:bg-surface-bg-hover transition-colors text-left group"
                 >
                   <div
-                    className="w-8 h-8 rounded-md border border-toolbar-border flex-shrink-0"
+                    className="w-8 h-8 rounded-md border border-toolbar-border shrink-0"
                     style={{ backgroundColor: color.value }}
                   />
                   <div className="min-w-0 flex-1">
@@ -122,9 +122,9 @@ export function ColorPreviewModal({
                     </p>
                   </div>
                   {copiedColor === color.value ? (
-                    <Check className="w-3 h-3 text-success flex-shrink-0" />
+                    <Check className="w-3 h-3 text-success shrink-0" />
                   ) : (
-                    <Copy className="w-3 h-3 text-text-muted opacity-0 group-hover:opacity-100 flex-shrink-0" />
+                    <Copy className="w-3 h-3 text-text-muted opacity-0 group-hover:opacity-100 shrink-0" />
                   )}
                 </button>
               ))}

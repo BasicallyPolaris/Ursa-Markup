@@ -61,9 +61,9 @@ function PopoverContent({
           data-slot="popover-content"
           className={cn(
             "z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-none",
-            "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
-            "data-[ending-style]:opacity-0 data-[ending-style]:scale-95",
-            "origin-[var(--transform-origin)] transition-[opacity,transform] duration-150",
+            "data-starting-style:opacity-0 data-starting-style:scale-95",
+            "data-ending-style:opacity-0 data-ending-style:scale-95",
+            "origin-(--transform-origin) transition-[opacity,transform] duration-150",
             className
           )}
           {...props}

@@ -28,14 +28,14 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
       onCheckedChange={(newChecked) => onCheckedChange?.(newChecked)}
       disabled={disabled}
       className={cn(
-        "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-[checked]:bg-toggle-checked data-[unchecked]:bg-toggle-unchecked",
+        "peer inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50 data-checked:bg-toggle-checked data-unchecked:bg-toggle-unchecked",
         className,
       )}
       {...props}
     >
       <BaseSwitch.Thumb
         className={cn(
-          "pointer-events-none block size-5 rounded-full bg-text-primary shadow-lg ring-0 transition-transform data-[checked]:translate-x-5 data-[unchecked]:translate-x-0",
+          "pointer-events-none block size-5 rounded-full bg-text-primary shadow-lg ring-0 transition-transform data-checked:translate-x-5 data-unchecked:translate-x-0",
         )}
       />
     </BaseSwitch.Root>

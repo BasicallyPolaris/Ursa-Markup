@@ -48,10 +48,10 @@ function SelectContent({
       <BaseSelect.Positioner sideOffset={4} alignItemWithTrigger={false}>
         <BaseSelect.Popup
           className={cn(
-            "z-50 min-w-[8rem] overflow-hidden rounded-md border border-toolbar-border bg-panel-bg p-1 shadow-lg",
-            "data-[starting-style]:opacity-0 data-[starting-style]:scale-95",
-            "data-[ending-style]:opacity-0 data-[ending-style]:scale-95",
-            "origin-[var(--transform-origin)] transition-[opacity,transform] duration-150",
+            "z-50 min-w-32 overflow-hidden rounded-md border border-toolbar-border bg-panel-bg p-1 shadow-lg",
+            "data-starting-style:opacity-0 data-starting-style:scale-95",
+            "data-ending-style:opacity-0 data-ending-style:scale-95",
+            "origin-(--transform-origin) transition-[opacity,transform] duration-150",
             className,
           )}
           {...props}
@@ -73,8 +73,8 @@ function SelectItem({
       className={cn(
         "relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none",
         "text-text-primary hover:bg-surface-bg-hover",
-        "data-[highlighted]:bg-surface-bg-active",
-        "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        "data-highlighted:bg-surface-bg-active",
+        "data-disabled:pointer-events-none data-disabled:opacity-50",
         className,
       )}
       {...props}
