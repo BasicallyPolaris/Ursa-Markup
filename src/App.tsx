@@ -211,6 +211,43 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // Handle CLI file opening (initial launch + single-instance)
+  useEffect(() => {
+    // Helper to open a file from CLI
+    const openFileFromCLI = async (filePath: string) => {
+      try {
+        const fileData = await services.ioService.readFile(filePath);
+        const blob = new Blob([fileData]);
+        const url = URL.createObjectURL(blob);
+        services.tabManager.createDocument(filePath, undefined, url);
+      } catch (error) {
+        console.error("Failed to open CLI file:", error);
+      }
+    };
+
+    // Listen for single-instance file open events
+    const setupListener = async () => {
+      return await services.ioService.listenForFiles((filePath) => {
+        openFileFromCLI(filePath);
+      });
+    };
+
+    // Check for pending file from initial launch
+    const checkPendingFile = async () => {
+      const pendingFile = await services.ioService.getPendingFile();
+      if (pendingFile) {
+        await openFileFromCLI(pendingFile);
+      }
+    };
+
+    const unlistenPromise = setupListener();
+    checkPendingFile();
+
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
   // Listen for settings applied events from settings window
   useEffect(() => {
     const setupListener = async () => {

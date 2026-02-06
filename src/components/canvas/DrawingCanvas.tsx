@@ -414,8 +414,6 @@ export function DrawingCanvas({
           const width = Math.abs(end.x - start.x);
           const height = Math.abs(end.y - start.y);
           const borderRadius = strokeBrush.borderRadius || 0;
-          const borderWidth = strokeBrush.borderWidth || 2;
-          const borderEnabled = strokeBrush.borderEnabled !== false;
 
           ctx.globalAlpha = strokeBrush.opacity;
           ctx.fillStyle = strokeBrush.color;
@@ -424,15 +422,6 @@ export function DrawingCanvas({
           ctx.beginPath();
           ctx.roundRect(x, y, width, height, borderRadius);
           ctx.fill();
-
-          // Draw border if enabled
-          if (borderEnabled) {
-            ctx.strokeStyle = strokeBrush.color;
-            ctx.lineWidth = borderWidth;
-            ctx.beginPath();
-            ctx.roundRect(x, y, width, height, borderRadius);
-            ctx.stroke();
-          }
         }
       }
     },
@@ -1272,14 +1261,12 @@ export function DrawingCanvas({
           }
         }
 
-        // Draw area rectangle with rounded corners and optional border
+        // Draw area rectangle with rounded corners
         const x = Math.min(startPoint.x, endPoint.x);
         const y = Math.min(startPoint.y, endPoint.y);
         const width = Math.abs(endPoint.x - startPoint.x);
         const height = Math.abs(endPoint.y - startPoint.y);
         const borderRadius = brush.borderRadius || 0;
-        const borderWidth = brush.borderWidth || 2;
-        const borderEnabled = brush.borderEnabled !== false;
 
         ctx.globalAlpha = brush.opacity;
         ctx.fillStyle = brush.color;
@@ -1288,15 +1275,6 @@ export function DrawingCanvas({
         ctx.beginPath();
         ctx.roundRect(x, y, width, height, borderRadius);
         ctx.fill();
-
-        // Draw border if enabled
-        if (borderEnabled) {
-          ctx.strokeStyle = brush.color;
-          ctx.lineWidth = borderWidth;
-          ctx.beginPath();
-          ctx.roundRect(x, y, width, height, borderRadius);
-          ctx.stroke();
-        }
 
         // Record area as a stroke with top-left and bottom-right corners
         onAddPointToStroke({ x: x, y: y });

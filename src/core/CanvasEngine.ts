@@ -460,7 +460,6 @@ export class CanvasEngine {
       const height = Math.abs(preview.currentPoint.y - preview.startPoint.y);
 
       const borderRadius = preview.brush.borderRadius || 0;
-      const borderWidth = preview.brush.borderWidth || 0;
 
       // Use full opacity for preview to match the final applied result
       this.displayCtx.globalAlpha = preview.brush.opacity;
@@ -468,26 +467,6 @@ export class CanvasEngine {
       this.displayCtx.beginPath();
       this.displayCtx.roundRect(x, y, width, height, borderRadius);
       this.displayCtx.fill();
-
-      // Draw border if borderWidth > 0
-      // Border is drawn OUTSIDE the fill area (outset) - matching BrushEngine.drawArea()
-      if (borderWidth > 0) {
-        const halfBorder = borderWidth / 2;
-        this.displayCtx.globalAlpha = preview.brush.opacity;
-        this.displayCtx.strokeStyle = preview.brush.color;
-        this.displayCtx.lineWidth = borderWidth;
-        this.displayCtx.setLineDash([]);
-        this.displayCtx.beginPath();
-        // Offset outward by half the border width so the border is outside the fill
-        this.displayCtx.roundRect(
-          x - halfBorder,
-          y - halfBorder,
-          width + borderWidth,
-          height + borderWidth,
-          borderRadius + halfBorder,
-        );
-        this.displayCtx.stroke();
-      }
 
       this.displayCtx.globalAlpha = 1;
     } else if (

@@ -152,7 +152,6 @@ export interface AppSettings {
   defaultPenBlendMode: "normal" | "multiply";
   defaultAreaOpacity: number;
   defaultAreaBorderRadius: number;
-  defaultAreaBorderWidth: number;
   defaultAreaBlendMode: "normal" | "multiply";
   blendMode: "normal" | "multiply";
   closeTabBehavior: CloseTabBehavior;
@@ -189,7 +188,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultPenBlendMode: "normal",
   defaultAreaOpacity: 1,
   defaultAreaBorderRadius: 0,
-  defaultAreaBorderWidth: 0,
   defaultAreaBlendMode: "multiply",
   blendMode: "normal",
   closeTabBehavior: "prompt",

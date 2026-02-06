@@ -5,11 +5,34 @@ import type {
   RulerSnapInfo,
   ViewState,
 } from "../types";
+import { toRgbaString } from "../lib/theme";
 
 /**
  * Ruler height in pixels (constant screen size)
  */
 const RULER_HEIGHT = 60;
+
+/**
+ * Helper to get a CSS custom property value
+ */
+function getCssVar(name: string): string {
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim();
+  return value || "0 0% 50%";
+}
+
+/**
+ * Convert CSS variable color to rgba string for canvas
+ */
+function getRulerColor(varName: string, alpha: number = 1): string {
+  const colorValue = getCssVar(varName);
+  try {
+    return toRgbaString(colorValue, alpha);
+  } catch {
+    return `rgba(128, 128, 128, ${alpha})`;
+  }
+}
 
 /**
  * Distance in pixels for ruler snapping (in canvas coords)
@@ -346,11 +369,11 @@ export class Ruler {
     }
 
     // Draw ruler background
-    ctx.fillStyle = "rgba(200, 200, 200, 0.9)";
+    ctx.fillStyle = getRulerColor("--ruler-bg", 0.9);
     ctx.fillRect(-rulerLength / 2, -rulerHeight / 2, rulerLength, rulerHeight);
 
     // Draw border (constant 2px width)
-    ctx.strokeStyle = "rgba(100, 100, 100, 1)";
+    ctx.strokeStyle = getRulerColor("--ruler-border", 1);
     ctx.lineWidth = 2;
     ctx.strokeRect(
       -rulerLength / 2,
@@ -360,7 +383,7 @@ export class Ruler {
     );
 
     // Draw tick marks
-    ctx.strokeStyle = "rgba(50, 50, 50, 1)";
+    ctx.strokeStyle = getRulerColor("--ruler-tick", 1);
     ctx.lineWidth = 1.5;
     ctx.beginPath();
 
@@ -385,7 +408,7 @@ export class Ruler {
 
       // Draw labels every 10 ticks
       if (absI % 10 === 0 && i !== 0) {
-        ctx.fillStyle = "rgba(50, 50, 50, 1)";
+        ctx.fillStyle = getRulerColor("--ruler-text", 1);
         ctx.font = "bold 11px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -399,14 +422,14 @@ export class Ruler {
     const centerRadius = 22;
     ctx.beginPath();
     ctx.arc(0, 0, centerRadius, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255, 255, 255, 1)";
+    ctx.fillStyle = getRulerColor("--ruler-bg", 1);
     ctx.fill();
-    ctx.strokeStyle = "rgba(100, 100, 100, 1)";
+    ctx.strokeStyle = getRulerColor("--ruler-border", 1);
     ctx.lineWidth = 2;
     ctx.stroke();
 
     // Draw angle text
-    ctx.fillStyle = "rgba(50, 50, 50, 1)";
+    ctx.fillStyle = getRulerColor("--ruler-text", 1);
     ctx.font = "bold 13px sans-serif";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
@@ -421,7 +444,7 @@ export class Ruler {
       ctx.moveTo(Math.cos(angle) * r1, Math.sin(angle) * r1);
       ctx.lineTo(Math.cos(angle) * r2, Math.sin(angle) * r2);
     }
-    ctx.strokeStyle = "rgba(80, 80, 80, 1)";
+    ctx.strokeStyle = getRulerColor("--ruler-compass", 1);
     ctx.lineWidth = 1.5;
     ctx.stroke();
 

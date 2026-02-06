@@ -25,7 +25,6 @@ interface ToolConfig {
   opacity: number;
   blendMode: BlendMode;
   borderRadius?: number;
-  borderWidth?: number;
 }
 
 interface DrawingContextValue {
@@ -76,7 +75,6 @@ export function DrawingProvider({
         opacity: settings.defaultAreaOpacity,
         blendMode: settings.defaultAreaBlendMode ?? "multiply",
         borderRadius: settings.defaultAreaBorderRadius,
-        borderWidth: settings.defaultAreaBorderWidth,
       },
     }),
   );
@@ -96,7 +94,6 @@ export function DrawingProvider({
     blendMode: currentConfig.blendMode,
     opacity: currentConfig.opacity,
     borderRadius: currentConfig.borderRadius,
-    borderWidth: currentConfig.borderWidth,
   };
 
   const blendMode = currentConfig.blendMode;
@@ -141,8 +138,6 @@ export function DrawingProvider({
         toolConfigChanges.opacity = changes.opacity;
       if (changes.borderRadius !== undefined)
         toolConfigChanges.borderRadius = changes.borderRadius;
-      if (changes.borderWidth !== undefined)
-        toolConfigChanges.borderWidth = changes.borderWidth;
 
       if (Object.keys(toolConfigChanges).length > 0) {
         updateToolConfig(tool, toolConfigChanges);

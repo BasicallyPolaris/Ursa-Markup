@@ -60,8 +60,6 @@ export interface BrushSettings {
   opacity: number;
   blendMode: BlendMode;
   borderRadius?: number;
-  borderWidth?: number;
-  borderEnabled?: boolean;
 }
 
 export interface CanvasState {
@@ -96,7 +94,6 @@ export interface AreaToolConfig {
   opacity: number;
   defaultSize: number;
   borderRadius: number;
-  borderWidth: number;
 }
 
 export interface RulerState {
