@@ -141,6 +141,18 @@ export function detectColorFormat(color: string): ColorFormat {
   // Default to hex for 3, 4, 6, or 8 character strings without prefix
   if (/^[0-9a-f]{3,8}$/i.test(trimmed)) return "hex";
 
+  // Check for space-separated HSL format: "h s% l%" or "h s% l% / alpha"
+  // e.g., "0 0% 78%" or "0 70% 45% / 0.5"
+  const hslParts = trimmed.split(/\s+/);
+  if (hslParts.length >= 3) {
+    const h = parseInt(hslParts[0], 10);
+    const s = parseInt(hslParts[1].replace('%', ''), 10);
+    const l = parseInt(hslParts[2].replace('%', ''), 10);
+    if (!isNaN(h) && !isNaN(s) && !isNaN(l) && s >= 0 && s <= 100 && l >= 0 && l <= 100) {
+      return "hsl";
+    }
+  }
+
   throw new Error(`Unable to detect color format for: ${color}`);
 }
 
@@ -195,19 +207,31 @@ export function rgbToRgb(rgb: string): { r: number; g: number; b: number } {
 
 /**
  * Parses an HSL/HSLA color string
- * Supports: hsl(h, s%, l%), hsla(h, s%, l%, a)
+ * Supports: hsl(h, s%, l%), hsla(h, s%, l%, a), and space-separated CSS format: "h s% l%"
  */
 export function hslToHsl(hsl: string): { h: number; s: number; l: number } {
+  // Try standard hsl() format first: hsl(0, 0%, 78%)
   const match = hsl.match(/hsla?\s*\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%/i);
-  if (!match) {
-    throw new Error(`Invalid HSL color: ${hsl}`);
+  if (match) {
+    return {
+      h: parseInt(match[1], 10),
+      s: parseInt(match[2], 10),
+      l: parseInt(match[3], 10),
+    };
   }
 
-  return {
-    h: parseInt(match[1], 10),
-    s: parseInt(match[2], 10),
-    l: parseInt(match[3], 10),
-  };
+  // Try space-separated CSS variable format: "0 0% 78%" or "0 0% 78% / alpha"
+  const parts = hsl.trim().split(/\s+/);
+  if (parts.length >= 3) {
+    const h = parseInt(parts[0], 10);
+    const s = parseInt(parts[1].replace('%', ''), 10);
+    const l = parseInt(parts[2].replace('%', ''), 10);
+    if (!isNaN(h) && !isNaN(s) && !isNaN(l)) {
+      return { h, s, l };
+    }
+  }
+
+  throw new Error(`Invalid HSL color: ${hsl}`);
 }
 
 /**

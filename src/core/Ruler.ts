@@ -422,9 +422,9 @@ export class Ruler {
     const centerRadius = 22;
     ctx.beginPath();
     ctx.arc(0, 0, centerRadius, 0, Math.PI * 2);
-    ctx.fillStyle = getRulerColor("--ruler-bg", 1);
+    ctx.fillStyle = getRulerColor("--ruler-center-bg", 1);
     ctx.fill();
-    ctx.strokeStyle = getRulerColor("--ruler-border", 1);
+    ctx.strokeStyle = getRulerColor("--ruler-center-border", 1);
     ctx.lineWidth = 2;
     ctx.stroke();
 

@@ -218,6 +218,20 @@ pub fn run() {
                         app.exit(0);
                     }
                 }
+                // When window is focused, ensure webview has keyboard focus
+                // This fixes hotkeys not working after alt-tab or window switching
+                tauri::RunEvent::WindowEvent {
+                    label,
+                    event: tauri::WindowEvent::Focused(true),
+                    ..
+                } => {
+                    if label == "main" {
+                        if let Some(window) = app.get_webview_window("main") {
+                            // Focus the webview to ensure keyboard events are captured
+                            let _ = window.set_focus();
+                        }
+                    }
+                }
                 _ => {}
             }
         });

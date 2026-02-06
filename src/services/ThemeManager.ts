@@ -215,6 +215,9 @@ export class ThemeManager {
 
       this.activeTheme = themeConfig.themes[0] || getDefaultTheme();
 
+      // Apply theme CSS variables immediately after loading
+      applyThemeToCss(this.activeTheme);
+
       console.log(`Theme config loaded from: ${loadedFrom}`);
       console.log(`Default theme: ${this.activeTheme.label}`);
       console.log(`Available themes: ${themeConfig.themes.length}`);

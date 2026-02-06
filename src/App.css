@@ -142,8 +142,8 @@
     --ruler-tick: 0 0% 16%;
     --ruler-tick-major: 0 0% 16%;
     --ruler-text: 0 0% 16%;
-    --ruler-center-bg: 0 0% 86%;
-    --ruler-center-border: 0 0% 31%;
+    --ruler-center-bg: 0 0% 100%;
+    --ruler-center-border: 0 0% 39%;
     --ruler-compass: 0 70% 45%;
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
