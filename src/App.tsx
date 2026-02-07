@@ -284,11 +284,13 @@ function App() {
     <SettingsProvider>
       <ThemeProvider>
         <TabManagerProvider>
-          <AppContent
-            containerRef={containerRef}
-            canvasContainerRef={canvasContainerRef}
-          />
-          <Toaster />
+          <DrawingProvider>
+            <AppContent
+              containerRef={containerRef}
+              canvasContainerRef={canvasContainerRef}
+            />
+            <Toaster />
+          </DrawingProvider>
         </TabManagerProvider>
       </ThemeProvider>
     </SettingsProvider>

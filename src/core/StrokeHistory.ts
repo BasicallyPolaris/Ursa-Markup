@@ -1,12 +1,11 @@
-import type {
-  Stroke,
-  StrokeGroup,
-  Point,
-  Tool,
-  BrushSettings,
-  StrokeHistoryState,
+import {
+  type AnyStroke,
+  type AnyStrokeGroup,
+  type Point,
+  type Tool,
+  type ToolConfigs,
+  type StrokeHistoryState,
 } from "../types";
-import { BrushEngine } from "./BrushEngine";
 
 /**
  * Maximum number of stroke groups in history
@@ -14,24 +13,24 @@ import { BrushEngine } from "./BrushEngine";
 const MAX_HISTORY = 100;
 
 /**
- * StrokeHistory manages stroke recording, undo/redo, and replay
- * This is a pure class that can be used independently of React
+ * StrokeHistory manages stroke recording, undo/redo state.
+ * It is purely a data container and does not handle rendering.
  */
 export class StrokeHistory {
-  groups: StrokeGroup[] = [];
+  groups: AnyStrokeGroup[] = [];
   currentIndex = -1;
   maxHistory = MAX_HISTORY;
 
   // Current stroke tracking (not yet committed to history)
-  private currentGroup: StrokeGroup | null = null;
-  private currentStroke: Stroke | null = null;
+  // We use a looser type internally while building the group
+  private currentGroup: {
+    id: string;
+    strokes: AnyStroke[];
+    timestamp: number;
+  } | null = null;
+
+  private currentStroke: AnyStroke | null = null;
   private isRecording = false;
-
-  private brushEngine: BrushEngine;
-
-  constructor(brushEngine?: BrushEngine) {
-    this.brushEngine = brushEngine || new BrushEngine();
-  }
 
   /**
    * Check if undo is available
@@ -64,22 +63,32 @@ export class StrokeHistory {
 
   /**
    * Start a new stroke within the current group
+   *
    */
-  startStroke(tool: Tool, brushSettings: BrushSettings, point: Point): void {
+  startStroke<T extends Tool>(
+    tool: T,
+    config: ToolConfigs[T],
+    color: string,
+    point: Point,
+  ): void {
     if (!this.isRecording || !this.currentGroup) {
+      console.warn("Attempted to start stroke without active group");
       return;
     }
 
-    const stroke: Stroke = {
+    // Create the stroke with strict typing
+    // We cast to AnyStroke because the implementation is generic but the storage is a union
+    const stroke: any = {
       id: this.generateId(),
       tool,
+      color,
+      toolConfig: config,
       points: [point],
-      brushSettings,
       timestamp: Date.now(),
     };
 
-    this.currentStroke = stroke;
-    this.currentGroup.strokes.push(stroke);
+    this.currentStroke = stroke as AnyStroke;
+    this.currentGroup.strokes.push(this.currentStroke);
   }
 
   /**
@@ -110,11 +119,15 @@ export class StrokeHistory {
       return;
     }
 
-    // Remove redo states and add new group
+    // 1. Remove "Future" (Redo stack)
+    // If we were in the middle of the stack, we discard the redo history
     const newGroups = this.groups.slice(0, this.currentIndex + 1);
-    newGroups.push(this.currentGroup);
 
-    // Keep only last maxHistory groups
+    // 2. Add new group
+    // We cast here because we assume the group is homogeneous by usage
+    newGroups.push(this.currentGroup as unknown as AnyStrokeGroup);
+
+    // 3. Enforce Max History (Queue behavior)
     if (newGroups.length > this.maxHistory) {
       newGroups.shift();
     }
@@ -129,9 +142,9 @@ export class StrokeHistory {
    * Returns the new index after undo
    */
   undo(): number {
-    if (this.currentIndex < 0) return this.currentIndex;
-
-    this.currentIndex--;
+    if (this.canUndo()) {
+      this.currentIndex--;
+    }
     return this.currentIndex;
   }
 
@@ -140,9 +153,9 @@ export class StrokeHistory {
    * Returns the new index after redo
    */
   redo(): number {
-    if (this.currentIndex >= this.groups.length - 1) return this.currentIndex;
-
-    this.currentIndex++;
+    if (this.canRedo()) {
+      this.currentIndex++;
+    }
     return this.currentIndex;
   }
 
@@ -158,58 +171,6 @@ export class StrokeHistory {
   }
 
   /**
-   * Replay strokes up to the current index onto a canvas
-   */
-  replayToCanvas(canvas: HTMLCanvasElement): void {
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // Clear canvas first
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Replay all stroke groups up to current index
-    for (let i = 0; i <= this.currentIndex; i++) {
-      const group = this.groups[i];
-      if (!group) continue;
-
-      for (const stroke of group.strokes) {
-        this.replayStroke(ctx, stroke);
-      }
-    }
-  }
-
-  /**
-   * Replay a single stroke onto a canvas context
-   */
-  replayStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
-    if (stroke.points.length === 0) return;
-
-    switch (stroke.tool) {
-      case "pen":
-        this.brushEngine.drawPenStroke(
-          ctx,
-          stroke.points,
-          stroke.brushSettings,
-        );
-        break;
-      case "highlighter":
-        this.brushEngine.drawHighlighterStroke(
-          ctx,
-          stroke.points,
-          stroke.brushSettings,
-        );
-        break;
-      case "area":
-        if (stroke.points.length >= 2) {
-          const start = stroke.points[0];
-          const end = stroke.points[stroke.points.length - 1];
-          this.brushEngine.drawArea(ctx, start, end, stroke.brushSettings);
-        }
-        break;
-    }
-  }
-
-  /**
    * Check if currently recording a stroke group
    */
   isCurrentlyRecording(): boolean {
@@ -219,8 +180,8 @@ export class StrokeHistory {
   /**
    * Get the current stroke group being recorded (if any)
    */
-  getCurrentGroup(): StrokeGroup | null {
-    return this.currentGroup;
+  getCurrentGroup(): AnyStrokeGroup | null {
+    return this.currentGroup as unknown as AnyStrokeGroup;
   }
 
   /**
@@ -236,11 +197,8 @@ export class StrokeHistory {
   /**
    * Deserialize from plain object
    */
-  static deserialize(
-    state: StrokeHistoryState,
-    brushEngine?: BrushEngine,
-  ): StrokeHistory {
-    const history = new StrokeHistory(brushEngine);
+  static deserialize(state: StrokeHistoryState): StrokeHistory {
+    const history = new StrokeHistory();
     history.groups = state.groups;
     history.currentIndex = state.currentIndex;
     return history;

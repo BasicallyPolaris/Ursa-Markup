@@ -5,7 +5,7 @@
  * Colors are converted to HSL for CSS variable compatibility.
  */
 
-import type { ColorPalette, ToolConfig } from "../types";
+import type { ColorPalette } from "../types";
 // Import JSON defaults as the canonical theme data
 import defaultConfigData from "./default-config.json";
 
@@ -120,8 +120,6 @@ export interface ThemeConfig {
   themes: Theme[];
   /** Color palettes for drawing tools (independent of themes) */
   palettes: ColorPalette[];
-  /** Tool configuration */
-  tools?: ToolConfig;
 }
 
 // ============================================================================
@@ -146,9 +144,17 @@ export function detectColorFormat(color: string): ColorFormat {
   const hslParts = trimmed.split(/\s+/);
   if (hslParts.length >= 3) {
     const h = parseInt(hslParts[0], 10);
-    const s = parseInt(hslParts[1].replace('%', ''), 10);
-    const l = parseInt(hslParts[2].replace('%', ''), 10);
-    if (!isNaN(h) && !isNaN(s) && !isNaN(l) && s >= 0 && s <= 100 && l >= 0 && l <= 100) {
+    const s = parseInt(hslParts[1].replace("%", ""), 10);
+    const l = parseInt(hslParts[2].replace("%", ""), 10);
+    if (
+      !isNaN(h) &&
+      !isNaN(s) &&
+      !isNaN(l) &&
+      s >= 0 &&
+      s <= 100 &&
+      l >= 0 &&
+      l <= 100
+    ) {
       return "hsl";
     }
   }
@@ -224,8 +230,8 @@ export function hslToHsl(hsl: string): { h: number; s: number; l: number } {
   const parts = hsl.trim().split(/\s+/);
   if (parts.length >= 3) {
     const h = parseInt(parts[0], 10);
-    const s = parseInt(parts[1].replace('%', ''), 10);
-    const l = parseInt(parts[2].replace('%', ''), 10);
+    const s = parseInt(parts[1].replace("%", ""), 10);
+    const l = parseInt(parts[2].replace("%", ""), 10);
     if (!isNaN(h) && !isNaN(s) && !isNaN(l)) {
       return { h, s, l };
     }
@@ -498,8 +504,6 @@ export function applyThemeToCss(theme: Theme): void {
   setVar("--ring", colors.accent.primary);
 }
 
-
-
 /**
  * Validates theme structure and returns validation result
  */
@@ -564,7 +568,10 @@ export function validateTheme(partial: unknown): {
   }
 
   // Validate defaultPalette if present
-  if (theme.defaultPalette !== undefined && typeof theme.defaultPalette !== "string") {
+  if (
+    theme.defaultPalette !== undefined &&
+    typeof theme.defaultPalette !== "string"
+  ) {
     errors.push("defaultPalette must be a string");
   }
 
@@ -593,6 +600,5 @@ export function mergeConfigWithDefaults(
   return {
     themes: partial.themes || DEFAULT_CONFIG.themes,
     palettes: partial.palettes || DEFAULT_CONFIG.palettes,
-    tools: partial.tools || DEFAULT_CONFIG.tools,
   };
 }

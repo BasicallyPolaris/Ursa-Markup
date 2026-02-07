@@ -15,6 +15,8 @@ import type { Point, Size } from "../types";
 
 interface CanvasEngineContextValue {
   engine: CanvasEngine | null;
+  // Optional: allow components to notify the provider of the actual DOM node
+  setCanvasRef?: (node: HTMLElement | null) => void;
   zoom: number;
   viewOffset: Point;
   canvasSize: Size;
@@ -69,13 +71,31 @@ export function CanvasEngineProvider({
         engine.destroy();
       }
     };
-  }, [containerRef, engine]);
+  }, [engine, containerRef.current]);
+
+  // Allow imperative initialization from consumers (e.g. CanvasContainer)
+  const setCanvasRef = useCallback((node: HTMLElement | null) => {
+    if (!node) {
+      if (engine) {
+        engine.destroy();
+        setEngine(null);
+      }
+      return;
+    }
+
+    if (!engine) {
+      const newEngine = new CanvasEngineClass();
+      newEngine.initialize(node);
+      setEngine(newEngine);
+    }
+  }, [engine]);
 
   const setZoom = useCallback(
     (newZoom: number) => {
       const clampedZoom = Math.max(0.1, Math.min(5, newZoom));
       setZoomState(clampedZoom);
-      document.zoom = clampedZoom; // Persist to document
+      // Persist through Document API so listeners are notified
+      document.setZoom(clampedZoom);
     },
     [document],
   );
@@ -83,7 +103,8 @@ export function CanvasEngineProvider({
   const setViewOffset = useCallback(
     (offset: Point) => {
       setViewOffsetState(offset);
-      document.viewOffset = offset; // Persist to document
+      // Persist through Document API so listeners are notified
+      document.setViewOffset(offset);
     },
     [document],
   );
@@ -91,7 +112,8 @@ export function CanvasEngineProvider({
   const setCanvasSizeValue = useCallback(
     (size: Size) => {
       setCanvasSize(size);
-      document.canvasSize = size; // Persist to document
+      // Persist through Document API so listeners are notified
+      document.setCanvasSize(size);
     },
     [document],
   );
@@ -126,8 +148,9 @@ export function CanvasEngineProvider({
 
       setZoomState(finalZoom);
       setViewOffsetState(newOffset);
-      document.zoom = finalZoom;
-      document.viewOffset = newOffset;
+      // Persist through Document API
+      document.setZoom(finalZoom);
+      document.setViewOffset(newOffset);
     },
     [containerRef, canvasSize, document],
   );
@@ -162,8 +185,9 @@ export function CanvasEngineProvider({
 
       setZoomState(finalZoom);
       setViewOffsetState(newOffset);
-      document.zoom = finalZoom;
-      document.viewOffset = newOffset;
+      // Persist through Document API
+      document.setZoom(finalZoom);
+      document.setViewOffset(newOffset);
     },
     [containerRef, canvasSize, document],
   );
@@ -188,7 +212,8 @@ export function CanvasEngineProvider({
       const newOffset = { x: -panX / zoom, y: -panY / zoom };
 
       setViewOffsetState(newOffset);
-      document.viewOffset = newOffset;
+      // Persist through Document API
+      document.setViewOffset(newOffset);
     },
     [containerRef, canvasSize, zoom, document],
   );
@@ -216,14 +241,16 @@ export function CanvasEngineProvider({
 
       setZoomState(clampedZoom);
       setViewOffsetState(newOffset);
-      document.zoom = clampedZoom;
-      document.viewOffset = newOffset;
+      // Persist through Document API
+      document.setZoom(clampedZoom);
+      document.setViewOffset(newOffset);
     },
     [zoom, viewOffset, document],
   );
 
   const value: CanvasEngineContextValue = {
     engine,
+    setCanvasRef,
     zoom,
     viewOffset,
     canvasSize,

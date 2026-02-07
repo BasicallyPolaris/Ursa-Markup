@@ -17,7 +17,8 @@ import type {
   HotkeyBinding,
   HotkeySettings,
 } from "../../../services/types";
-import { formatHotkey, DEFAULT_HOTKEYS } from "../../../services/types";
+import { DEFAULT_HOTKEYS } from "../../../services/AppSettings";
+import { formatHotkey } from "../../../services/types";
 import { cn } from "../../../lib/utils";
 
 interface ShortcutGroup {

@@ -1,97 +1,91 @@
-import type { Point, BrushSettings } from "../types";
+import {
+  type Point,
+  type PenToolConfig,
+  type HighlighterToolConfig,
+  type AreaToolConfig,
+} from "../types";
 
-/**
- * BrushEngine handles all brush rendering operations
- * Supports multiple tools (pen, highlighter, area) and blend modes (normal, multiply)
- *
- * Rendering approach (inspired by KSnip):
- * - Use smooth Canvas API paths with anti-aliasing for high-quality strokes
- * - For multiply blend mode (highlighter): draw to temp canvas first, then composite
- *   with multiply blend mode to avoid anti-aliasing artifacts at edges
- */
 export class BrushEngine {
   /**
-   * Draw a pen stroke using smooth Canvas paths
-   * Uses round caps and joins for natural-looking strokes
+   * Draw a standard Pen stroke
+   * Uses quadratic curves for smoothness and round caps
    */
   drawPenStroke(
     ctx: CanvasRenderingContext2D,
     points: Point[],
-    brush: BrushSettings,
+    config: PenToolConfig,
+    color: string,
   ): void {
     if (points.length === 0) return;
 
-    ctx.save();
-
-    // Set up stroke style
+    // 1. Configure Context
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.lineWidth = brush.size;
-    ctx.strokeStyle = brush.color;
-    ctx.globalAlpha = brush.opacity;
+    ctx.lineWidth = "size" in config ? config.size : 1;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = config.opacity;
 
-    // Draw the path
+    // 2. Begin Path
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
 
-    if (points.length === 1) {
-      // Single point - draw a dot
-      ctx.lineTo(points[0].x + 0.1, points[0].y + 0.1);
-    } else {
-      // Multiple points - use quadratic curves for smoothness
+    // 3. Draw Curves
+    if (points.length < 3) {
+      // Simple line for dot or short stroke
       for (let i = 1; i < points.length; i++) {
-        const curr = points[i];
-
-        // For smoother curves, use the midpoint between points
-        if (i < points.length - 1) {
-          const next = points[i + 1];
-          const midX = (curr.x + next.x) / 2;
-          const midY = (curr.y + next.y) / 2;
-          ctx.quadraticCurveTo(curr.x, curr.y, midX, midY);
-        } else {
-          // Last point - draw directly to it
-          ctx.lineTo(curr.x, curr.y);
-        }
+        ctx.lineTo(points[i].x, points[i].y);
       }
+    } else {
+      // Quadratic Bezier smoothing
+      // We draw from midpoint to midpoint to ensure smooth joins
+      for (let i = 1; i < points.length - 1; i++) {
+        const curr = points[i];
+        const next = points[i + 1];
+
+        // Calculate midpoint
+        const midX = (curr.x + next.x) / 2;
+        const midY = (curr.y + next.y) / 2;
+
+        ctx.quadraticCurveTo(curr.x, curr.y, midX, midY);
+      }
+      // Connect to the very last point
+      const last = points[points.length - 1];
+      ctx.lineTo(last.x, last.y);
     }
 
     ctx.stroke();
-    ctx.restore();
   }
 
   /**
-   * Draw a highlighter stroke using smooth Canvas paths
-   * Uses square line caps for flat highlighter ends
-   * Uses quadratic curves for smooth path interpolation
+   * Draw a Highlighter stroke
+   * Uses square caps and bevel joins to mimic a marker tip
    */
   drawHighlighterStroke(
     ctx: CanvasRenderingContext2D,
     points: Point[],
-    brush: BrushSettings,
+    config: HighlighterToolConfig,
+    color: string,
   ): void {
     if (points.length === 0) return;
 
-    ctx.save();
-
-    // Set up stroke style - square cap gives flat ends, bevel for smoother joints
+    // 1. Configure Context for Marker look
     ctx.lineCap = "square";
     ctx.lineJoin = "bevel";
-    ctx.lineWidth = brush.size;
-    ctx.strokeStyle = brush.color;
-    ctx.globalAlpha = brush.opacity;
+    ctx.lineWidth = config.size;
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = config.opacity;
 
-    // Draw the path using quadratic curves for smoothness
+    // 2. Begin Path
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
 
-    if (points.length === 1) {
-      // Single point - draw a short horizontal line to create a visible mark
-      ctx.lineTo(points[0].x + 1, points[0].y);
-    } else if (points.length === 2) {
-      // Two points - draw a straight line
-      ctx.lineTo(points[1].x, points[1].y);
+    // 3. Draw (Standard lines often look better for highlighter than curves,
+    // but quadratic is safer for fast/jagged mouse movements)
+    if (points.length < 3) {
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
     } else {
-      // Multiple points - use quadratic curves for smoothness
       for (let i = 1; i < points.length - 1; i++) {
         const curr = points[i];
         const next = points[i + 1];
@@ -99,45 +93,39 @@ export class BrushEngine {
         const midY = (curr.y + next.y) / 2;
         ctx.quadraticCurveTo(curr.x, curr.y, midX, midY);
       }
-      // Last point - draw directly to it
       const last = points[points.length - 1];
       ctx.lineTo(last.x, last.y);
     }
 
     ctx.stroke();
-    ctx.restore();
   }
 
   /**
-   * Draw an area rectangle with optional rounded corners
-   * Uses smooth Canvas paths for high-quality rendering
-   * Automatically clamps border radius to valid range based on dimensions
+   * Draw an Area (Rectangle/Box)
    */
   drawArea(
     ctx: CanvasRenderingContext2D,
     start: Point,
     end: Point,
-    brush: BrushSettings,
+    config: AreaToolConfig,
+    color: string,
   ): void {
-    ctx.save();
-
     const x = Math.min(start.x, end.x);
     const y = Math.min(start.y, end.y);
     const width = Math.abs(end.x - start.x);
     const height = Math.abs(end.y - start.y);
+    const radius = config.borderRadius || 0;
 
-    // Clamp border radius to half of the smaller dimension
-    // This prevents invalid rendering when radius exceeds the rect bounds
-    const maxRadius = Math.min(width, height) / 2;
-    const borderRadius = Math.min(brush.borderRadius || 0, maxRadius);
+    ctx.fillStyle = color;
+    ctx.globalAlpha = config.opacity;
 
-    // Draw fill
-    ctx.globalAlpha = brush.opacity;
-    ctx.fillStyle = brush.color;
     ctx.beginPath();
-    ctx.roundRect(x, y, width, height, borderRadius);
+    if (typeof ctx.roundRect === "function") {
+      ctx.roundRect(x, y, width, height, radius);
+    } else {
+      // Fallback for older browsers
+      ctx.rect(x, y, width, height);
+    }
     ctx.fill();
-
-    ctx.restore();
   }
 }

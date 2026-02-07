@@ -24,6 +24,11 @@ export function GeneralSettings({
     { value: "discard", label: "Discard" },
   ];
 
+  const windowCloseOptions = [
+    { value: "exit", label: "Exit application" },
+    { value: "minimize-to-tray", label: "Minimize to tray" },
+  ];
+
   return (
     <div className="space-y-5">
       {/* Close Tab Behavior */}
@@ -55,6 +60,17 @@ export function GeneralSettings({
             options={closeTabOptions}
             value={settings.closeTabBehavior}
             onChange={(value) => updateDraft({ closeTabBehavior: value })}
+          />
+        </SettingsRow>
+        <SettingsRow
+          label="Window closing behavior"
+          description="What happens when you close the main window"
+        >
+          <ToggleButtonGroup
+            // types are compatible: we accept any string here and SettingsManager will persist it
+            options={windowCloseOptions as any}
+            value={(settings as any).closeWindowBehavior || "exit"}
+            onChange={(value) => updateDraft({ closeWindowBehavior: value as any })}
           />
         </SettingsRow>
       </SettingsSection>

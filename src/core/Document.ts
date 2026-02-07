@@ -1,7 +1,6 @@
 import type { DocumentState, Point, Size } from "../types";
 import { StrokeHistory } from "./StrokeHistory";
 import { Ruler } from "./Ruler";
-import { BrushEngine } from "./BrushEngine";
 
 /**
  * Generate a unique document ID
@@ -40,10 +39,10 @@ export class Document {
   // Increments on each change, used to skip redundant copies
   version: number;
 
-  // Event callbacks (for React integration)
-  private onChangeCallback: (() => void) | null = null;
+  // Event callbacks (for React integration) - allow multiple subscribers
+  private onChangeCallbacks: Set<() => void> = new Set();
 
-  constructor(id?: string, brushEngine?: BrushEngine) {
+  constructor(id?: string) {
     this.id = id || generateId();
     this.filePath = null;
     this.fileName = null;
@@ -53,7 +52,7 @@ export class Document {
     this.viewOffset = { x: 0, y: 0 };
     this.canvasSize = { width: 800, height: 600 };
 
-    this.strokeHistory = new StrokeHistory(brushEngine);
+    this.strokeHistory = new StrokeHistory();
     this.ruler = new Ruler();
 
     this.hasChanges = false;
@@ -295,22 +294,35 @@ export class Document {
    * Used for React integration
    */
   onChange(callback: () => void): void {
-    this.onChangeCallback = callback;
+    this.onChangeCallbacks.add(callback);
   }
 
   /**
-   * Remove the change callback
+   * Remove a specific change callback (or all if no arg provided)
    */
-  offChange(): void {
-    this.onChangeCallback = null;
+  offChange(callback?: () => void): void {
+    if (callback) {
+      this.onChangeCallbacks.delete(callback);
+    } else {
+      this.onChangeCallbacks.clear();
+    }
   }
 
   /**
    * Notify listeners of a change
    */
   private notifyChange(): void {
-    if (this.onChangeCallback) {
-      this.onChangeCallback();
+    // Debug: notify about change for easier tracing during runtime
+    // console.debug can be enabled in runtime devtools
+    // eslint-disable-next-line no-console
+    // console.debug("Document.notifyChange", { id: this.id, version: this.version });
+
+    for (const cb of Array.from(this.onChangeCallbacks)) {
+      try {
+        cb();
+      } catch (err) {
+        console.error("Document change listener failed", err);
+      }
     }
   }
 
@@ -341,11 +353,8 @@ export class Document {
   /**
    * Deserialize from plain object
    */
-  static deserialize(
-    state: DocumentState,
-    brushEngine?: BrushEngine,
-  ): Document {
-    const doc = new Document(state.id, brushEngine);
+  static deserialize(state: DocumentState): Document {
+    const doc = new Document(state.id);
 
     doc.filePath = state.filePath;
     doc.fileName = state.fileName;
@@ -371,7 +380,7 @@ export class Document {
   /**
    * Create an empty document
    */
-  static createEmpty(brushEngine?: BrushEngine): Document {
-    return new Document(undefined, brushEngine);
+  static createEmpty(): Document {
+    return new Document(undefined);
   }
 }

@@ -1,24 +1,45 @@
+import {
+  type BlendMode,
+  type ColorPalette,
+  type EraseMode,
+  type Tool,
+} from "../types";
+import type { ThemeConfig, ThemeColors, Theme } from "../lib/theme";
+
 /**
- * Service layer types
+ * RE-EXPORTS
  */
+export type { ColorPalette, ThemeConfig, ThemeColors, Theme };
 
-export type CloseTabBehavior = "prompt" | "auto-save" | "discard";
-export type ImageOpenBehavior = "center" | "fit";
+/**
+ * BEHAVIOR ENUMS & TYPES
+ */
+export const CloseTabBehaviors = {
+  PROMPT: "prompt",
+  AUTO_SAVE: "auto-save",
+  DISCARD: "discard",
+} as const;
+export type CloseTabBehavior =
+  (typeof CloseTabBehaviors)[keyof typeof CloseTabBehaviors];
 
-// Hotkey action identifiers
+export const ImageOpenBehaviors = {
+  CENTER: "center",
+  FIT: "fit",
+} as const;
+export type ImageOpenBehavior =
+  (typeof ImageOpenBehaviors)[keyof typeof ImageOpenBehaviors];
+
+export const AutoCopyFormats = {
+  PNG: "png",
+  JPEG: "jpeg",
+} as const;
+export type AutoCopyFormat =
+  (typeof AutoCopyFormats)[keyof typeof AutoCopyFormats];
+
+/**
+ * HOTKEY DEFINITIONS
+ */
 export type HotkeyAction =
-  // File operations
-  | "file.open"
-  | "file.save"
-  | "file.copy"
-  // Edit operations
-  | "edit.undo"
-  | "edit.redo"
-  // Tool selection
-  | "tool.pen"
-  | "tool.highlighter"
-  | "tool.area"
-  // Quick colors
   | "color.1"
   | "color.2"
   | "color.3"
@@ -26,95 +47,104 @@ export type HotkeyAction =
   | "color.5"
   | "color.6"
   | "color.7"
-  // Navigation
+  | "edit.redo"
+  | "edit.undo"
+  | "file.copy"
+  | "file.open"
+  | "file.save"
+  | "nav.centerImage"
+  | "nav.fitToWindow"
   | "nav.ruler"
+  | "nav.stretchToFill"
   | "nav.zoomIn"
   | "nav.zoomOut"
-  | "nav.fitToWindow"
-  | "nav.stretchToFill"
-  | "nav.centerImage"
-  // Tabs
-  | "tab.new"
   | "tab.close"
+  | "tab.new"
   | "tab.next"
-  | "tab.previous";
+  | "tab.previous"
+  | "tool.area"
+  | "tool.eraser"
+  | "tool.highlighter"
+  | "tool.pen";
 
-// Hotkey definition
-export interface HotkeyBinding {
-  key: string; // The main key (lowercase)
-  ctrl?: boolean; // Ctrl/Cmd modifier
-  shift?: boolean; // Shift modifier
-  alt?: boolean; // Alt modifier
-}
-
-// Serialized format for storage
-export type HotkeySettings = Record<HotkeyAction, HotkeyBinding>;
-
-// Default hotkey bindings
-export const DEFAULT_HOTKEYS: HotkeySettings = {
-  // File operations
-  "file.open": { key: "o", ctrl: true },
-  "file.save": { key: "s", ctrl: true },
-  "file.copy": { key: "c", ctrl: true },
-  // Edit operations
-  "edit.undo": { key: "z", ctrl: true },
-  "edit.redo": { key: "z", ctrl: true, shift: true },
-  // Tool selection (no modifiers)
-  "tool.pen": { key: "1" },
-  "tool.highlighter": { key: "2" },
-  "tool.area": { key: "3" },
-  // Quick colors (Ctrl + number)
-  "color.1": { key: "1", ctrl: true },
-  "color.2": { key: "2", ctrl: true },
-  "color.3": { key: "3", ctrl: true },
-  "color.4": { key: "4", ctrl: true },
-  "color.5": { key: "5", ctrl: true },
-  "color.6": { key: "6", ctrl: true },
-  "color.7": { key: "7", ctrl: true },
-  // Navigation
-  "nav.ruler": { key: "r", ctrl: true },
-  "nav.zoomIn": { key: "=", ctrl: true },
-  "nav.zoomOut": { key: "-", ctrl: true },
-  "nav.fitToWindow": { key: "f", ctrl: true, alt: true },
-  "nav.stretchToFill": { key: "f", ctrl: true },
-  "nav.centerImage": { key: "c", ctrl: true, alt: true },
-  // Tabs
-  "tab.new": { key: "t", ctrl: true },
-  "tab.close": { key: "w", ctrl: true },
-  "tab.next": { key: "tab", ctrl: true },
-  "tab.previous": { key: "tab", ctrl: true, shift: true },
+export type HotkeyBinding = {
+  key: string;
+  ctrl?: boolean; // Maps to Ctrl on Windows/Linux and Cmd on macOS
+  shift?: boolean;
+  alt?: boolean;
 };
 
-// Helper to format a hotkey for display
+export type HotkeySettings = Record<HotkeyAction, HotkeyBinding>;
+
+/**
+ * APP SETTINGS INTERFACE
+ */
+export type AppSettings = {
+  autoCopyFormat: AutoCopyFormat;
+  autoCopyJpegQuality: number;
+  autoCopyOnChange: boolean;
+  autoCopyShowToast: boolean;
+  blendMode: BlendMode;
+  closeTabBehavior: CloseTabBehavior;
+  closeWindowBehavior?: "exit" | "minimize-to-tray";
+  colorPresets: string[];
+  defaultColor: string;
+  defaultAreaBlendMode: BlendMode;
+  defaultAreaBorderRadius: number;
+  defaultAreaOpacity: number;
+  defaultEraseMode?: EraseMode;
+  defaultEraserSize?: number;
+  defaultHighlighterBlendMode: BlendMode;
+  defaultHighlighterBorderRadius: number;
+  defaultHighlighterOpacity: number;
+  defaultHighlighterSize: number;
+  defaultPenBlendMode: BlendMode;
+  defaultPenOpacity: number;
+  defaultPenSize: number;
+  defaultTool: Tool;
+  hotkeys: HotkeySettings;
+  imageOpenBehavior: ImageOpenBehavior;
+  manualCopyFormat: AutoCopyFormat;
+  manualCopyJpegQuality: number;
+  selectedPalette: string;
+  showDebugInfo: boolean;
+  theme: string;
+};
+
+/**
+ * UTILITY HELPERS
+ */
+
+/** Converts a HotkeyBinding into a human-readable string (e.g., "Ctrl+Shift+Z") */
 export function formatHotkey(binding: HotkeyBinding | undefined): string {
-  // Handle undefined or unbound hotkeys
-  if (!binding || !binding.key || binding.key === "") {
-    return "Unbound";
-  }
+  if (!binding || !binding.key || binding.key === "") return "Unbound";
 
   const parts: string[] = [];
   if (binding.ctrl) parts.push("Ctrl");
   if (binding.shift) parts.push("Shift");
   if (binding.alt) parts.push("Alt");
 
-  // Format the key nicely
   let keyDisplay = binding.key;
-  if (keyDisplay === " ") keyDisplay = "Space";
-  else if (keyDisplay === "tab") keyDisplay = "Tab";
-  else if (keyDisplay === "escape") keyDisplay = "Esc";
-  else if (keyDisplay === "enter") keyDisplay = "Enter";
-  else if (keyDisplay === "arrowup") keyDisplay = "↑";
-  else if (keyDisplay === "arrowdown") keyDisplay = "↓";
-  else if (keyDisplay === "arrowleft") keyDisplay = "←";
-  else if (keyDisplay === "arrowright") keyDisplay = "→";
-  else if (keyDisplay === "=") keyDisplay = "+";
-  else keyDisplay = keyDisplay.toUpperCase();
+  const specialKeys: Record<string, string> = {
+    " ": "Space",
+    tab: "Tab",
+    escape: "Esc",
+    enter: "Enter",
+    arrowup: "↑",
+    arrowdown: "↓",
+    arrowleft: "←",
+    arrowright: "→",
+    "=": "+",
+  };
 
+  keyDisplay =
+    specialKeys[keyDisplay.toLowerCase()] || keyDisplay.toUpperCase();
   parts.push(keyDisplay);
+
   return parts.join("+");
 }
 
-// Helper to check if a keyboard event matches a hotkey binding
+/** Compares a KeyboardEvent against a HotkeyBinding */
 export function matchesHotkey(
   event: KeyboardEvent,
   binding: HotkeyBinding,
@@ -123,95 +153,24 @@ export function matchesHotkey(
   const ctrlOrMeta = event.ctrlKey || event.metaKey;
 
   return (
-    key === binding.key &&
+    key === binding.key.toLowerCase() &&
     ctrlOrMeta === !!binding.ctrl &&
     event.shiftKey === !!binding.shift &&
     event.altKey === !!binding.alt
   );
 }
 
-export type AutoCopyFormat = "png" | "jpeg";
-
-export interface AppSettings {
-  theme: string;
-  selectedPalette: string;
-  autoCopyOnChange: boolean;
-  autoCopyFormat: AutoCopyFormat;
-  autoCopyJpegQuality: number;
-  autoCopyShowToast: boolean;
-  manualCopyFormat: AutoCopyFormat;
-  manualCopyJpegQuality: number;
-  colorPresets: string[];
-  defaultTool: "pen" | "highlighter" | "area";
-  defaultPenSize: number;
-  defaultHighlighterSize: number;
-  defaultPenOpacity: number;
-  defaultHighlighterOpacity: number;
-  defaultHighlighterBorderRadius: number;
-  defaultHighlighterBlendMode: "normal" | "multiply";
-  defaultPenBlendMode: "normal" | "multiply";
-  defaultAreaOpacity: number;
-  defaultAreaBorderRadius: number;
-  defaultAreaBlendMode: "normal" | "multiply";
-  blendMode: "normal" | "multiply";
-  closeTabBehavior: CloseTabBehavior;
-  imageOpenBehavior: ImageOpenBehavior;
-  showDebugInfo: boolean;
-  hotkeys: HotkeySettings;
-}
-
-export const DEFAULT_SETTINGS: AppSettings = {
-  theme: "dark",
-  selectedPalette: "default",
-  autoCopyOnChange: true,
-  autoCopyFormat: "jpeg",
-  autoCopyJpegQuality: 0.85,
-  autoCopyShowToast: false,
-  manualCopyFormat: "png",
-  manualCopyJpegQuality: 0.95,
-  colorPresets: [
-    "#FF6B6B",
-    "#FF9F43",
-    "#FFE066",
-    "#6BCB77",
-    "#4D96FF",
-    "#9B59B6",
-    "#FF6B9D",
-  ],
-  defaultTool: "pen",
-  defaultPenSize: 3,
-  defaultHighlighterSize: 20,
-  defaultPenOpacity: 1,
-  defaultHighlighterOpacity: 1,
-  defaultHighlighterBorderRadius: 4,
-  defaultHighlighterBlendMode: "multiply",
-  defaultPenBlendMode: "normal",
-  defaultAreaOpacity: 1,
-  defaultAreaBorderRadius: 0,
-  defaultAreaBlendMode: "multiply",
-  blendMode: "normal",
-  closeTabBehavior: "prompt",
-  imageOpenBehavior: "fit",
-  showDebugInfo: false,
-  hotkeys: DEFAULT_HOTKEYS,
-};
-
-// Import theme types from their sources
-import type { ColorPalette } from "../types";
-import type { ThemeConfig, ThemeColors, Theme } from "../lib/theme";
-
-// Re-export for convenience
-export type { ColorPalette, ThemeConfig, ThemeColors, Theme };
-
-// Event listener types
+/**
+ * EVENT SYSTEM TYPES
+ */
 export type EventCallback<T = void> = (payload: T) => void;
 
 export interface ServiceEvents {
+  activeDocumentChanged: { id: string | null };
+  documentAdded: { id: string };
+  documentChanged: { id: string };
+  documentClosed: { id: string };
   settingsChanged: AppSettings;
   settingsSaved: AppSettings;
   themeLoaded: Theme;
-  documentChanged: { id: string };
-  activeDocumentChanged: { id: string | null };
-  documentClosed: { id: string };
-  documentAdded: { id: string };
 }

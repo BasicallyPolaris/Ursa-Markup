@@ -23,4 +23,4 @@ export {
   CanvasEngineProvider,
   useCanvasEngine,
 } from "./CanvasEngineContext";
-export { DrawingContext, DrawingProvider, useDrawing } from "./DrawingContext";
+export { DrawingProvider, useDrawing } from "./DrawingContext";
