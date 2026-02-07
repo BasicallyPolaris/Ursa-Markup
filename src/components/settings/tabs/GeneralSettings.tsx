@@ -1,37 +1,60 @@
-import { Clipboard, FolderClosed, Eye } from "lucide-react";
-import { Switch } from "../../ui/switch";
-import { Slider } from "../../ui/slider";
-import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
+import { Clipboard, Eye, FolderClosed } from "lucide-react";
+import { Slider } from "~/components/ui/slider";
+import { Switch } from "~/components/ui/switch";
+import { DeepPartial } from "~/types";
 import {
-  SettingsSection,
+  AutoCopyFormats,
+  CloseTabBehaviors,
+  CloseWindowBehaviors,
+  ImageOpenBehaviors,
+  type AppSettings,
+  type AutoCopyFormat,
+  type CloseTabBehavior,
+} from "~/types/settings";
+import {
   SettingsRow,
+  SettingsSection,
   SettingsSliderRow,
 } from "../components/SettingsSection";
-import type { AppSettings, CloseTabBehavior } from "../../../services/types";
+import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
 
 interface GeneralSettingsProps {
   settings: AppSettings;
-  updateDraft: (updates: Partial<AppSettings>) => void;
+  updateDraft: (updates: DeepPartial<AppSettings>) => void;
 }
 
 export function GeneralSettings({
   settings,
   updateDraft,
 }: GeneralSettingsProps) {
+  const { copySettings, miscSettings } = settings;
+
   const closeTabOptions: { value: CloseTabBehavior; label: string }[] = [
-    { value: "prompt", label: "Ask me" },
-    { value: "auto-save", label: "Auto-save" },
-    { value: "discard", label: "Discard" },
+    { value: CloseTabBehaviors.PROMPT, label: "Ask me" },
+    { value: CloseTabBehaviors.AUTO_SAVE, label: "Auto-save" },
+    { value: CloseTabBehaviors.DISCARD, label: "Discard" },
   ];
 
-  const windowCloseOptions = [
-    { value: "exit", label: "Exit application" },
-    { value: "minimize-to-tray", label: "Minimize to tray" },
+  const closeWindowOptions = [
+    { value: CloseWindowBehaviors.EXIT, label: "Exit application" },
+    { value: CloseWindowBehaviors.MINIMIZE_TO_TRAY, label: "Minimize to tray" },
+  ];
+
+  const imageOpenBehaviorOptions = [
+    { value: ImageOpenBehaviors.FIT, label: "Fit" },
+    { value: ImageOpenBehaviors.CENTER, label: "Center" },
+  ];
+
+  const copyFormatOptions = [
+    { value: AutoCopyFormats.JPEG, label: "JPEG" },
+    { value: AutoCopyFormats.PNG, label: "PNG" },
   ];
 
   return (
     <div className="space-y-5">
-      {/* Close Tab Behavior */}
+      {/* ---------------------------------------------------------------------
+          TAB & WINDOW BEHAVIOR
+      ---------------------------------------------------------------------- */}
       <SettingsSection
         title="Tab Behavior"
         description="What happens when closing a tab with unsaved changes"
@@ -42,40 +65,50 @@ export function GeneralSettings({
           description="How images are positioned when opened"
         >
           <ToggleButtonGroup
-            options={[
-              { value: "fit", label: "Fit" },
-              { value: "center", label: "Center" },
-            ]}
-            value={settings.imageOpenBehavior}
+            options={imageOpenBehaviorOptions}
+            value={miscSettings.imageOpenBehavior}
             onChange={(value) =>
-              updateDraft({ imageOpenBehavior: value as any })
+              updateDraft({
+                miscSettings: { imageOpenBehavior: value },
+              })
             }
           />
         </SettingsRow>
+
         <SettingsRow
           label="Tab closing behavior"
-          description="How images are positioned when opened"
+          description="What happens when closing a tab with unsaved changes"
         >
           <ToggleButtonGroup
             options={closeTabOptions}
-            value={settings.closeTabBehavior}
-            onChange={(value) => updateDraft({ closeTabBehavior: value })}
+            value={miscSettings.closeTabBehavior}
+            onChange={(value) =>
+              updateDraft({
+                miscSettings: { closeTabBehavior: value },
+              })
+            }
           />
         </SettingsRow>
+
         <SettingsRow
           label="Window closing behavior"
           description="What happens when you close the main window"
         >
           <ToggleButtonGroup
-            // types are compatible: we accept any string here and SettingsManager will persist it
-            options={windowCloseOptions as any}
-            value={(settings as any).closeWindowBehavior || "exit"}
-            onChange={(value) => updateDraft({ closeWindowBehavior: value as any })}
+            options={closeWindowOptions}
+            value={miscSettings.closeWindowBehavior}
+            onChange={(value) =>
+              updateDraft({
+                miscSettings: { closeWindowBehavior: value },
+              })
+            }
           />
         </SettingsRow>
       </SettingsSection>
 
-      {/* Auto-copy setting */}
+      {/* ---------------------------------------------------------------------
+          CLIPBOARD
+      ---------------------------------------------------------------------- */}
       <SettingsSection
         title="Clipboard"
         description="Control how images are copied to clipboard"
@@ -86,54 +119,60 @@ export function GeneralSettings({
           description="Automatically copy the image to clipboard after each stroke"
         >
           <Switch
-            checked={settings.autoCopyOnChange}
-            onCheckedChange={(checked: boolean) =>
-              updateDraft({ autoCopyOnChange: checked })
+            checked={copySettings.autoCopyOnChange}
+            onCheckedChange={(checked) =>
+              updateDraft({
+                copySettings: { autoCopyOnChange: checked },
+              })
             }
           />
         </SettingsRow>
-        {settings.autoCopyOnChange && (
+
+        {copySettings.autoCopyOnChange && (
           <SettingsRow
             label="Confirm auto-copy with toast"
             description="Show a notification when auto-copy completes"
           >
             <Switch
-              checked={settings.autoCopyShowToast}
-              onCheckedChange={(checked: boolean) =>
-                updateDraft({ autoCopyShowToast: checked })
+              checked={copySettings.autoCopyShowToast}
+              onCheckedChange={(checked) =>
+                updateDraft({
+                  copySettings: { autoCopyShowToast: checked },
+                })
               }
             />
           </SettingsRow>
         )}
 
-        {settings.autoCopyOnChange && (
+        {copySettings.autoCopyOnChange && (
           <>
             <SettingsRow
               label="Auto-copy format"
               description="Image format for automatic clipboard copy"
             >
               <ToggleButtonGroup
-                options={[
-                  { value: "jpeg", label: "JPEG" },
-                  { value: "png", label: "PNG" },
-                ]}
-                value={settings.autoCopyFormat}
+                options={copyFormatOptions}
+                value={copySettings.autoCopyFormat}
                 onChange={(value) =>
-                  updateDraft({ autoCopyFormat: value as any })
+                  updateDraft({
+                    copySettings: { autoCopyFormat: value as AutoCopyFormat },
+                  })
                 }
               />
             </SettingsRow>
 
-            {settings.autoCopyFormat === "jpeg" && (
+            {copySettings.autoCopyFormat === AutoCopyFormats.JPEG && (
               <SettingsSliderRow
                 label="JPEG quality"
-                value={Math.round(settings.autoCopyJpegQuality * 100)}
+                value={Math.round(copySettings.autoCopyJpegQuality * 100)}
                 unit="%"
               >
                 <Slider
-                  value={[Math.round(settings.autoCopyJpegQuality * 100)]}
+                  value={[Math.round(copySettings.autoCopyJpegQuality * 100)]}
                   onValueChange={([value]) =>
-                    updateDraft({ autoCopyJpegQuality: value / 100 })
+                    updateDraft({
+                      copySettings: { autoCopyJpegQuality: value / 100 },
+                    })
                   }
                   min={30}
                   max={100}
@@ -150,27 +189,28 @@ export function GeneralSettings({
           description="Format used when manually copying via keyboard or the Copy action"
         >
           <ToggleButtonGroup
-            options={[
-              { value: "jpeg", label: "JPEG" },
-              { value: "png", label: "PNG" },
-            ]}
-            value={settings.manualCopyFormat}
+            options={copyFormatOptions}
+            value={copySettings.manualCopyFormat}
             onChange={(value) =>
-              updateDraft({ manualCopyFormat: value as any })
+              updateDraft({
+                copySettings: { manualCopyFormat: value as AutoCopyFormat },
+              })
             }
           />
         </SettingsRow>
 
-        {settings.manualCopyFormat === "jpeg" && (
+        {copySettings.manualCopyFormat === AutoCopyFormats.JPEG && (
           <SettingsSliderRow
             label="Manual copy JPEG quality"
-            value={Math.round(settings.manualCopyJpegQuality * 100)}
+            value={Math.round(copySettings.manualCopyJpegQuality * 100)}
             unit="%"
           >
             <Slider
-              value={[Math.round(settings.manualCopyJpegQuality * 100)]}
+              value={[Math.round(copySettings.manualCopyJpegQuality * 100)]}
               onValueChange={([value]) =>
-                updateDraft({ manualCopyJpegQuality: value / 100 })
+                updateDraft({
+                  copySettings: { manualCopyJpegQuality: value / 100 },
+                })
               }
               min={30}
               max={100}
@@ -180,7 +220,9 @@ export function GeneralSettings({
         )}
       </SettingsSection>
 
-      {/* Display settings */}
+      {/* ---------------------------------------------------------------------
+          DISPLAY
+      ---------------------------------------------------------------------- */}
       <SettingsSection
         title="Display"
         description="Canvas and interface display options"
@@ -191,9 +233,11 @@ export function GeneralSettings({
           description="Display zoom level and ruler angle on canvas"
         >
           <Switch
-            checked={settings.showDebugInfo}
-            onCheckedChange={(checked: boolean) =>
-              updateDraft({ showDebugInfo: checked })
+            checked={miscSettings.showDebugInfo}
+            onCheckedChange={(checked) =>
+              updateDraft({
+                miscSettings: { showDebugInfo: checked },
+              })
             }
           />
         </SettingsRow>

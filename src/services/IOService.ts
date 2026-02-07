@@ -5,7 +5,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { readFile } from "@tauri-apps/plugin-fs";
 
 // Import the worker
-import CopyWorker from "../workers/copyWorker?worker";
+import CopyWorker from "~/workers/copyWorker?worker";
 
 /**
  * Options for clipboard copy operation

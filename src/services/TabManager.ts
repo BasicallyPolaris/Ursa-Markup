@@ -1,5 +1,5 @@
+import type { CloseTabBehavior, ServiceEvents } from "~/types/settings";
 import { Document } from "../core/Document";
-import type { CloseTabBehavior, ServiceEvents } from "./types";
 
 type EventCallback<T> = (payload: T) => void;
 
@@ -369,7 +369,7 @@ export class TabManager {
       try {
         callback(payload);
       } catch (error) {
-        console.error(`Error in ${event} listener:`, error);
+        console.error(`Error in ${String(event)} listener:`, error);
       }
     });
   }

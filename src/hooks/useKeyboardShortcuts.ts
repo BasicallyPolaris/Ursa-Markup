@@ -1,23 +1,33 @@
-import { useEffect, useCallback, useMemo, useRef } from "react";
-import { useSettings } from "../contexts/SettingsContext";
-import { useTabManager } from "../contexts/TabManagerContext";
-import { useDocument } from "../contexts/DocumentContext";
-import { useCanvasEngine } from "../contexts/CanvasEngineContext";
-import { useDrawing } from "../contexts/DrawingContext";
-import { matchesHotkey, formatHotkey } from "../services/types";
-import { DEFAULT_HOTKEYS } from "../services/AppSettings";
-import type {
-  HotkeyAction,
-  HotkeySettings,
-  HotkeyBinding,
-} from "../services/types";
-import { services } from "../services";
+/**
+ * @file Keyboard Shortcuts & File Actions
+ * @description Manages global keyboard shortcuts, hotkey display logic, and core
+ * file operations (Open, Save, Copy). Acts as the central registry for binding
+ * user inputs to application state changes.
+ */
+
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCanvasEngine } from "~/contexts/CanvasEngineContext";
+import { useDocument } from "~/contexts/DocumentContext";
+import { useDrawing } from "~/contexts/DrawingContext";
+import { useSettings } from "~/contexts/SettingsContext";
+import { useTabManager } from "~/contexts/TabManagerContext";
+import { services } from "~/services";
+import { DEFAULT_HOTKEYS } from "~/services/Settings/config";
+import type { HotkeyAction, HotkeySettings } from "~/types/settings";
+import { Tool, Tools } from "~/types/tools";
+import { formatHotkey, matchesHotkey } from "~/utils/hotkeys";
 import { registerPendingCopy } from "./useClipboardEvents";
-import { Tool, Tools } from "../types";
+
+// -----------------------------------------------------------------------------
+// Hotkey Display Hooks
+// -----------------------------------------------------------------------------
 
 /**
- * Hook to get a formatted hotkey string for a specific action
- * Use this in UI components to display the current hotkey binding
+ * Retrieves the formatted display string for a specific hotkey action.
+ * Useful for UI tooltips and menu items (e.g., "Ctrl+S").
+ *
+ * @param action - The identifier of the action to look up.
+ * @returns The formatted hotkey string.
  */
 export function useHotkeyDisplay(action: HotkeyAction): string {
   const { settings } = useSettings();
@@ -26,20 +36,27 @@ export function useHotkeyDisplay(action: HotkeyAction): string {
 }
 
 /**
- * Hook to get all hotkey bindings for display purposes
+ * Retrieves the full map of current hotkey bindings.
  */
 export function useHotkeys(): HotkeySettings {
   const { settings } = useSettings();
   return settings.hotkeys || DEFAULT_HOTKEYS;
 }
 
+// -----------------------------------------------------------------------------
+// File Actions Hook
+// -----------------------------------------------------------------------------
+
 /**
- * Hook to get file action handlers (save, copy, open)
- * These can be used by both keyboard shortcuts and UI buttons
+ * Provides handlers for core file operations: Open, Save, and Copy.
+ * These handlers abstract the logic for interacting with the CanvasEngine
+ * and IOService, making them reusable for both keyboard shortcuts and UI buttons.
  */
 export function useFileActions() {
   const { engine } = useCanvasEngine();
-  // Keep engine in a ref to always have the latest reference
+
+  // Use a ref to access the latest engine instance within callbacks
+  // without forcing re-creation of the handlers on every render.
   const engineRef = useRef(engine);
   engineRef.current = engine;
 
@@ -55,6 +72,7 @@ export function useFileActions() {
   const handleSave = useCallback(async () => {
     const activeDoc = services.tabManager.getActiveDocument();
     const currentEngine = engineRef.current;
+
     if (!activeDoc || !currentEngine) return;
 
     const canvas = currentEngine.getFreshCombinedCanvas();
@@ -62,6 +80,7 @@ export function useFileActions() {
 
     const defaultPath = activeDoc.filePath || "annotated-image.png";
     const success = await services.ioService.saveImage(canvas, defaultPath);
+
     if (success) {
       activeDoc.markAsChanged(false);
     }
@@ -70,22 +89,24 @@ export function useFileActions() {
   const handleCopy = useCallback(async () => {
     const activeDoc = services.tabManager.getActiveDocument();
     const currentEngine = engineRef.current;
+
     if (!currentEngine || !activeDoc) return;
 
     const canvas = currentEngine.getFreshCombinedCanvas();
     if (canvas) {
       const version = activeDoc.version;
-      // Register as manual copy (show toast on success)
+
+      // Register intent to copy (handled by useClipboardEvents)
       registerPendingCopy(version, false);
-      // Use manual copy settings from app settings (format + jpeg quality)
-      const { manualCopyFormat, manualCopyJpegQuality } =
-        services.settingsManager.settings;
-      // Force copy even if version matches (user explicitly requested it)
+
+      // Retrieve latest copy preferences directly to ensure freshness
+      const { copySettings } = services.settingsManager.settings;
+
       await services.ioService.copyToClipboard(canvas, version, {
-        force: true,
+        force: true, // Manual copy always forces an update
         isAutoCopy: false,
-        format: manualCopyFormat,
-        jpegQuality: manualCopyJpegQuality,
+        format: copySettings.manualCopyFormat,
+        jpegQuality: copySettings.manualCopyJpegQuality,
       });
     }
   }, []);
@@ -93,77 +114,77 @@ export function useFileActions() {
   return { handleOpen, handleSave, handleCopy };
 }
 
+// -----------------------------------------------------------------------------
+// Global Keyboard Manager
+// -----------------------------------------------------------------------------
+
 /**
- * useKeyboardShortcuts consolidates all keyboard shortcuts
- * Provides global keyboard handling for the application
- * Now uses customizable hotkeys from settings
+ * centralized registry for all application keyboard shortcuts.
+ * * Maps hotkey definitions (from settings) to specific handler functions.
+ * Listens for global `keydown` events and executes the matching action.
  */
-export function useKeyboardShortcuts() {
+export function useKeyboardShortcuts(): void {
   const { settings } = useSettings();
-  const {
-    addTab,
-    closeTab,
-    activeDocumentId,
-    documents,
-    switchToNextTab,
-    switchToPreviousTab,
-  } = useTabManager();
 
-  const { undo, redo, toggleRuler } = useDocument();
-  const { switchTool, setActiveColor } = useDrawing();
-  const { zoom, setZoom, fitToWindow, stretchToFill, centerImage } =
-    useCanvasEngine();
+  // Context Consumers
+  const tabManager = useTabManager();
+  const documentContext = useDocument();
+  const drawingContext = useDrawing();
+  const canvasContext = useCanvasEngine();
+  const fileActions = useFileActions();
 
-  // Get file action handlers
-  const { handleOpen, handleSave, handleCopy } = useFileActions();
+  // Action Handlers
+  // Wrapped in useCallbacks to maintain stable references for the effect dependency array
 
-  // Get hotkeys from settings, fallback to defaults
-  const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
-
-  const handleUndo = useCallback(() => {
-    undo();
-  }, [undo]);
-
-  const handleRedo = useCallback(() => {
-    redo();
-  }, [redo]);
-
-  const handleToggleRuler = useCallback(() => {
-    toggleRuler();
-  }, [toggleRuler]);
+  const handleUndo = useCallback(
+    () => documentContext.undo(),
+    [documentContext],
+  );
+  const handleRedo = useCallback(
+    () => documentContext.redo(),
+    [documentContext],
+  );
+  const handleToggleRuler = useCallback(
+    () => documentContext.toggleRuler(),
+    [documentContext],
+  );
 
   const handleToolChange = useCallback(
     (tool: Tool) => {
-      switchTool(tool);
+      drawingContext.switchTool(tool);
     },
-    [switchTool],
+    [drawingContext],
   );
-
-  const handleZoomIn = useCallback(() => {
-    setZoom(Math.min(5, zoom * 1.2));
-  }, [zoom, setZoom]);
-
-  const handleZoomOut = useCallback(() => {
-    setZoom(Math.max(0.1, zoom / 1.2));
-  }, [zoom, setZoom]);
 
   const handleColorChange = useCallback(
     (index: number) => {
-      if (index < settings.colorPresets.length) {
-        setActiveColor(settings.colorPresets[index]);
+      const color = settings.activePaletteColors[index];
+      if (color) {
+        drawingContext.setActiveColor(color);
       }
     },
-    [settings.colorPresets],
+    [settings.activePaletteColors, drawingContext],
   );
 
+  const handleZoomIn = useCallback(() => {
+    canvasContext.setZoom(Math.min(5, canvasContext.zoom * 1.2));
+  }, [canvasContext]);
+
+  const handleZoomOut = useCallback(() => {
+    canvasContext.setZoom(Math.max(0.1, canvasContext.zoom / 1.2));
+  }, [canvasContext]);
+
   const handleCloseTab = useCallback(() => {
+    const { documents, activeDocumentId, closeTab } = tabManager;
     if (documents.length > 1 && activeDocumentId) {
       closeTab(activeDocumentId);
     }
-  }, [documents.length, activeDocumentId, closeTab]);
+  }, [tabManager]);
 
+  // Event Listener Setup
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore input fields to prevent blocking typing
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
@@ -173,16 +194,25 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      const actionHandlers: Record<HotkeyAction, (() => void) | null> = {
-        "file.open": handleOpen,
-        "file.save": handleSave,
-        "file.copy": handleCopy,
+      // Action Registry
+      // Maps configuration keys to executable functions
+      const actionMap: Record<HotkeyAction, (() => void) | null> = {
+        // File Operations
+        "file.open": fileActions.handleOpen,
+        "file.save": fileActions.handleSave,
+        "file.copy": fileActions.handleCopy,
+
+        // Edit Operations
         "edit.undo": handleUndo,
         "edit.redo": handleRedo,
+
+        // Tools
         "tool.pen": () => handleToolChange(Tools.PEN),
         "tool.highlighter": () => handleToolChange(Tools.HIGHLIGHTER),
         "tool.area": () => handleToolChange(Tools.AREA),
         "tool.eraser": () => handleToolChange(Tools.ERASER),
+
+        // Colors
         "color.1": () => handleColorChange(0),
         "color.2": () => handleColorChange(1),
         "color.3": () => handleColorChange(2),
@@ -190,30 +220,37 @@ export function useKeyboardShortcuts() {
         "color.5": () => handleColorChange(4),
         "color.6": () => handleColorChange(5),
         "color.7": () => handleColorChange(6),
+
+        // Navigation & View
         "nav.ruler": handleToggleRuler,
         "nav.zoomIn": handleZoomIn,
         "nav.zoomOut": handleZoomOut,
-        "nav.fitToWindow": fitToWindow,
-        "nav.stretchToFill": stretchToFill,
-        "nav.centerImage": centerImage,
-        "tab.new": addTab,
-        "tab.close":
-          documents.length > 1 && activeDocumentId ? handleCloseTab : null,
-        "tab.next": switchToNextTab,
-        "tab.previous": switchToPreviousTab,
+        "nav.fitToWindow": canvasContext.fitToWindow,
+        "nav.stretchToFill": canvasContext.stretchToFill,
+        "nav.centerImage": canvasContext.centerImage,
+
+        // Tab Management
+        "tab.new": tabManager.addTab,
+        "tab.close": tabManager.documents.length > 1 ? handleCloseTab : null,
+        "tab.next": tabManager.switchToNextTab,
+        "tab.previous": tabManager.switchToPreviousTab,
       };
 
-      for (const [action, binding] of Object.entries(hotkeys) as [
-        HotkeyAction,
-        HotkeyBinding,
-      ][]) {
-        if (!binding.key || binding.key === "") continue;
+      const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
+
+      // Iterate through defined hotkeys and execute match
+      for (const [actionKey, binding] of Object.entries(hotkeys)) {
+        const action = actionKey as HotkeyAction;
+
+        // Skip unbound or invalid keys
+        if (!binding.key) continue;
+
         if (matchesHotkey(e, binding)) {
-          const handler = actionHandlers[action];
+          const handler = actionMap[action];
           if (handler) {
             e.preventDefault();
             handler();
-            return;
+            return; // Execute only the first matching action
           }
         }
       }
@@ -222,25 +259,23 @@ export function useKeyboardShortcuts() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
-    settings,
-    undo,
-    redo,
-    toggleRuler,
-    switchTool,
-    setActiveColor,
-    zoom,
-    setZoom,
-    fitToWindow,
-    stretchToFill,
-    centerImage,
-    addTab,
-    closeTab,
-    activeDocumentId,
-    documents.length,
-    switchToNextTab,
-    switchToPreviousTab,
-    handleOpen,
-    handleSave,
-    handleCopy,
+    // Dependencies are extensive to ensure closure freshness
+    settings.hotkeys,
+    fileActions,
+    handleUndo,
+    handleRedo,
+    handleToggleRuler,
+    handleToolChange,
+    handleColorChange,
+    handleZoomIn,
+    handleZoomOut,
+    handleCloseTab,
+    canvasContext.fitToWindow,
+    canvasContext.stretchToFill,
+    canvasContext.centerImage,
+    tabManager.addTab,
+    tabManager.switchToNextTab,
+    tabManager.switchToPreviousTab,
+    tabManager.documents.length, // Required for tab closing logic
   ]);
 }

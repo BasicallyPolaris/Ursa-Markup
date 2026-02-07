@@ -1,7 +1,7 @@
+import { Plus, X } from "lucide-react";
 import { useCallback } from "react";
-import { X, Plus } from "lucide-react";
-import { useTabManager } from "../../contexts/TabManagerContext";
-import { cn } from "../../lib/utils";
+import { useTabManager } from "~/contexts/TabManagerContext";
+import { cn } from "~/lib/utils";
 
 export function TabBar() {
   const { documents, activeDocumentId, switchTab, closeTab, addTab } =

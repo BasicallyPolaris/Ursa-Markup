@@ -3,14 +3,15 @@
  * This runs in a separate Tauri window from the main app
  */
 
-import { useState, useEffect, useCallback } from "react";
-import { listen, emit } from "@tauri-apps/api/event";
+import { emit, listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { SettingsWindow } from "./components/settings/SettingsWindow";
-import { settingsManager, themeManager } from "./services";
-import type { AppSettings } from "./services/types";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { SettingsWindow } from "./components/settings/SettingsWindow";
 import { Toaster } from "./components/ui/sonner";
+import { settingsManager, themeManager } from "./services";
+import { DeepPartial } from "./types";
+import type { AppSettings } from "./types/settings";
 
 function SettingsApp() {
   const [settings, setSettings] = useState<AppSettings>(
@@ -31,8 +32,8 @@ function SettingsApp() {
 
       // Apply saved theme
       const savedSettings = settingsManager.settings;
-      if (savedSettings.theme) {
-        themeManager.setTheme(savedSettings.theme);
+      if (savedSettings.activeTheme) {
+        themeManager.setTheme(savedSettings.activeTheme);
       }
 
       setSettings({ ...savedSettings });
@@ -72,7 +73,7 @@ function SettingsApp() {
     };
   }, []);
 
-  const updateDraft = useCallback((updates: Partial<AppSettings>) => {
+  const updateDraft = useCallback((updates: DeepPartial<AppSettings>) => {
     settingsManager.updateDraft(updates);
   }, []);
 
@@ -85,7 +86,6 @@ function SettingsApp() {
     } else {
       toast.error("Settings couldn't be saved.");
     }
-    
   }, []);
 
   const handleCancel = useCallback(async () => {

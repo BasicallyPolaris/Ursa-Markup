@@ -2,22 +2,16 @@
  * Service layer exports
  * Application-wide state management and I/O operations
  */
-
-export * from "./types";
-
-// Re-export types from lib/theme
-export type { Theme, ThemeConfig, ThemeColors } from "../lib/theme";
-
 // Import and re-export classes
-export { SettingsManager } from "./SettingsManager";
-export { ThemeManager } from "./ThemeManager";
+export { SettingsManager } from "./Settings/SettingsManager";
+export { ThemeManager } from "./Theme/ThemeManager";
 export { IOService } from "./IOService";
 export { TabManager } from "./TabManager";
 export { WindowManager } from "./WindowManager";
 
 // Import singleton instances
-import { settingsManager } from "./SettingsManager";
-import { themeManager } from "./ThemeManager";
+import { settingsManager } from "./Settings/SettingsManager";
+import { themeManager } from "./Theme/ThemeManager";
 import { ioService } from "./IOService";
 import { tabManager } from "./TabManager";
 import { windowManager } from "./WindowManager";

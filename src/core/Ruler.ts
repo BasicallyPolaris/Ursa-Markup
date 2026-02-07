@@ -1,11 +1,11 @@
 import type {
   Point,
-  Size,
-  RulerState,
   RulerSnapInfo,
+  RulerState,
+  Size,
   ViewState,
-} from "../types";
-import { toRgbaString } from "../lib/theme";
+} from "~/types";
+import { toRgbaString } from "~/utils/colors";
 
 /**
  * Ruler height in pixels (constant screen size)

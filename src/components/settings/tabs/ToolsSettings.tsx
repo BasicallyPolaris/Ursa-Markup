@@ -1,29 +1,39 @@
-import { Pencil, Highlighter, Square, Eraser } from "lucide-react";
-import { Slider } from "../../ui/slider";
-import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
+import { Eraser, Highlighter, Pencil, Square } from "lucide-react";
+import { Slider } from "~/components/ui/slider";
+import { TOOL_SETTINGS_CONSTANTS } from "~/services/Settings/config";
+import { DeepPartial } from "~/types";
+import type { AppSettings } from "~/types/settings";
+import { BlendModes, EraseModes, ToolConfigs, Tools } from "~/types/tools";
 import {
+  SettingsGroup,
+  SettingsRow,
   SettingsSection,
   SettingsSliderRow,
-  SettingsRow,
-  SettingsGroup,
 } from "../components/SettingsSection";
-import type { AppSettings } from "../../../services/types";
-import { BlendModes } from "../../../types";
+import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
 
-interface ToolsSettingsProps {
-  settings: AppSettings;
-  updateDraft: (updates: Partial<AppSettings>) => void;
-}
+type ToolsSettingsProps = {
+  toolConfigs: ToolConfigs;
+  updateDraft: (updates: DeepPartial<AppSettings>) => void;
+};
 
-export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
+export function ToolsSettings({
+  toolConfigs,
+  updateDraft,
+}: ToolsSettingsProps) {
   const blendModeOptions = [
     { value: BlendModes.NORMAL, label: "Normal" },
     { value: BlendModes.MULTIPLY, label: "Multiply" },
   ];
 
+  const eraserModeOptions = [
+    { value: EraseModes.FULL_STROKE, label: "Full Stroke" },
+    { value: EraseModes.CONTAINED, label: "Contained" },
+  ];
+
   return (
     <div className="space-y-5">
-      {/* Pen Settings */}
+      {/* ======================= PEN TOOL ======================= */}
       <SettingsSection
         title="Pen Tool Defaults"
         description="Freehand drawing with solid strokes"
@@ -32,13 +42,17 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
             label="Size"
-            value={settings.defaultPenSize}
+            value={toolConfigs[Tools.PEN].size}
             unit="px"
           >
             <Slider
-              value={[settings.defaultPenSize]}
+              value={[toolConfigs[Tools.PEN].size]}
               onValueChange={([value]) =>
-                updateDraft({ defaultPenSize: value })
+                updateDraft({
+                  toolConfigs: {
+                    [Tools.PEN]: { size: value },
+                  },
+                })
               }
               min={1}
               max={20}
@@ -55,9 +69,13 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
             >
               <ToggleButtonGroup
                 options={blendModeOptions}
-                value={settings.defaultPenBlendMode}
+                value={toolConfigs[Tools.PEN].blendMode}
                 onChange={(value) =>
-                  updateDraft({ defaultPenBlendMode: value })
+                  updateDraft({
+                    toolConfigs: {
+                      [Tools.PEN]: { blendMode: value },
+                    },
+                  })
                 }
                 className="w-40"
               />
@@ -66,7 +84,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         </div>
       </SettingsSection>
 
-      {/* Highlighter Settings */}
+      {/* ======================= HIGHLIGHTER TOOL ======================= */}
       <SettingsSection
         title="Highlighter Tool Defaults"
         description="Highlighter with customizable blend modes"
@@ -75,33 +93,41 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
             label="Size"
-            value={settings.defaultHighlighterSize}
+            value={toolConfigs[Tools.HIGHLIGHTER].size}
             unit="px"
           >
             <Slider
-              value={[settings.defaultHighlighterSize]}
+              value={[toolConfigs[Tools.HIGHLIGHTER].size]}
               onValueChange={([value]) =>
-                updateDraft({ defaultHighlighterSize: value })
+                updateDraft({
+                  toolConfigs: {
+                    [Tools.HIGHLIGHTER]: { size: value },
+                  },
+                })
               }
-              min={5}
-              max={50}
-              step={1}
+              min={TOOL_SETTINGS_CONSTANTS.highlighter.minSize}
+              max={TOOL_SETTINGS_CONSTANTS.highlighter.maxSize}
+              step={TOOL_SETTINGS_CONSTANTS.highlighter.sizeStep}
             />
           </SettingsSliderRow>
 
           <SettingsSliderRow
             label="Opacity"
-            value={Math.round(settings.defaultHighlighterOpacity * 100)}
+            value={Math.round(toolConfigs[Tools.HIGHLIGHTER].opacity)}
             unit="%"
           >
             <Slider
-              value={[settings.defaultHighlighterOpacity * 100]}
+              value={[toolConfigs[Tools.HIGHLIGHTER].opacity]}
               onValueChange={([value]) =>
-                updateDraft({ defaultHighlighterOpacity: value / 100 })
+                updateDraft({
+                  toolConfigs: {
+                    [Tools.HIGHLIGHTER]: { opacity: value },
+                  },
+                })
               }
-              min={10}
-              max={100}
-              step={5}
+              min={TOOL_SETTINGS_CONSTANTS.highlighter.minOpacity}
+              max={TOOL_SETTINGS_CONSTANTS.highlighter.maxOpacity}
+              step={TOOL_SETTINGS_CONSTANTS.highlighter.opacityStep}
             />
           </SettingsSliderRow>
         </SettingsGroup>
@@ -114,9 +140,13 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
             >
               <ToggleButtonGroup
                 options={blendModeOptions}
-                value={settings.defaultHighlighterBlendMode}
+                value={toolConfigs[Tools.HIGHLIGHTER].blendMode}
                 onChange={(value) =>
-                  updateDraft({ defaultHighlighterBlendMode: value })
+                  updateDraft({
+                    toolConfigs: {
+                      [Tools.HIGHLIGHTER]: { blendMode: value },
+                    },
+                  })
                 }
                 className="w-40"
               />
@@ -125,7 +155,7 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         </div>
       </SettingsSection>
 
-      {/* Area Tool Settings */}
+      {/* ======================= AREA TOOL ======================= */}
       <SettingsSection
         title="Area Tool Defaults"
         description="Rectangular highlight regions"
@@ -134,33 +164,41 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
             label="Opacity"
-            value={Math.round(settings.defaultAreaOpacity * 100)}
+            value={Math.round(toolConfigs[Tools.AREA].opacity)}
             unit="%"
           >
             <Slider
-              value={[settings.defaultAreaOpacity * 100]}
+              value={[toolConfigs[Tools.AREA].opacity]}
               onValueChange={([value]) =>
-                updateDraft({ defaultAreaOpacity: value / 100 })
+                updateDraft({
+                  toolConfigs: {
+                    [Tools.AREA]: { opacity: value },
+                  },
+                })
               }
-              min={10}
-              max={100}
-              step={5}
+              min={TOOL_SETTINGS_CONSTANTS.area.minOpacity}
+              max={TOOL_SETTINGS_CONSTANTS.area.maxOpacity}
+              step={TOOL_SETTINGS_CONSTANTS.area.opacityStep}
             />
           </SettingsSliderRow>
 
           <SettingsSliderRow
             label="Corner Radius"
-            value={settings.defaultAreaBorderRadius}
+            value={toolConfigs[Tools.AREA].borderRadius}
             unit="px"
           >
             <Slider
-              value={[settings.defaultAreaBorderRadius]}
+              value={[toolConfigs[Tools.AREA].borderRadius]}
               onValueChange={([value]) =>
-                updateDraft({ defaultAreaBorderRadius: value })
+                updateDraft({
+                  toolConfigs: {
+                    [Tools.AREA]: { borderRadius: value },
+                  },
+                })
               }
-              min={0}
-              max={50}
-              step={1}
+              min={TOOL_SETTINGS_CONSTANTS.area.minRadius}
+              max={TOOL_SETTINGS_CONSTANTS.area.maxRadius}
+              step={TOOL_SETTINGS_CONSTANTS.area.radiusStep}
             />
           </SettingsSliderRow>
         </SettingsGroup>
@@ -173,9 +211,13 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
             >
               <ToggleButtonGroup
                 options={blendModeOptions}
-                value={settings.defaultAreaBlendMode}
+                value={toolConfigs[Tools.AREA].blendMode}
                 onChange={(value) =>
-                  updateDraft({ defaultAreaBlendMode: value })
+                  updateDraft({
+                    toolConfigs: {
+                      [Tools.AREA]: { blendMode: value },
+                    },
+                  })
                 }
                 className="w-40"
               />
@@ -183,7 +225,8 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
           </SettingsGroup>
         </div>
       </SettingsSection>
-      {/* Eraser Tool Settings */}
+
+      {/* ======================= ERASER TOOL ======================= */}
       <SettingsSection
         title="Eraser Tool Defaults"
         description="Remove strokes with an eraser brush"
@@ -192,17 +235,21 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
             label="Size"
-            value={(settings as any).defaultEraserSize || 10}
+            value={toolConfigs[Tools.ERASER].size}
             unit="px"
           >
             <Slider
-              value={[(settings as any).defaultEraserSize || 10]}
+              value={[toolConfigs[Tools.ERASER].size]}
               onValueChange={([value]) =>
-                updateDraft({ defaultEraserSize: value })
+                updateDraft({
+                  toolConfigs: {
+                    [Tools.ERASER]: { size: value },
+                  },
+                })
               }
-              min={5}
-              max={80}
-              step={1}
+              min={TOOL_SETTINGS_CONSTANTS.eraser.minSize}
+              max={TOOL_SETTINGS_CONSTANTS.eraser.maxSize}
+              step={TOOL_SETTINGS_CONSTANTS.eraser.sizeStep}
             />
           </SettingsSliderRow>
         </SettingsGroup>
@@ -214,13 +261,14 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
               description="How eraser selects strokes to remove"
             >
               <ToggleButtonGroup
-                options={[
-                  { value: "full-stroke", label: "Full Stroke" },
-                  { value: "contained", label: "Contained" },
-                ]}
-                value={(settings as any).defaultEraserMode || "full-stroke"}
+                options={eraserModeOptions}
+                value={toolConfigs[Tools.ERASER].eraserMode}
                 onChange={(value) =>
-                  updateDraft({ defaultEraseMode: value as any })
+                  updateDraft({
+                    toolConfigs: {
+                      [Tools.ERASER]: { eraserMode: value },
+                    },
+                  })
                 }
                 className="w-40"
               />

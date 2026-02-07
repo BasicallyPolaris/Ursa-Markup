@@ -9,17 +9,17 @@ import {
   Info,
   X,
 } from "lucide-react";
-import { SettingsSection } from "../components/SettingsSection";
-import { Button } from "../../ui/button";
+import { SettingsSection } from "~/components/settings/components/SettingsSection";
+import { Button } from "~/components/ui/button";
 import type {
   AppSettings,
   HotkeyAction,
   HotkeyBinding,
   HotkeySettings,
-} from "../../../services/types";
-import { DEFAULT_HOTKEYS } from "../../../services/AppSettings";
-import { formatHotkey } from "../../../services/types";
-import { cn } from "../../../lib/utils";
+} from "~/types/settings";
+import { DEFAULT_HOTKEYS } from "~/services/Settings/config";
+import { formatHotkey } from "~/utils/hotkeys";
+import { cn } from "~/lib/utils";
 
 interface ShortcutGroup {
   title: string;

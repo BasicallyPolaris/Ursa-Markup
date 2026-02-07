@@ -18,7 +18,7 @@ import { TabBar } from "./components/tabs/TabBar";
 import { CloseTabDialog } from "./components/tabs/CloseTabDialog";
 import { CanvasContainer } from "./components/canvas/CanvasContainer";
 import { Toaster } from "./components/ui/sonner";
-import type { AppSettings } from "./services/types";
+import type { AppSettings } from "./types/settings";
 
 interface AppContentProps {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -257,7 +257,7 @@ function App() {
           const savedSettings = event.payload;
 
           // Apply theme through ThemeManager
-          services.themeManager.setTheme(savedSettings.theme);
+          services.themeManager.setTheme(savedSettings.activeTheme);
 
           // Reload settings from disk to ensure consistency
           services.settingsManager.load().then(() => {
@@ -277,8 +277,8 @@ function App() {
   // Apply theme when theme changes
   useEffect(() => {
     // Apply theme through ThemeManager (applies CSS variables and class)
-    services.themeManager.setTheme(settings.theme);
-  }, [settings.theme]);
+    services.themeManager.setTheme(settings.activeTheme);
+  }, [settings.activeTheme]);
 
   return (
     <SettingsProvider>

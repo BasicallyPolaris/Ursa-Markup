@@ -1,52 +1,55 @@
-import { useCallback, useState, useEffect } from "react";
 import {
-  Pencil,
-  Highlighter,
-  Square,
-  Ruler,
-  Undo2,
-  Redo2,
-  FolderOpen,
-  Save,
-  Copy,
-  Maximize,
-  Expand,
-  Minus,
-  Plus,
-  Settings,
-  Layers,
   Blend,
+  Copy,
   Eraser,
+  Expand,
+  FolderOpen,
+  Highlighter,
+  Layers,
+  Maximize,
+  Minus,
+  Pencil,
+  Plus,
+  Redo2,
+  Ruler,
+  Save,
+  Settings,
+  Square,
+  Undo2,
 } from "lucide-react";
-import { Button } from "../ui/button";
-import { ToolButton } from "../ui/tool-button";
-import { IconButton } from "../ui/icon-button";
-import { Slider } from "../ui/slider";
+import { useCallback, useEffect, useState } from "react";
+import { Button } from "~/components/ui/button";
+import { IconButton } from "~/components/ui/icon-button";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
-} from "../ui/select";
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { Slider } from "~/components/ui/slider";
+import { ToolButton } from "~/components/ui/tool-button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "../ui/tooltip";
-import { useSettings } from "../../contexts/SettingsContext";
-import { useTabManager } from "../../contexts/TabManagerContext";
-import { useDocument } from "../../contexts/DocumentContext";
-import { useCanvasEngine } from "../../contexts/CanvasEngineContext";
-import { useDrawing } from "../../contexts/DrawingContext";
-import { useHotkeys, useFileActions } from "../../hooks/useKeyboardShortcuts";
-import { formatHotkey } from "../../services/types";
-import { BlendModes, Tools, type BlendMode, type Tool } from "../../types";
-import { cn } from "../../lib/utils";
+} from "~/components/ui/tooltip";
+import { useCanvasEngine } from "~/contexts/CanvasEngineContext";
+import { useDocument } from "~/contexts/DocumentContext";
+import { useDrawing } from "~/contexts/DrawingContext";
+import { useSettings } from "~/contexts/SettingsContext";
+import { useTabManager } from "~/contexts/TabManagerContext";
+import { useFileActions, useHotkeys } from "~/hooks/useKeyboardShortcuts";
+import { cn } from "~/lib/utils";
+import {
+  APP_SETTINGS_CONSTANTS,
+  TOOL_SETTINGS_CONSTANTS,
+} from "~/services/Settings/config";
+import { BlendModes, Tools, type BlendMode, type Tool } from "~/types/tools";
+import { formatHotkey } from "~/utils/hotkeys";
 
 export function Toolbar() {
-  // Get contexts
   const { settings, openSettings } = useSettings();
   const { activeDocument } = useTabManager();
   const { strokeHistory, ruler, toggleRuler, undo, redo } = useDocument();
@@ -54,7 +57,6 @@ export function Toolbar() {
   const hotkeys = useHotkeys();
   const { handleOpen, handleSave, handleCopy } = useFileActions();
 
-  // Use shared drawing state from context
   const {
     tool,
     switchTool,
@@ -64,26 +66,22 @@ export function Toolbar() {
     setActiveColor,
   } = useDrawing();
 
-  // Use colorPresets from settings (consistent with hotkeys)
-  const colorPresets = settings.colorPresets;
+  const colorPresets = settings.activePaletteColors;
   const hasImage = activeDocument?.hasImage() ?? false;
   const canUndo = strokeHistory.canUndo;
   const canRedo = strokeHistory.canRedo;
 
-  // Zoom input state
   const [zoomInputValue, setZoomInputValue] = useState(
     Math.round(zoom * 100).toString() + "%",
   );
   const [isEditingZoom, setIsEditingZoom] = useState(false);
 
-  // Sync zoom input value when zoom changes externally
   useEffect(() => {
     if (!isEditingZoom) {
       setZoomInputValue(Math.round(zoom * 100).toString() + "%");
     }
   }, [zoom, isEditingZoom]);
 
-  // Handlers
   const handleToolChange = useCallback(
     (newTool: Tool) => {
       switchTool(newTool);
@@ -111,14 +109,16 @@ export function Toolbar() {
 
   const handleZoomInputBlur = useCallback(() => {
     setIsEditingZoom(false);
-    // Remove % sign if present for parsing
     const cleanValue = zoomInputValue.replace("%", "").trim();
-    const value = parseInt(cleanValue, 10);
-    if (!isNaN(value) && value >= 10 && value <= 500) {
-      setZoom(value / 100);
+    const value = parseInt(cleanValue, 10) / 100;
+    if (
+      !isNaN(value) &&
+      value >= APP_SETTINGS_CONSTANTS.MIN_ZOOM &&
+      value <= APP_SETTINGS_CONSTANTS.MAX_ZOOM
+    ) {
+      setZoom(value);
       setZoomInputValue(value.toString() + "%");
     } else {
-      // Reset to current zoom if invalid
       setZoomInputValue(Math.round(zoom * 100).toString() + "%");
     }
   }, [zoomInputValue, zoom, setZoom]);
@@ -170,7 +170,6 @@ export function Toolbar() {
   return (
     <TooltipProvider delayDuration={0}>
       <div className="flex flex-col select-none">
-        {/* Top Bar */}
         <div className="flex items-center justify-between px-3 py-2 bg-toolbar-bg border-b border-toolbar-border">
           <div className="flex items-center gap-1">
             <Tooltip>
@@ -228,7 +227,6 @@ export function Toolbar() {
           </div>
 
           <div className="flex items-center gap-1">
-            {/* Undo/Redo */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
@@ -255,10 +253,8 @@ export function Toolbar() {
               </TooltipContent>
             </Tooltip>
 
-            {/* Divider */}
             <div className="w-px h-5 bg-text-secondary/20 mx-2" />
 
-            {/* Settings */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
@@ -271,9 +267,7 @@ export function Toolbar() {
           </div>
         </div>
 
-        {/* Tools Bar */}
         <div className="flex items-center gap-3 px-3 py-2 bg-toolbar-bg-secondary border-b border-toolbar-border overflow-x-auto scrollbar-thin scrollbar-thumb-toolbar-border scrollbar-track-transparent">
-          {/* Drawing Tools */}
           <div className="flex items-center gap-1 bg-surface-bg rounded-lg p-1 border border-toolbar-border">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -291,9 +285,9 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <ToolButton
-                  active={tool === "highlighter"}
+                  active={tool === Tools.HIGHLIGHTER}
                   icon={<Highlighter className="size-4" />}
-                  onClick={() => handleToolChange("highlighter")}
+                  onClick={() => handleToolChange(Tools.HIGHLIGHTER)}
                 />
               </TooltipTrigger>
               <TooltipContent>
@@ -304,9 +298,9 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <ToolButton
-                  active={tool === "area"}
+                  active={tool === Tools.AREA}
                   icon={<Square className="size-4" />}
-                  onClick={() => handleToolChange("area")}
+                  onClick={() => handleToolChange(Tools.AREA)}
                 />
               </TooltipTrigger>
               <TooltipContent>
@@ -329,7 +323,6 @@ export function Toolbar() {
 
           <div className="w-px h-8 bg-text-secondary/20" />
 
-          {/* Color Palette with smooth anti-aliased circles */}
           <div className="flex items-center gap-1.5 overflow-visible">
             {colorPresets.slice(0, 7).map((color: string, index: number) => (
               <Tooltip key={`${color}-${index}`}>
@@ -360,7 +353,6 @@ export function Toolbar() {
 
           <div className="w-px h-8 bg-surface-bg" />
 
-          {/* Size and Radius Controls */}
           <div className="flex items-center gap-4">
             {"size" in toolConfig && (
               <div className="flex flex-col gap-1 w-24">
@@ -372,9 +364,9 @@ export function Toolbar() {
                 </div>
                 <Slider
                   value={[toolConfig.size]}
-                  min={1}
-                  max={tool === "highlighter" ? 40 : 20}
-                  step={1}
+                  min={TOOL_SETTINGS_CONSTANTS[toolConfig.tool].minSize}
+                  max={TOOL_SETTINGS_CONSTANTS[toolConfig.tool].maxSize}
+                  step={TOOL_SETTINGS_CONSTANTS[toolConfig.tool].sizeStep}
                   onValueChange={([value]) =>
                     updateToolConfig(tool, { size: value })
                   }
@@ -386,14 +378,14 @@ export function Toolbar() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Radius</span>
                   <span className="text-xs text-text-secondary font-mono">
-                    {toolConfig.borderRadius || 0}px
+                    {toolConfig.borderRadius}px
                   </span>
                 </div>
                 <Slider
-                  value={[toolConfig.borderRadius || 0]}
-                  min={0}
-                  max={50}
-                  step={1}
+                  value={[toolConfig.borderRadius]}
+                  min={TOOL_SETTINGS_CONSTANTS[toolConfig.tool].minRadius}
+                  max={TOOL_SETTINGS_CONSTANTS[toolConfig.tool].maxRadius}
+                  step={TOOL_SETTINGS_CONSTANTS[toolConfig.tool].radiusStep}
                   onValueChange={([value]) =>
                     updateToolConfig(tool, { borderRadius: value })
                   }
@@ -405,21 +397,21 @@ export function Toolbar() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Opacity</span>
                   <span className="text-xs text-text-secondary font-mono">
-                    {Math.round(toolConfig.opacity * 100)}%
+                    {Math.round(toolConfig.opacity)}%
                   </span>
                 </div>
                 <Slider
-                  value={[toolConfig.opacity * 100]}
-                  min={10}
-                  max={100}
-                  step={5}
+                  value={[toolConfig.opacity]}
+                  min={TOOL_SETTINGS_CONSTANTS[toolConfig.tool].minOpacity}
+                  max={TOOL_SETTINGS_CONSTANTS[toolConfig.tool].maxOpacity}
+                  step={TOOL_SETTINGS_CONSTANTS[toolConfig.tool].opacityStep}
                   onValueChange={([value]) =>
-                    updateToolConfig(tool, { opacity: value / 100 })
+                    updateToolConfig(tool, { opacity: value })
                   }
                 />
               </div>
             )}
-            {/* Brush Previews */}
+
             {(tool === Tools.PEN ||
               tool === Tools.HIGHLIGHTER ||
               tool === Tools.AREA) && (
@@ -463,7 +455,6 @@ export function Toolbar() {
 
           <div className="w-px h-8 bg-surface-bg" />
 
-          {/* Blend Mode Select - shown for drawing tools */}
           {(tool === Tools.PEN ||
             tool === Tools.HIGHLIGHTER ||
             tool === Tools.AREA) && (
@@ -505,7 +496,8 @@ export function Toolbar() {
             </Select>
           )}
 
-          {/* Ruler Toggle - icon only */}
+          <div className="flex-1" />
+
           <Tooltip>
             <TooltipTrigger asChild>
               <ToolButton
@@ -520,16 +512,17 @@ export function Toolbar() {
             </TooltipContent>
           </Tooltip>
 
-          <div className="flex-1" />
-
-          {/* Zoom Controls */}
           <div className="flex items-center gap-1 bg-surface-bg rounded-lg p-1 border border-toolbar-border">
             <Tooltip>
               <TooltipTrigger asChild>
                 <IconButton
                   icon={<Minus className="size-3" />}
                   size="sm"
-                  onClick={() => handleZoomChange(Math.max(0.1, zoom / 1.2))}
+                  onClick={() =>
+                    handleZoomChange(
+                      Math.max(APP_SETTINGS_CONSTANTS.MIN_ZOOM, zoom / 1.2),
+                    )
+                  }
                 />
               </TooltipTrigger>
               <TooltipContent>
@@ -545,7 +538,7 @@ export function Toolbar() {
               onBlur={handleZoomInputBlur}
               onKeyDown={handleZoomInputKeyDown}
               className="w-12 h-6 text-xs text-text-secondary text-center font-mono bg-transparent border border-transparent hover:border-toolbar-border focus:border-accent-primary focus:outline-none rounded px-1"
-              title="Click to edit zoom (10-500%)"
+              title={`Click to edit zoom (${Math.round(APP_SETTINGS_CONSTANTS.MIN_ZOOM * 100)}-${Math.round(APP_SETTINGS_CONSTANTS.MAX_ZOOM * 100)}%)`}
             />
 
             <Tooltip>
@@ -553,7 +546,11 @@ export function Toolbar() {
                 <IconButton
                   icon={<Plus className="size-3" />}
                   size="sm"
-                  onClick={() => handleZoomChange(Math.min(5, zoom * 1.2))}
+                  onClick={() =>
+                    handleZoomChange(
+                      Math.min(APP_SETTINGS_CONSTANTS.MAX_ZOOM, zoom * 1.2),
+                    )
+                  }
                 />
               </TooltipTrigger>
               <TooltipContent>

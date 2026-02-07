@@ -1,96 +1,129 @@
-import { useEffect } from "react";
+/**
+ * @file Clipboard Event Manager
+ * @description Manages global Tauri clipboard event listeners using a reference-counted
+ * singleton pattern. Handles toast notifications based on user settings and copy context
+ * (manual vs. automatic).
+ */
+
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { settingsManager } from "../services";
 
+// -----------------------------------------------------------------------------
+// Types & Interfaces
+// -----------------------------------------------------------------------------
+
 /**
- * Payload from the Rust backend clipboard-copy-result event
+ * Payload received from the backend `clipboard-copy-result` event.
  */
-interface ClipboardCopyResultPayload {
+type ClipboardCopyResultPayload = {
   success: boolean;
   error: string | null;
   version: number;
-}
+};
+
+// -----------------------------------------------------------------------------
+// Module State
+// -----------------------------------------------------------------------------
 
 /**
- * Track whether the most recent copy was auto or manual
- * Using a simple flag instead of version-based tracking for reliability
+ * Heuristics to distinguish between user-initiated and auto-generated copies.
+ * @internal
  */
 let lastCopyWasManual = false;
 let lastCopyTimestamp = 0;
+const MANUAL_COPY_TIMEOUT_MS = 10000;
 
 /**
- * Singleton listener state - ensures only ONE listener exists globally
+ * Singleton listener references.
+ * Ensures only one Tauri event listener is active regardless of hook consumer count.
+ * @internal
  */
 let globalUnlisten: UnlistenFn | null = null;
 let listenerPromise: Promise<void> | null = null;
 let listenerRefCount = 0;
 
+// -----------------------------------------------------------------------------
+// Public Helpers
+// -----------------------------------------------------------------------------
+
 /**
- * Register a pending copy operation
- * Called when a copy is initiated to track whether it was auto or manual
+ * Updates the internal state to reflect an initiated copy operation.
+ * Used to correlate the subsequent backend result event with the action source.
+ *
+ * @param _version - The optimistic version number of the copy (unused currently).
+ * @param isAutoCopy - Whether the copy was triggered programmatically.
  */
-export function registerPendingCopy(_version: number, isAutoCopy: boolean): void {
+export function registerPendingCopy(
+  _version: number,
+  isAutoCopy: boolean,
+): void {
   lastCopyWasManual = !isAutoCopy;
   lastCopyTimestamp = Date.now();
 }
 
+// -----------------------------------------------------------------------------
+// Internal Logic
+// -----------------------------------------------------------------------------
+
 /**
- * Set up the global clipboard event listener (singleton pattern)
+ * Initializes the global Tauri event listener if not already active.
+ * Handles the logic for displaying toast notifications based on success/failure
+ * and user preference settings.
  */
 async function setupGlobalListener(): Promise<void> {
-  // Already have a listener
+  // Prevent duplicate listeners
   if (globalUnlisten) return;
-  
-  // Setup in progress - wait for it
+
+  // Prevent race conditions during async setup
   if (listenerPromise) {
     await listenerPromise;
     return;
   }
-  
-  // Create the listener
+
   listenerPromise = (async () => {
     globalUnlisten = await listen<ClipboardCopyResultPayload>(
       "clipboard-copy-result",
       (event) => {
         const { success, error } = event.payload;
-        
-        // Check if the most recent copy was manual (within last 10 seconds)
-        const isRecentManualCopy = lastCopyWasManual && (Date.now() - lastCopyTimestamp < 10000);
-        
-        // Reset the flag after processing
+
+        // Validate if the result correlates to a recent manual action
+        const isRecentManualCopy =
+          lastCopyWasManual &&
+          Date.now() - lastCopyTimestamp < MANUAL_COPY_TIMEOUT_MS;
+
+        // Reset flag to prevent stale state affecting future events
         if (isRecentManualCopy) {
           lastCopyWasManual = false;
         }
-        
-        // Get current settings to check auto-copy toast preference
-        const shouldShowToastForAutoCopy = settingsManager.settings.autoCopyShowToast;
-        
-        // Show toast for manual copies or when auto-copy toast is enabled, or errors
+
+        const shouldShowToastForAutoCopy =
+          settingsManager.settings.copySettings.autoCopyShowToast;
+
         if (success) {
-          // Show success toast for manual copies OR when auto-copy toast setting is enabled
+          // Toast policy: Always show for manual actions, conditionally for auto-copy
           if (isRecentManualCopy || shouldShowToastForAutoCopy) {
-            toast.success("Copied to clipboard", {
-              duration: 2000,
-            });
+            toast.success("Copied to clipboard", { duration: 2000 });
           }
         } else {
-          // Always show error toast (even for auto-copy)
+          // Error policy: Always notify on failure
           toast.error("Copy failed", {
             description: error || "Unknown error",
             duration: 5000,
           });
         }
-      }
+      },
     );
   })();
-  
+
   await listenerPromise;
   listenerPromise = null;
 }
 
 /**
- * Cleanup the global listener when no more hooks are using it
+ * Decrements the listener reference count.
+ * Detaches the global Tauri listener if no components are currently observing.
  */
 function cleanupGlobalListener(): void {
   if (listenerRefCount <= 0 && globalUnlisten) {
@@ -99,23 +132,29 @@ function cleanupGlobalListener(): void {
   }
 }
 
+// -----------------------------------------------------------------------------
+// Hooks
+// -----------------------------------------------------------------------------
+
 /**
- * Hook to listen for clipboard copy results from the Rust backend
- * Shows toast notifications for copy success/failure
- * 
- * Auto-copies are silent (no toast), manual copies show toast
- * 
- * Uses a singleton pattern to ensure only one listener exists globally,
- * even if multiple components use this hook or components remount.
+ * Subscribes the mounting component to global clipboard events.
+ *
+ * Implements a reference-counting mechanism to manage the lifecycle of the
+ * underlying Tauri event listener. When the last component unmounts, the
+ * listener is automatically cleaned up.
+ *
+ * @example
+ * ```tsx
+ * // In a top-level layout or specific component
+ * useClipboardEvents();
+ * ```
  */
 export function useClipboardEvents(): void {
   useEffect(() => {
-    // Increment ref count and set up listener
     listenerRefCount++;
     setupGlobalListener();
 
     return () => {
-      // Decrement ref count and cleanup if needed
       listenerRefCount--;
       cleanupGlobalListener();
     };

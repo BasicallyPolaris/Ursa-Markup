@@ -1,48 +1,57 @@
-import React, {
-  useRef,
-  useEffect,
-  useCallback,
-  useState,
-  useLayoutEffect,
-} from "react";
 import type { RefObject } from "react";
-import { useDocument } from "../../contexts/DocumentContext";
-import { useCanvasEngine } from "../../contexts/CanvasEngineContext";
-import { useDrawing } from "../../contexts/DrawingContext";
-import { useSettings } from "../../contexts/SettingsContext";
-import { useHotkeys } from "../../hooks/useKeyboardShortcuts";
-import { registerPendingCopy } from "../../hooks/useClipboardEvents";
-import { formatHotkey } from "../../services/types";
-import { services } from "../../services";
-import { cn } from "../../lib/utils";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { useCanvasEngine } from "~/contexts/CanvasEngineContext";
+import { useDocument } from "~/contexts/DocumentContext";
+import { useDrawing } from "~/contexts/DrawingContext";
+import { useSettings } from "~/contexts/SettingsContext";
+import { registerPendingCopy } from "~/hooks/useClipboardEvents";
+import { useHotkeys } from "~/hooks/useKeyboardShortcuts";
+import { cn } from "~/lib/utils";
+import { services } from "~/services";
 import {
-  Tools,
-  type Point,
-  type ViewState,
-  type Tool,
-  type ToolConfig,
-  type RulerSnapInfo,
   AnyPreviewState,
-} from "../../types";
+  type Point,
+  type RulerSnapInfo,
+  type ViewState,
+} from "~/types";
+import { ImageOpenBehaviors } from "~/types/settings";
+import { Tools, type Tool, type ToolConfig } from "~/types/tools";
+import { formatHotkey } from "~/utils/hotkeys";
 
 interface CanvasContainerProps {
   className?: string;
+  /** Optional external ref to control the container programmatically */
   containerRef?: RefObject<HTMLDivElement | null>;
 }
 
+/**
+ * CanvasContainer
+ *
+ * Acts as the bridge between React's declarative DOM/Event system and the
+ * imperative CanvasEngine. It handles:
+ * 1. Coordinate mapping (Screen space <-> World space)
+ * 2. High-frequency event handling (Pointer/Wheel)
+ * 3. View state management (Pan/Zoom)
+ * 4. Tool lifecycle orchestration
+ */
 export function CanvasContainer({
   className,
   containerRef: externalRef,
 }: CanvasContainerProps) {
-  console.log("[CANVAS CONTAINER] Render");
   const localRef = useRef<HTMLDivElement>(null);
   const containerRef = (externalRef ||
-    localRef) as React.MutableRefObject<HTMLDivElement | null>;
+    localRef) as React.RefObject<HTMLDivElement | null>;
 
-  // Cache container bounds to avoid getBoundingClientRect on every mousemove
+  // Performance: Cache DOMRect to avoid layout thrashing (reflow) during high-frequency mouse events.
   const containerRectRef = useRef<DOMRect | null>(null);
 
-  // --- Contexts ---
+  // --- Dependencies ---
   const {
     document,
     strokeHistory,
@@ -74,19 +83,19 @@ export function CanvasContainer({
   const { settings } = useSettings();
   const hotkeys = useHotkeys();
 
-  // --- Local State ---
+  // --- Local Interaction State ---
   const [isDrawing, setIsDrawing] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [currentPoint, setCurrentPoint] = useState<Point | null>(null);
   const [isRulerHover, setIsRulerHover] = useState(false);
   const [isRulerDragging, setIsRulerDragging] = useState(false);
 
-  // We track this state to trigger renders when ruler moves,
-  // but we don't read it in the render loop (we read ruler directly)
+  // Tracks updates to ruler position to force re-renders, distinct from the ruler object reference.
   const [, setRulerHash] = useState(0);
 
-  // --- Mutable Refs (for Event Listeners) ---
-  // Using refs allows event listeners to remain bound without stale closures
+  // --- Event State Refs ---
+  // Mutable refs are used here to access the latest state inside event listeners (closures)
+  // without necessitating frequent re-binding of event handlers.
   const isDrawingRef = useRef(false);
   const isPanningRef = useRef(false);
   const panStartRef = useRef<Point | null>(null);
@@ -97,14 +106,17 @@ export function CanvasContainer({
   const viewStateRef = useRef<ViewState>({ zoom, viewOffset, canvasSize });
   const autoCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Sync Ref with State
+  // Ensure viewStateRef is always synchronized for the next event loop
   useLayoutEffect(() => {
     viewStateRef.current = { zoom, viewOffset, canvasSize };
   }, [zoom, viewOffset, canvasSize]);
 
-  // --- Helpers ---
+  // --- Coordinate Helpers ---
 
-  // High-performance coordinate conversion using cached rect
+  /**
+   * Converts client coordinates (browser viewport) to Canvas World coordinates.
+   * Utilizes the cached DOMRect for performance.
+   */
   const getScreenToCanvas = useCallback(
     (clientX: number, clientY: number): Point | null => {
       const rect = containerRectRef.current;
@@ -119,6 +131,9 @@ export function CanvasContainer({
     [],
   );
 
+  /**
+   * Converts client coordinates to Container Relative coordinates (0,0 is top-left of div).
+   */
   const getRelativePoint = useCallback(
     (clientX: number, clientY: number): Point | null => {
       const rect = containerRectRef.current;
@@ -131,7 +146,8 @@ export function CanvasContainer({
     [],
   );
 
-  // Snapping Logic
+  // --- Snapping Logic ---
+
   const calculateSnappedPoint = useCallback(
     (
       canvasPoint: Point,
@@ -140,7 +156,7 @@ export function CanvasContainer({
       currentTool: Tool,
       config: ToolConfig,
     ): Point => {
-      // Area tool snaps to edges, others snap based on brush size
+      // Area tool specifically snaps to edges of the ruler, whereas brushes snap to the guide line.
       if (currentTool === Tools.AREA) {
         return ruler.snapPointToEdge(
           canvasPoint,
@@ -160,19 +176,18 @@ export function CanvasContainer({
     [ruler],
   );
 
-  // Callback ref that notifies both the external ref and the canvas engine context
-  // This ensures the engine provider is notified the instant the DOM node is
-  // attached, avoiding timing races between provider init and image load.
+  /**
+   * Callback ref to notify the EngineProvider immediately upon DOM attachment.
+   * Prevents race conditions between Provider initialization and Image loading.
+   */
   const setContainerRef = useCallback(
     (node: HTMLDivElement | null) => {
-      // Update the external/local ref
       if (externalRef) {
         (externalRef as React.RefObject<HTMLDivElement | null>).current = node;
       } else {
         localRef.current = node;
       }
 
-      // Notify the canvas engine context immediately
       if (typeof setCanvasRef === "function") {
         setCanvasRef(node);
       }
@@ -182,29 +197,26 @@ export function CanvasContainer({
 
   // --- Lifecycle Effects ---
 
-  // 1. Initial Load & Resize Observer
+  // 1. Resize Observer: Maintain cached bounds for accurate coordinate conversion
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Observer to keep rect cache updated
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) {
         containerRectRef.current = entry.target.getBoundingClientRect();
-        // Force a re-render if size changes drastically to update canvas resolution
         if (engine) engine.render(viewStateRef.current, ruler);
       }
     });
 
     observer.observe(container);
-    // Initial cache
     containerRectRef.current = container.getBoundingClientRect();
 
     return () => observer.disconnect();
   }, [containerRef, engine, ruler]);
 
-  // 2. Load Image & Initial Setup
+  // 2. Image Loading & Initialization
   useEffect(() => {
     if (!document?.imageSrc || !engine) return;
 
@@ -218,16 +230,19 @@ export function CanvasContainer({
         setCanvasSize(loadedSize);
         document.setCanvasSize(loadedSize);
 
+        // Apply initial viewport fit strategy
         if (!document.hasAppliedInitialFit) {
           document.hasAppliedInitialFit = true;
-          if (settings.imageOpenBehavior === "fit") {
+          if (
+            settings.miscSettings.imageOpenBehavior === ImageOpenBehaviors.FIT
+          ) {
             stretchToFill(loadedSize);
           } else {
             fitToWindow(loadedSize);
           }
         }
 
-        // Initial replay
+        // Hydrate history
         engine.replayStrokes({
           groups: strokeHistory.groups,
           currentIndex: strokeHistory.currentIndex,
@@ -238,9 +253,9 @@ export function CanvasContainer({
     return () => {
       mounted = false;
     };
-  }, [document?.imageSrc, engine]); // Intentionally minimal deps
+  }, [document?.imageSrc, engine]); // Dependencies intentionally kept minimal to prevent reload loops
 
-  // 3. History Changes & Auto-Copy
+  // 3. History Synchronization
   useEffect(() => {
     if (!engine || !document) return;
     if (engine.canvasSize.width === 0) return;
@@ -251,14 +266,13 @@ export function CanvasContainer({
     });
   }, [strokeHistory.currentIndex, strokeHistory.groups, engine]);
 
-  // 4. The Render Loop
-  // React is driving the frame loop here via state updates (isDrawing, currentPoint)
+  // 4. Main Render Loop
+  // The Engine is imperative; this effect bridges declarative React state changes
+  // to the Engine's render method.
   useEffect(() => {
-    if (!engine) {
-      console.log("[CANVAS CONTAINER RENDER EFFECT] Early return - no engine");
-      return;
-    }
+    if (!engine) return;
 
+    // Construct preview state for active drawing operations
     const previewState =
       isDrawing && startPointRef.current && tool != Tools.ERASER
         ? ({
@@ -288,26 +302,29 @@ export function CanvasContainer({
     activeColor,
   ]);
 
-  // --- Event Handlers ---
+  // --- Input Handlers ---
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      e.preventDefault(); // Prevent text selection
+      e.preventDefault(); // Suppress browser text selection
 
       const canvasPoint = getScreenToCanvas(e.clientX, e.clientY);
       const screenPoint = getRelativePoint(e.clientX, e.clientY);
 
       if (!canvasPoint || !screenPoint) return;
 
-      // 1. Pan Start (Middle Mouse or Ctrl+Left)
+      // Interaction Priority:
+      // 1. Pan (Middle Mouse / Ctrl+Left)
+      // 2. Ruler Manipulation
+      // 3. Drawing/Tools
+
       if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
         isPanningRef.current = true;
-        panStartRef.current = canvasPoint; // Store canvas point for accurate delta
+        panStartRef.current = canvasPoint;
         setIsPanning(true);
         return;
       }
 
-      // 2. Ruler Interaction
       if (
         ruler.visible &&
         ruler.isPointOnRuler(screenPoint, {
@@ -320,10 +337,11 @@ export function CanvasContainer({
         return;
       }
 
-      // 3. Drawing Start
+      // Begin Drawing Sequence
       let startDrawPoint = canvasPoint;
       startPointSnappedRef.current = false;
 
+      // Calculate initial snap if applicable
       if (ruler.visible) {
         const snapInfo = ruler.getSnapInfo(canvasPoint, viewStateRef.current);
         if (snapInfo.inStickyZone) {
@@ -343,7 +361,7 @@ export function CanvasContainer({
       lastPointRef.current = startDrawPoint;
       previewPointsRef.current = [startDrawPoint];
 
-      setIsDrawing(true); // Triggers render loop
+      setIsDrawing(true);
       startStrokeGroup();
       startStroke(tool, toolConfig, activeColor, startDrawPoint);
     },
@@ -356,7 +374,7 @@ export function CanvasContainer({
       const screenPoint = getRelativePoint(e.clientX, e.clientY);
       if (!canvasPoint || !screenPoint) return;
 
-      // 1. Hover States
+      // -- Passive Hover State --
       if (!isDrawingRef.current && !isPanningRef.current && !ruler.isDragging) {
         const onRuler =
           ruler.visible &&
@@ -368,10 +386,9 @@ export function CanvasContainer({
         return;
       }
 
-      // 2. Panning
+      // -- Active Panning --
       if (isPanningRef.current && panStartRef.current) {
-        // Calculate delta in canvas space, then apply to view offset
-        // This is simplified; usually we pan based on screen delta / zoom
+        // Delta is calculated in World Space to maintain sync with cursor
         const deltaX = panStartRef.current.x - canvasPoint.x;
         const deltaY = panStartRef.current.y - canvasPoint.y;
 
@@ -382,17 +399,18 @@ export function CanvasContainer({
         return;
       }
 
-      // 3. Ruler Dragging
+      // -- Ruler Manipulation --
       if (ruler.isDragging || isRulerDragging) {
         dragRuler(screenPoint);
-        setRulerHash((h) => h + 1); // Force re-render
+        setRulerHash((h) => h + 1);
         return;
       }
 
-      // 4. Drawing
+      // -- Active Drawing --
       if (isDrawingRef.current && startPointRef.current) {
         let drawPoint = canvasPoint;
 
+        // Dynamic snapping during stroke
         if (ruler.visible) {
           const snapInfo = ruler.getSnapInfo(canvasPoint, viewStateRef.current);
           if (snapInfo.inStickyZone) {
@@ -410,7 +428,7 @@ export function CanvasContainer({
           }
         }
 
-        setCurrentPoint(drawPoint); // Triggers render loop
+        setCurrentPoint(drawPoint);
         addPointToStroke(drawPoint);
         previewPointsRef.current.push(drawPoint);
         lastPointRef.current = drawPoint;
@@ -420,7 +438,6 @@ export function CanvasContainer({
   );
 
   const handleMouseUp = useCallback(() => {
-    // 1. End Pan
     if (isPanningRef.current) {
       isPanningRef.current = false;
       panStartRef.current = null;
@@ -428,14 +445,12 @@ export function CanvasContainer({
       return;
     }
 
-    // 2. End Ruler Drag
     if (ruler.isDragging || isRulerDragging) {
       endDragRuler();
       setIsRulerDragging(false);
       return;
     }
 
-    // 3. End Draw
     if (isDrawingRef.current) {
       isDrawingRef.current = false;
       startPointRef.current = null;
@@ -448,8 +463,8 @@ export function CanvasContainer({
       endStrokeGroup();
       document.markAsChanged();
 
-      // Trigger Auto-Copy (Debounced)
-      if (settings.autoCopyOnChange) {
+      // Handle Auto-Copy workflow (Debounced to prevent clipboard spam)
+      if (settings.copySettings.autoCopyOnChange) {
         if (autoCopyTimerRef.current) clearTimeout(autoCopyTimerRef.current);
 
         autoCopyTimerRef.current = setTimeout(() => {
@@ -459,8 +474,8 @@ export function CanvasContainer({
             services.ioService
               .copyToClipboard(canvas, document.version, {
                 isAutoCopy: true,
-                format: settings.autoCopyFormat,
-                jpegQuality: settings.autoCopyJpegQuality,
+                format: settings.copySettings.autoCopyFormat,
+                jpegQuality: settings.copySettings.autoCopyJpegQuality,
               })
               .catch(console.error);
           }
@@ -469,17 +484,15 @@ export function CanvasContainer({
     }
   }, [ruler, isRulerDragging, document, settings, engine]);
 
-  // --- Wheel Event (Zoom/Pan/Rotate) ---
-  // Attached imperatively to support non-passive event prevention
+  // --- Wheel Event Interceptor ---
+  // Must be attached imperatively to support { passive: false }, allowing
+  // e.preventDefault() to block browser-level zooming.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      // Check boundaries
       if (!containerRectRef.current) return;
-      // Note: we can skip bounds check if event is attached to container directly,
-      // but if event bubbles, we need it. Here we attach to container, so it's safe.
 
       const { zoom: currentZoom, viewOffset: currentOffset } =
         viewStateRef.current;
@@ -491,7 +504,6 @@ export function CanvasContainer({
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
         const newZoom = Math.max(0.1, Math.min(10, currentZoom * delta));
 
-        // Pass rect explicitely or ensure context handles it
         zoomAroundPoint(
           newZoom,
           e.clientX,
@@ -509,7 +521,7 @@ export function CanvasContainer({
           y: currentOffset.y,
         });
       }
-      // 3. Rotate Ruler (Only if mouse is on the ruler)
+      // 3. Ruler Rotation (Mouse over Ruler)
       else if (ruler.visible) {
         const screenPoint = {
           x: e.clientX - containerRectRef.current.left,
@@ -526,7 +538,7 @@ export function CanvasContainer({
           rotateRuler(delta);
           setRulerHash((h) => h + 1);
         } else {
-          // Mouse not on ruler - scroll the canvas instead
+          // Fallback to vertical pan if not on ruler
           e.preventDefault();
           setViewOffset({
             x: currentOffset.x,
@@ -590,9 +602,9 @@ export function CanvasContainer({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp} // Reuse MouseUp logic to cancel drags
+      onMouseLeave={handleMouseUp}
     >
-      {settings.showDebugInfo && (
+      {settings.miscSettings.showDebugInfo && (
         <DebugOverlay
           zoom={zoom}
           viewOffset={viewOffset}

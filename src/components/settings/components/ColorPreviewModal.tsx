@@ -1,6 +1,6 @@
 import { X, Copy, Check } from "lucide-react";
 import { useState } from "react";
-import type { Theme, ColorPalette } from "../../../services/types";
+import type { Theme, ColorPalette } from "~/types/theme";
 
 interface ColorPreviewModalProps {
   isOpen: boolean;
@@ -40,7 +40,10 @@ export function ColorPreviewModal({
         title: "Toolbar",
         colors: [
           { name: "Background", value: theme.colors.toolbar.background },
-          { name: "Secondary", value: theme.colors.toolbar.backgroundSecondary },
+          {
+            name: "Secondary",
+            value: theme.colors.toolbar.backgroundSecondary,
+          },
           { name: "Border", value: theme.colors.toolbar.border },
         ],
       },
@@ -141,7 +144,8 @@ export function ColorPreviewModal({
     return (
       <div className="space-y-4 mt-6 pt-6 border-t border-toolbar-border">
         <h3 className="text-lg font-semibold text-text-primary">
-          Palette: {palette.name.charAt(0).toUpperCase() + palette.name.slice(1)}
+          Palette:{" "}
+          {palette.name.charAt(0).toUpperCase() + palette.name.slice(1)}
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {palette.colors.map((color: string, index: number) => (

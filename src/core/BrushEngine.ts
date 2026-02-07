@@ -1,9 +1,9 @@
+import type { Point } from "~/types";
 import {
-  type Point,
-  type PenToolConfig,
-  type HighlighterToolConfig,
   type AreaToolConfig,
-} from "../types";
+  type HighlighterToolConfig,
+  type PenToolConfig,
+} from "~/types/tools";
 
 export class BrushEngine {
   /**
@@ -23,7 +23,7 @@ export class BrushEngine {
     ctx.lineJoin = "round";
     ctx.lineWidth = "size" in config ? config.size : 1;
     ctx.strokeStyle = color;
-    ctx.globalAlpha = config.opacity;
+    ctx.globalAlpha = config.opacity / 100;
 
     // 2. Begin Path
     ctx.beginPath();
@@ -73,7 +73,7 @@ export class BrushEngine {
     ctx.lineJoin = "bevel";
     ctx.lineWidth = config.size;
     ctx.strokeStyle = color;
-    ctx.globalAlpha = config.opacity;
+    ctx.globalAlpha = config.opacity / 100;
 
     // 2. Begin Path
     ctx.beginPath();
@@ -117,7 +117,7 @@ export class BrushEngine {
     const radius = config.borderRadius || 0;
 
     ctx.fillStyle = color;
-    ctx.globalAlpha = config.opacity;
+    ctx.globalAlpha = config.opacity / 100;
 
     ctx.beginPath();
     if (typeof ctx.roundRect === "function") {
