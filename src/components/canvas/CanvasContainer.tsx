@@ -255,16 +255,18 @@ export function CanvasContainer({
     };
   }, [document?.imageSrc, engine]); // Dependencies intentionally kept minimal to prevent reload loops
 
-  // 3. History Synchronization
-  useEffect(() => {
-    if (!engine || !document) return;
-    if (engine.canvasSize.width === 0) return;
+   // 3. History Synchronization
+   useEffect(() => {
+     if (!engine || !document) return;
+     if (engine.canvasSize.width === 0) return;
 
-    engine.replayStrokes({
-      groups: strokeHistory.groups,
-      currentIndex: strokeHistory.currentIndex,
-    });
-  }, [strokeHistory.currentIndex, strokeHistory.groups, engine]);
+     engine.replayStrokes({
+       groups: strokeHistory.groups,
+       currentIndex: strokeHistory.currentIndex,
+     });
+
+     engine.render({ zoom, viewOffset, canvasSize }, ruler);
+   }, [strokeHistory.currentIndex, strokeHistory.groups, engine, zoom, viewOffset, canvasSize, ruler]);
 
   // 4. Main Render Loop
   // The Engine is imperative; this effect bridges declarative React state changes

@@ -108,14 +108,14 @@ export function DocumentProvider({
   const undo = useCallback(() => {
     if (document.strokeHistory.canUndo()) {
       document.strokeHistory.undo();
-      document.markAsChanged();
+      document.markAsChanged(document.strokeHistory.currentIndex !== -1);
     }
   }, [document]);
 
   const redo = useCallback(() => {
     if (document.strokeHistory.canRedo()) {
       document.strokeHistory.redo();
-      document.markAsChanged();
+      document.markAsChanged(document.strokeHistory.currentIndex !== -1);
     }
   }, [document]);
 
