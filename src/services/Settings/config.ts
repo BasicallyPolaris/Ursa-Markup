@@ -94,6 +94,7 @@ export const APP_SETTINGS_CONSTANTS = {
   UNSAVED_INDICATOR: "●",
   MIN_ZOOM: 0.1,
   MAX_ZOOM: 10,
+  MAX_HISTORY: 100,
 } as const;
 
 /**

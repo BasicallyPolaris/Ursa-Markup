@@ -1,3 +1,4 @@
+import { APP_SETTINGS_CONSTANTS } from "~/services/Settings/config";
 import {
   type AnyStroke,
   type AnyStrokeGroup,
@@ -7,18 +8,13 @@ import {
 import { type Tool, type ToolConfigs } from "~/types/tools";
 
 /**
- * Maximum number of stroke groups in history
- */
-const MAX_HISTORY = 100;
-
-/**
  * StrokeHistory manages stroke recording, undo/redo state.
  * It is purely a data container and does not handle rendering.
  */
 export class StrokeHistory {
   groups: AnyStrokeGroup[] = [];
   currentIndex = -1;
-  maxHistory = MAX_HISTORY;
+  maxHistory = APP_SETTINGS_CONSTANTS.MAX_HISTORY;
 
   // Current stroke tracking (not yet committed to history)
   // We use a looser type internally while building the group
