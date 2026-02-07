@@ -94,6 +94,8 @@ export function DrawingProvider({
   useEffect(() => {
     if (isLoaded && !isInitialized.current) {
       setToolConfigs(getDefaultConfigs(settings));
+      // Also sync the active color from settings
+      setActiveColor(settings.defaultColor);
       isInitialized.current = true;
     }
   }, [isLoaded, settings]);

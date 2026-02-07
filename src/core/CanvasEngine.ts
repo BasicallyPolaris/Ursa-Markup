@@ -38,7 +38,6 @@ export class CanvasEngine {
   private displayCtx: CanvasRenderingContext2D | null = null;
 
   // State
-  private baseImageData: ImageData | null = null;
   private isImageLoading = false;
   private _canvasSize: Size = { width: 0, height: 0 };
 
@@ -94,6 +93,7 @@ export class CanvasEngine {
   // --- Image Loading ---
 
   async loadImage(imageSrc: string): Promise<void> {
+    console.log("[CANVAS ENGINE] loadImage called");
     if (this.isImageLoading) return;
     this.isImageLoading = true;
     this.resetIncrementalState();
@@ -107,16 +107,6 @@ export class CanvasEngine {
 
         if (this.baseCtx && this.baseCanvas) {
           this.baseCtx.drawImage(img, 0, 0);
-          try {
-            this.baseImageData = this.baseCtx.getImageData(
-              0,
-              0,
-              this.baseCanvas.width,
-              this.baseCanvas.height,
-            );
-          } catch (e) {
-            console.warn("Could not capture base image data (CORS?)", e);
-          }
         }
 
         this.clearCanvas(this.drawCtx);
@@ -384,8 +374,15 @@ export class CanvasEngine {
   }
 
   render(viewState: ViewState, ruler: Ruler, preview?: AnyPreviewState): void {
-    if (!this.displayCanvas || !this.displayCtx || !this.container) return;
-    if (this._canvasSize.width === 0) return;
+    console.log("[CANVAS ENGINE RENDER] viewState.zoom:", viewState.zoom, "viewState.viewOffset:", viewState.viewOffset, "canvasSize:", this._canvasSize);
+    if (!this.displayCanvas || !this.displayCtx || !this.container) {
+      console.log("[CANVAS ENGINE RENDER] Early return - missing canvas/container");
+      return;
+    }
+    if (this._canvasSize.width === 0) {
+      console.log("[CANVAS ENGINE RENDER] Early return - canvasSize is 0");
+      return;
+    }
 
     // Resize display canvas to match container window (responsive)
     const rect = this.container.getBoundingClientRect();
@@ -482,7 +479,6 @@ export class CanvasEngine {
     this.clearCanvas(this.compositeCtx);
     this.clearCanvas(this.displayCtx);
 
-    this.baseImageData = null;
     this._canvasSize = { width: 0, height: 0 };
     this.resetIncrementalState();
   }
