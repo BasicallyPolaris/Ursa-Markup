@@ -1,6 +1,6 @@
-import { X, Copy, Check } from "lucide-react";
+import { Check, Copy, X } from "lucide-react";
 import { useState } from "react";
-import type { Theme, ColorPalette } from "~/types/theme";
+import type { ColorPalette, Theme } from "~/types/theme";
 
 interface ColorPreviewModalProps {
   isOpen: boolean;
@@ -113,7 +113,7 @@ export function ColorPreviewModal({
                   className="flex items-center gap-2 p-2 rounded-lg bg-surface-bg hover:bg-surface-bg-hover transition-colors text-left group"
                 >
                   <div
-                    className="w-8 h-8 rounded-md border border-toolbar-border shrink-0"
+                    className="size-8 rounded-md border border-toolbar-border shrink-0"
                     style={{ backgroundColor: color.value }}
                   />
                   <div className="min-w-0 flex-1">
@@ -125,9 +125,9 @@ export function ColorPreviewModal({
                     </p>
                   </div>
                   {copiedColor === color.value ? (
-                    <Check className="w-3 h-3 text-success shrink-0" />
+                    <Check className="size-3 text-success shrink-0" />
                   ) : (
-                    <Copy className="w-3 h-3 text-text-muted opacity-0 group-hover:opacity-100 shrink-0" />
+                    <Copy className="size-3 text-text-muted opacity-0 group-hover:opacity-100 shrink-0" />
                   )}
                 </button>
               ))}
@@ -155,7 +155,7 @@ export function ColorPreviewModal({
               className="flex flex-col items-center gap-2 p-3 rounded-lg bg-surface-bg hover:bg-surface-bg-hover transition-colors group"
             >
               <div
-                className="w-12 h-12 rounded-full border-2 border-toolbar-border"
+                className="size-12 rounded-full border-2 border-toolbar-border"
                 style={{ backgroundColor: color }}
               />
               <div className="flex items-center gap-1">
@@ -163,9 +163,9 @@ export function ColorPreviewModal({
                   {color}
                 </span>
                 {copiedColor === color ? (
-                  <Check className="w-3 h-3 text-success" />
+                  <Check className="size-3 text-success" />
                 ) : (
-                  <Copy className="w-3 h-3 text-text-muted opacity-0 group-hover:opacity-100" />
+                  <Copy className="size-3 text-text-muted opacity-0 group-hover:opacity-100" />
                 )}
               </div>
               <span className="text-xs text-text-muted">Color {index + 1}</span>
@@ -188,7 +188,7 @@ export function ColorPreviewModal({
             onClick={onClose}
             className="p-2 rounded-lg hover:bg-surface-bg-hover transition-colors"
           >
-            <X className="w-5 h-5 text-text-secondary" />
+            <X className="size-5 text-text-secondary" />
           </button>
         </div>
 

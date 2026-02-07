@@ -1,25 +1,25 @@
-import { useState, useEffect, useCallback } from "react";
 import {
-  Keyboard,
-  FileInput,
   Brush,
-  MousePointer,
-  Layers,
-  RotateCcw,
+  FileInput,
   Info,
+  Keyboard,
+  Layers,
+  MousePointer,
+  RotateCcw,
   X,
 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { SettingsSection } from "~/components/settings/components/SettingsSection";
 import { Button } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
+import { DEFAULT_HOTKEYS } from "~/services/Settings/config";
 import type {
   AppSettings,
   HotkeyAction,
   HotkeyBinding,
   HotkeySettings,
 } from "~/types/settings";
-import { DEFAULT_HOTKEYS } from "~/services/Settings/config";
 import { formatHotkey } from "~/utils/hotkeys";
-import { cn } from "~/lib/utils";
 
 interface ShortcutGroup {
   title: string;
@@ -30,7 +30,7 @@ interface ShortcutGroup {
 const shortcutGroups: ShortcutGroup[] = [
   {
     title: "File Operations",
-    icon: <FileInput className="w-4 h-4" />,
+    icon: <FileInput className="size-4" />,
     shortcuts: [
       { action: "file.open", description: "Open image" },
       { action: "file.save", description: "Save image" },
@@ -39,7 +39,7 @@ const shortcutGroups: ShortcutGroup[] = [
   },
   {
     title: "Edit",
-    icon: <Layers className="w-4 h-4" />,
+    icon: <Layers className="size-4" />,
     shortcuts: [
       { action: "edit.undo", description: "Undo" },
       { action: "edit.redo", description: "Redo" },
@@ -47,7 +47,7 @@ const shortcutGroups: ShortcutGroup[] = [
   },
   {
     title: "Tools",
-    icon: <Brush className="w-4 h-4" />,
+    icon: <Brush className="size-4" />,
     shortcuts: [
       { action: "tool.pen", description: "Pen tool" },
       { action: "tool.highlighter", description: "Highlighter tool" },
@@ -56,7 +56,7 @@ const shortcutGroups: ShortcutGroup[] = [
   },
   {
     title: "Quick Colors",
-    icon: <Brush className="w-4 h-4" />,
+    icon: <Brush className="size-4" />,
     shortcuts: [
       { action: "color.1", description: "Color 1" },
       { action: "color.2", description: "Color 2" },
@@ -69,7 +69,7 @@ const shortcutGroups: ShortcutGroup[] = [
   },
   {
     title: "Navigation",
-    icon: <MousePointer className="w-4 h-4" />,
+    icon: <MousePointer className="size-4" />,
     shortcuts: [
       { action: "nav.ruler", description: "Toggle ruler" },
       { action: "nav.zoomIn", description: "Zoom in" },
@@ -79,7 +79,7 @@ const shortcutGroups: ShortcutGroup[] = [
   },
   {
     title: "Tabs",
-    icon: <Keyboard className="w-4 h-4" />,
+    icon: <Keyboard className="size-4" />,
     shortcuts: [
       { action: "tab.new", description: "New tab" },
       { action: "tab.close", description: "Close tab" },
@@ -221,7 +221,7 @@ export function ShortcutsSettings({
       <div className="flex justify-between gap-2 items-center">
         {/* Info Banner */}
         <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-accent-primary/10 border border-accent-primary/20">
-          <Info className="w-4 h-4 text-accent-primary mt-0.5 shrink-0" />
+          <Info className="size-4 text-accent-primary mt-0.5 shrink-0" />
           <p className="text-sm text-text-secondary">
             Click on any shortcut to{" "}
             <span className="text-text-primary font-medium">
@@ -293,7 +293,7 @@ export function ShortcutsSettings({
                         className="size-6 p-0 opacity-0 group-hover:opacity-100 text-text-muted hover:text-text-primary"
                         title="Reset to default"
                       >
-                        <RotateCcw className="w-3 h-3" />
+                        <RotateCcw className="size-3" />
                       </Button>
                     )}
                     {/* Clear button - show when bound and not modified (to allow unbinding defaults) */}
@@ -308,7 +308,7 @@ export function ShortcutsSettings({
                         className="size-6 p-0 opacity-0 group-hover:opacity-100 text-text-muted hover:text-destructive"
                         title="Unbind hotkey"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="size-3" />
                       </Button>
                     )}
                     <button

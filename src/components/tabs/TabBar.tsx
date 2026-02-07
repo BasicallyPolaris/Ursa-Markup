@@ -1,7 +1,11 @@
+import clsx from "clsx";
 import { Plus, X } from "lucide-react";
 import { useCallback } from "react";
+import { Button } from "~/components/ui/button";
 import { useTabManager } from "~/contexts/TabManagerContext";
 import { cn } from "~/lib/utils";
+import { APP_SETTINGS_CONSTANTS } from "~/services/Settings/config";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function TabBar() {
   const { documents, activeDocumentId, switchTab, closeTab, addTab } =
@@ -34,44 +38,58 @@ export function TabBar() {
       {documents.map((tab) => {
         const isActive = tab.id === activeDocumentId;
         return (
-          <div
-            key={tab.id}
-            onClick={() => handleSwitchTab(tab.id)}
-            className={cn(
-              "group flex items-center gap-2 px-3 py-1.5 min-w-30 max-w-50 rounded-t-md cursor-pointer select-none transition-all relative",
-              isActive
-                ? "bg-surface-bg-active text-text-primary"
-                : "bg-toolbar-bg text-text-muted hover:bg-surface-bg-hover hover:text-text-secondary",
-            )}
-          >
-            {/* Active tab bottom border indicator */}
-            {isActive && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-primary rounded-full" />
-            )}
-
-            <span className="flex-1 truncate text-sm">
-              {tab.getDisplayTitle()}
-              {tab.hasChanges && (
-                <span className="ml-1 text-status-unsaved">●</span>
-              )}
-            </span>
-
-            {/* Close button - only show on hover or if not the only tab */}
-            {documents.length > 1 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleCloseTab(tab.id);
-                }}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                key={tab.id}
+                onClick={() => handleSwitchTab(tab.id)}
                 className={cn(
-                  "p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity",
-                  "hover:bg-surface-bg-hover",
+                  "group flex items-center gap-2 px-3 py-1.5 w-50 rounded-t-md cursor-pointer select-none transition-all relative",
+                  isActive
+                    ? "bg-surface-bg-active text-text-primary"
+                    : "bg-toolbar-bg text-text-muted hover:bg-surface-bg-hover hover:text-text-secondary",
                 )}
               >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+                {/* Active tab bottom border indicator */}
+                {isActive && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-primary rounded-full" />
+                )}
+
+                <span className="text-status-unsaved">
+                  <span
+                    aria-hidden="true"
+                    className={clsx(!tab.hasChanges && "opacity-0")}
+                  >
+                    {APP_SETTINGS_CONSTANTS.UNSAVED_INDICATOR}
+                  </span>
+                  {tab.hasChanges && (
+                    <span className="sr-only">Unsaved changes</span>
+                  )}
+                </span>
+                <span className="flex-1 truncate text-sm text-center">
+                  {tab.getDisplayTitle()}
+                </span>
+
+                <Button
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (documents.length > 1 || tab.fileName) {
+                      handleCloseTab(tab.id);
+                    }
+                  }}
+                  disabled={!(documents.length > 1 || tab.fileName)}
+                  className={cn(
+                    "p-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity size-4 hover:bg-surface-bg-hover",
+                    !(documents.length > 1 || tab.fileName) && "opacity-0!",
+                  )}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>{tab.getDisplayTitle()}</TooltipContent>
+          </Tooltip>
         );
       })}
 
@@ -82,7 +100,7 @@ export function TabBar() {
           className="p-1.5 rounded-md hover:bg-surface-bg-hover transition-colors text-text-secondary"
           title="New Tab"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="size-4" />
         </button>
       )}
     </div>

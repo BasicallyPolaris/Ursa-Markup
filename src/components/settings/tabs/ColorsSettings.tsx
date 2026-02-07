@@ -126,7 +126,7 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
             onClick={handleOpenConfig}
             className="flex-1 border-dashed border-toolbar-border hover:border-text-muted hover:cursor-pointer"
           >
-            <ExternalLink className="w-4 h-4 mr-2" />
+            <ExternalLink className="size-4 mr-2" />
             Open Theme Config
           </Button>
 
@@ -163,7 +163,7 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
                 className="flex items-center gap-3 flex-1 text-left"
               >
                 <div
-                  className="w-10 h-10 rounded-md border border-toolbar-border shrink-0"
+                  className="size-10 rounded-md border border-toolbar-border shrink-0"
                   style={{ backgroundColor: theme.colors.app.background }}
                 />
                 <div className="flex-1">
@@ -216,7 +216,7 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
                   {palette.colors.map((color: string, idx: number) => (
                     <div
                       key={idx}
-                      className="w-6 h-6 rounded-full border border-text-primary/20"
+                      className="size-6 rounded-full border border-text-primary/20"
                       style={{ backgroundColor: color }}
                     />
                   ))}
@@ -231,7 +231,7 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
                   {palette.name.replace(/-/g, " ")}
                 </span>
                 {settings.activePalette === palette.name && (
-                  <div className="w-2 h-2 rounded-full bg-accent-primary" />
+                  <div className="size-2 rounded-full bg-accent-primary" />
                 )}
               </button>
 

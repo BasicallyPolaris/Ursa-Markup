@@ -330,7 +330,7 @@ export function Toolbar() {
                   <button
                     onClick={() => setActiveColor(color)}
                     className={cn(
-                      "w-6 h-6 rounded-full transition-all",
+                      "size-6 rounded-full transition-all",
                       activeColor === color
                         ? "ring-2 ring-text-primary/60 ring-offset-1 ring-offset-toolbar-bg-secondary scale-110"
                         : "hover:scale-105 hover:ring-2 hover:ring-text-primary/30",
@@ -415,7 +415,7 @@ export function Toolbar() {
             {(tool === Tools.PEN ||
               tool === Tools.HIGHLIGHTER ||
               tool === Tools.AREA) && (
-              <div className="flex items-center justify-center w-10 h-10 bg-surface-bg rounded-lg border border-toolbar-border">
+              <div className="flex items-center justify-center size-10 bg-surface-bg rounded-lg border border-toolbar-border">
                 {tool === Tools.PEN && (
                   <div
                     className="bg-current rounded-full"

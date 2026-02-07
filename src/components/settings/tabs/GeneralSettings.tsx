@@ -58,7 +58,7 @@ export function GeneralSettings({
       <SettingsSection
         title="Tab Behavior"
         description="What happens when closing a tab with unsaved changes"
-        icon={<FolderClosed className="w-4 h-4" />}
+        icon={<FolderClosed className="size-4" />}
       >
         <SettingsRow
           label="Image open behavior"
@@ -112,7 +112,7 @@ export function GeneralSettings({
       <SettingsSection
         title="Clipboard"
         description="Control how images are copied to clipboard"
-        icon={<Clipboard className="w-4 h-4" />}
+        icon={<Clipboard className="size-4" />}
       >
         <SettingsRow
           label="Auto-copy to clipboard"
@@ -226,7 +226,7 @@ export function GeneralSettings({
       <SettingsSection
         title="Display"
         description="Canvas and interface display options"
-        icon={<Eye className="w-4 h-4" />}
+        icon={<Eye className="size-4" />}
       >
         <SettingsRow
           label="Show debug info"
