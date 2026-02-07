@@ -167,8 +167,7 @@ export function CanvasContainer({
     (node: HTMLDivElement | null) => {
       // Update the external/local ref
       if (externalRef) {
-        (externalRef as React.MutableRefObject<HTMLDivElement | null>).current =
-          node;
+        (externalRef as React.RefObject<HTMLDivElement | null>).current = node;
       } else {
         localRef.current = node;
       }
@@ -207,13 +206,11 @@ export function CanvasContainer({
 
   // 2. Load Image & Initial Setup
   useEffect(() => {
-    console.log("[CANVAS CONTAINER LOAD EFFECT] imageSrc:", document?.imageSrc ? "exists" : "null", "engine:", engine ? "exists" : "null");
     if (!document?.imageSrc || !engine) return;
 
     let mounted = true;
 
     engine.loadImage(document.imageSrc).then(() => {
-      console.log("[CANVAS CONTAINER LOAD EFFECT] Image loaded, engine.canvasSize:", engine.canvasSize);
       if (!mounted) return;
 
       if (engine.canvasSize.width > 0) {
@@ -257,16 +254,13 @@ export function CanvasContainer({
   // 4. The Render Loop
   // React is driving the frame loop here via state updates (isDrawing, currentPoint)
   useEffect(() => {
-    console.log("[CANVAS CONTAINER RENDER EFFECT] engine:", engine ? "exists" : "null", "canvasSize:", canvasSize, "zoom:", zoom, "viewOffset:", viewOffset);
     if (!engine) {
       console.log("[CANVAS CONTAINER RENDER EFFECT] Early return - no engine");
       return;
     }
 
     const previewState =
-      isDrawing &&
-      startPointRef.current &&
-      tool != Tools.ERASER
+      isDrawing && startPointRef.current && tool != Tools.ERASER
         ? ({
             tool,
             color: activeColor,
@@ -277,15 +271,16 @@ export function CanvasContainer({
           } as AnyPreviewState)
         : undefined;
 
-    console.log("[CANVAS CONTAINER RENDER EFFECT] Calling engine.render with canvasSize:", canvasSize);
     engine.render({ zoom, viewOffset, canvasSize }, ruler, previewState);
-    console.log("[CANVAS CONTAINER RENDER EFFECT] engine.render completed");
   }, [
     engine,
     zoom,
     viewOffset,
     canvasSize,
-    ruler,
+    ruler.angle,
+    ruler.x,
+    ruler.y,
+    ruler.visible,
     isDrawing,
     currentPoint,
     tool,
@@ -555,7 +550,13 @@ export function CanvasContainer({
     });
     return () =>
       container.removeEventListener("wheel", handleWheel, { capture: true });
-  }, [containerRef, ruler.visible, zoomAroundPoint, setViewOffset, rotateRuler]);
+  }, [
+    containerRef,
+    ruler.visible,
+    zoomAroundPoint,
+    setViewOffset,
+    rotateRuler,
+  ]);
 
   // --- Render ---
 

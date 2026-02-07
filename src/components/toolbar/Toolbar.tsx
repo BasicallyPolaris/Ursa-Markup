@@ -426,7 +426,7 @@ export function Toolbar() {
               <div className="flex items-center justify-center w-10 h-10 bg-surface-bg rounded-lg border border-toolbar-border">
                 {tool === Tools.PEN && (
                   <div
-                    className="bg-current"
+                    className="bg-current rounded-full"
                     style={{
                       width: Math.min(32, Math.max(4, toolConfig.size)),
                       height: Math.min(32, Math.max(4, toolConfig.size)),
