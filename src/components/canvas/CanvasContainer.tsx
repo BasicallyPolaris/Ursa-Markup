@@ -160,20 +160,26 @@ export function CanvasContainer({
     [ruler],
   );
 
-  // Notify CanvasEngineContext when container is ready.
-  // Use useLayoutEffect so the provider is notified synchronously after DOM
-  // mutations but before the regular useEffect callbacks run. This ensures
-  // the engine is created before the image load effect attempts to use it.
-  useLayoutEffect(() => {
-    console.log("[CANVAS CONTAINER] setCanvasRef layout effect, container:", containerRef.current ? "exists" : "null");
-    if (typeof setCanvasRef === "function") {
-      setCanvasRef(containerRef.current);
-      return () => {
-        setCanvasRef(null);
-      };
-    }
-    return () => {};
-  }, [containerRef.current, setCanvasRef]);
+  // Callback ref that notifies both the external ref and the canvas engine context
+  // This ensures the engine provider is notified the instant the DOM node is
+  // attached, avoiding timing races between provider init and image load.
+  const setContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      // Update the external/local ref
+      if (externalRef) {
+        (externalRef as React.MutableRefObject<HTMLDivElement | null>).current =
+          node;
+      } else {
+        localRef.current = node;
+      }
+
+      // Notify the canvas engine context immediately
+      if (typeof setCanvasRef === "function") {
+        setCanvasRef(node);
+      }
+    },
+    [externalRef, setCanvasRef],
+  );
 
   // --- Lifecycle Effects ---
 
@@ -559,7 +565,7 @@ export function CanvasContainer({
 
   return (
     <div
-      ref={containerRef}
+      ref={setContainerRef}
       className={cn(
         "relative overflow-hidden bg-canvas-bg flex-1 min-h-0",
         className,
