@@ -1,22 +1,29 @@
-import { useState, useCallback } from "react";
 import {
-  Settings,
-  Wrench,
   Keyboard,
   Palette,
   RotateCcw,
   Save,
+  Settings,
+  Wrench,
   X,
 } from "lucide-react";
-import { Button } from "../ui/button";
-import { GeneralSettings } from "./tabs/GeneralSettings";
-import { ToolsSettings } from "./tabs/ToolsSettings";
-import { ShortcutsSettings } from "./tabs/ShortcutsSettings";
+import { useCallback, useState } from "react";
+import { Button } from "~/components/ui/button";
+import { cn } from "~/lib/utils";
+import { DeepPartial } from "~/types";
+import type { AppSettings } from "~/types/settings";
 import { ColorsSettings } from "./tabs/ColorsSettings";
-import { cn } from "../../lib/utils";
-import type { AppSettings } from "../../services/types";
+import { GeneralSettings } from "./tabs/GeneralSettings";
+import { ShortcutsSettings } from "./tabs/ShortcutsSettings";
+import { ToolsSettings } from "./tabs/ToolsSettings";
 
-type TabId = "general" | "colors" | "tools" | "shortcuts";
+const TabIds = {
+  GENERAL: "general",
+  COLORS: "colors",
+  TOOLS: "tools",
+  SHORTCUTS: "shortcuts",
+} as const;
+type TabId = (typeof TabIds)[keyof typeof TabIds];
 
 interface Tab {
   id: TabId;
@@ -25,11 +32,19 @@ interface Tab {
 }
 
 const tabs: Tab[] = [
-  { id: "general", label: "General", icon: <Settings className="w-4 h-4" /> },
-  { id: "colors", label: "Colors", icon: <Palette className="w-4 h-4" /> },
-  { id: "tools", label: "Tool Defaults", icon: <Wrench className="w-4 h-4" /> },
   {
-    id: "shortcuts",
+    id: TabIds.GENERAL,
+    label: "General",
+    icon: <Settings className="w-4 h-4" />,
+  },
+  { id: TabIds.COLORS, label: "Colors", icon: <Palette className="w-4 h-4" /> },
+  {
+    id: TabIds.TOOLS,
+    label: "Tool Defaults",
+    icon: <Wrench className="w-4 h-4" />,
+  },
+  {
+    id: TabIds.SHORTCUTS,
     label: "Shortcuts",
     icon: <Keyboard className="w-4 h-4" />,
   },
@@ -38,7 +53,7 @@ const tabs: Tab[] = [
 interface SettingsWindowProps {
   settings: AppSettings;
   hasChanges: boolean;
-  updateDraft: (updates: Partial<AppSettings>) => void;
+  updateDraft: (updates: DeepPartial<AppSettings>) => void;
   onSave: () => Promise<void>;
   onCancel: () => void;
   onReset: () => void;
@@ -94,16 +109,19 @@ export function SettingsWindow({
 
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === "general" && (
+          {activeTab === TabIds.GENERAL && (
             <GeneralSettings settings={settings} updateDraft={updateDraft} />
           )}
-          {activeTab === "colors" && (
+          {activeTab === TabIds.COLORS && (
             <ColorsSettings settings={settings} updateDraft={updateDraft} />
           )}
-          {activeTab === "tools" && (
-            <ToolsSettings settings={settings} updateDraft={updateDraft} />
+          {activeTab === TabIds.TOOLS && (
+            <ToolsSettings
+              toolConfigs={settings.toolConfigs}
+              updateDraft={updateDraft}
+            />
           )}
-          {activeTab === "shortcuts" && (
+          {activeTab === TabIds.SHORTCUTS && (
             <ShortcutsSettings settings={settings} updateDraft={updateDraft} />
           )}
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { Slider as BaseSlider } from "@base-ui-components/react/slider";
+import * as React from "react";
 import { cn } from "../../lib/utils";
 
 interface SliderProps {
@@ -47,7 +47,6 @@ function Slider({
       step={step}
       disabled={disabled}
       onValueChange={(newValue) => {
-        // newValue could be number or readonly number[]
         const valuesArray = Array.isArray(newValue)
           ? [...newValue]
           : [newValue];

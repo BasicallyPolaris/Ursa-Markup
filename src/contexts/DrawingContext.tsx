@@ -1,19 +1,19 @@
 import React, {
   createContext,
-  useContext,
-  useState,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import {
-  type Tool,
-  Tools,
   BlendModes,
   EraseModes,
+  Tools,
+  type Tool,
   type ToolConfigs,
-} from "../types";
+} from "~/types/tools";
 import { useSettings } from "./SettingsContext";
 
 interface DrawingActions {
@@ -74,11 +74,10 @@ export function DrawingProvider({
   initialTool = Tools.PEN,
 }: DrawingProviderProps) {
   const { settings, isLoaded } = useSettings();
+  const defaultColor = settings.activePaletteColors[0];
 
   // Lazy initialization for color
-  const [activeColor, setActiveColor] = useState<string>(
-    () => settings.defaultColor,
-  );
+  const [activeColor, setActiveColor] = useState<string>(() => defaultColor);
 
   const [tool, setTool] = useState<Tool>(initialTool);
 
@@ -95,7 +94,7 @@ export function DrawingProvider({
     if (isLoaded && !isInitialized.current) {
       setToolConfigs(getDefaultConfigs(settings));
       // Also sync the active color from settings
-      setActiveColor(settings.defaultColor);
+      setActiveColor(defaultColor);
       isInitialized.current = true;
     }
   }, [isLoaded, settings]);

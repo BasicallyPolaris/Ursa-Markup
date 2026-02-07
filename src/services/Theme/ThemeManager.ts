@@ -6,17 +6,12 @@ import {
 } from "@tauri-apps/plugin-fs";
 import { appConfigDir } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
-import type { ThemeConfig, Theme } from "../lib/theme";
-import type { ColorPalette } from "../types";
-import {
-  DEFAULT_CONFIG,
-  getDefaultTheme,
-  applyThemeToCss,
-  validateTheme,
-  toRgbaString,
-} from "../lib/theme";
-import type { ServiceEvents } from "./types";
+import type { ThemeConfig, Theme, ColorPalette } from "~/types/theme";
+import type { ServiceEvents } from "~/types/settings";
 import { isTauri } from "@tauri-apps/api/core";
+import { DEFAULT_THEME, getDefaultTheme } from "./config";
+import { applyThemeToCss, validateTheme } from "~/utils/theme";
+import { toRgbaString } from "~/utils/colors";
 
 type EventCallback<T> = (payload: T) => void;
 
@@ -26,7 +21,7 @@ type EventCallback<T> = (payload: T) => void;
  * Bundled defaults are only used as fallback on errors
  */
 export class ThemeManager {
-  private config: ThemeConfig = DEFAULT_CONFIG;
+  private config: ThemeConfig = DEFAULT_THEME;
   private activeTheme: Theme = getDefaultTheme();
   private selectedPaletteName: string = "default";
   private configFileName: string = "theme.json";
@@ -142,7 +137,7 @@ export class ThemeManager {
         );
       }
 
-      const content = JSON.stringify(DEFAULT_CONFIG, null, 2);
+      const content = JSON.stringify(DEFAULT_THEME, null, 2);
       const configPath = await this.getConfigPath();
       await writeTextFile(configPath, content);
       console.log(
@@ -184,7 +179,7 @@ export class ThemeManager {
               console.warn("User config validation errors:", validation.errors);
               this.error = `Config validation failed: ${validation.errors.join(", ")}`;
               // Use defaults but keep error state
-              themeConfig = DEFAULT_CONFIG;
+              themeConfig = DEFAULT_THEME;
               loadedFrom = "defaults (validation error)";
             } else {
               themeConfig = parsed as ThemeConfig;
@@ -193,12 +188,12 @@ export class ThemeManager {
           } else {
             // Initialize user config with bundled defaults
             await this.initializeUserConfig();
-            themeConfig = DEFAULT_CONFIG;
+            themeConfig = DEFAULT_THEME;
             loadedFrom = "bundled (initialized user config)";
           }
         } else {
           // Web/browser environment - use bundled defaults
-          themeConfig = DEFAULT_CONFIG;
+          themeConfig = DEFAULT_THEME;
           loadedFrom = "bundled";
         }
       } catch (loadError) {
@@ -207,7 +202,7 @@ export class ThemeManager {
           loadError instanceof Error
             ? loadError.message
             : "Failed to load theme config";
-        themeConfig = DEFAULT_CONFIG;
+        themeConfig = DEFAULT_THEME;
         loadedFrom = "defaults (error fallback)";
       }
 
@@ -229,7 +224,7 @@ export class ThemeManager {
     } catch (err) {
       console.error("Theme initialization error:", err);
       // Apply default theme as fallback
-      this.config = DEFAULT_CONFIG;
+      this.config = DEFAULT_THEME;
       this.activeTheme = getDefaultTheme();
       applyThemeToCss(this.activeTheme);
       this.isLoading = false;
@@ -271,7 +266,7 @@ export class ThemeManager {
   getActivePalette(paletteName?: string): ColorPalette {
     const name = paletteName || this.selectedPaletteName;
     const palette = this.config.palettes.find((p) => p.name === name);
-    return palette || this.config.palettes[0] || DEFAULT_CONFIG.palettes[0];
+    return palette || this.config.palettes[0] || DEFAULT_THEME.palettes[0];
   }
 
   /**

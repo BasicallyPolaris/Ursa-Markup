@@ -4,14 +4,14 @@
 
 import React, {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   useCallback,
+  useContext,
+  useEffect,
   useRef,
+  useState,
 } from "react";
-import type { ThemeConfig, Theme, ColorPalette } from "../services";
-import { themeManager } from "../services";
+import { themeManager } from "~/services";
+import type { ColorPalette, Theme, ThemeConfig } from "~/types/theme";
 
 interface ThemeContextValue {
   config: ThemeConfig;
@@ -34,7 +34,9 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [config, setConfig] = useState<ThemeConfig>(themeManager.configData);
-  const [currentTheme, setCurrentTheme] = useState<Theme>(themeManager.currentTheme);
+  const [currentTheme, setCurrentTheme] = useState<Theme>(
+    themeManager.currentTheme,
+  );
   const [isLoading, setIsLoading] = useState<boolean>(themeManager.loading);
   const [error, setError] = useState<string | null>(themeManager.loadError);
   const unsubscribeRef = useRef<(() => void) | null>(null);

@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { Button } from "~/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,9 +7,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog";
-import { Button } from "../ui/button";
-import { useTabManager } from "../../contexts/TabManagerContext";
+} from "~/components/ui/dialog";
+import { useTabManager } from "~/contexts/TabManagerContext";
 
 export function CloseTabDialog() {
   const {

@@ -4,14 +4,14 @@
 
 import React, {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from "react";
-import type { CanvasEngine, Document } from "../core";
-import { CanvasEngine as CanvasEngineClass } from "../core";
-import type { Point, Size } from "../types";
+import type { CanvasEngine, Document } from "~/core";
+import { CanvasEngine as CanvasEngineClass } from "~/core";
+import type { Point, Size } from "~/types";
 
 interface CanvasEngineContextValue {
   engine: CanvasEngine | null;
@@ -59,7 +59,14 @@ export function CanvasEngineProvider({
   // This handles the case where an empty document is reused and loadImage() resets its state
   useEffect(() => {
     const handleDocumentChange = () => {
-      console.log("[DOC CHANGE] zoom:", document.zoom, "viewOffset:", document.viewOffset, "canvasSize:", document.canvasSize);
+      console.log(
+        "[DOC CHANGE] zoom:",
+        document.zoom,
+        "viewOffset:",
+        document.viewOffset,
+        "canvasSize:",
+        document.canvasSize,
+      );
       setZoomState(document.zoom);
       setViewOffsetState(document.viewOffset);
       setCanvasSize(document.canvasSize);
@@ -73,7 +80,12 @@ export function CanvasEngineProvider({
 
   // Initialize engine when container is available
   useEffect(() => {
-    console.log("[CANVAS ENGINE CONTEXT] Init effect running, engine:", engine ? "exists" : "null", "container:", containerRef.current ? "exists" : "null");
+    console.log(
+      "[CANVAS ENGINE CONTEXT] Init effect running, engine:",
+      engine ? "exists" : "null",
+      "container:",
+      containerRef.current ? "exists" : "null",
+    );
     const container = containerRef.current;
     if (!container) {
       console.log("[CANVAS ENGINE CONTEXT] No container, returning");
@@ -96,21 +108,24 @@ export function CanvasEngineProvider({
   }, [engine, containerRef.current]);
 
   // Allow imperative initialization from consumers (e.g. CanvasContainer)
-  const setCanvasRef = useCallback((node: HTMLElement | null) => {
-    if (!node) {
-      if (engine) {
-        engine.destroy();
-        setEngine(null);
+  const setCanvasRef = useCallback(
+    (node: HTMLElement | null) => {
+      if (!node) {
+        if (engine) {
+          engine.destroy();
+          setEngine(null);
+        }
+        return;
       }
-      return;
-    }
 
-    if (!engine) {
-      const newEngine = new CanvasEngineClass();
-      newEngine.initialize(node);
-      setEngine(newEngine);
-    }
-  }, [engine]);
+      if (!engine) {
+        const newEngine = new CanvasEngineClass();
+        newEngine.initialize(node);
+        setEngine(newEngine);
+      }
+    },
+    [engine],
+  );
 
   const setZoom = useCallback(
     (newZoom: number) => {

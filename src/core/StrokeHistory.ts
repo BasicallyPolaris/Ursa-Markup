@@ -2,10 +2,9 @@ import {
   type AnyStroke,
   type AnyStrokeGroup,
   type Point,
-  type Tool,
-  type ToolConfigs,
   type StrokeHistoryState,
-} from "../types";
+} from "~/types";
+import { type Tool, type ToolConfigs } from "~/types/tools";
 
 /**
  * Maximum number of stroke groups in history

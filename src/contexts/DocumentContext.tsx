@@ -4,13 +4,14 @@
 
 import React, {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from "react";
-import { Document, StrokeHistory, Ruler } from "../core";
-import type { Point, Tool, ToolConfigs } from "../types";
+import { Document, Ruler, StrokeHistory } from "~/core";
+import type { Point } from "~/types";
+import type { Tool, ToolConfigs } from "~/types/tools";
 
 interface DocumentContextValue {
   document: Document;

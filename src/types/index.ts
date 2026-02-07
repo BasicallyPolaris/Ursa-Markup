@@ -1,65 +1,12 @@
-export const BlendModes = {
-  NORMAL: "source-over",
-  MULTIPLY: "multiply",
-} as const;
+import type { Tool, ToolConfigs } from "./tools";
 
-export type BlendMode = (typeof BlendModes)[keyof typeof BlendModes];
-
-export const EraseModes = {
-  FULL_STROKE: "full-stroke",
-  CONTAINED: "contained",
-} as const;
-
-export type EraseMode = (typeof EraseModes)[keyof typeof EraseModes];
-
-export const Tools = {
-  PEN: "pen",
-  HIGHLIGHTER: "highlighter",
-  AREA: "area",
-  ERASER: "eraser",
-} as const;
-
-export type Tool = (typeof Tools)[keyof typeof Tools];
-
-export type ToolConfig =
-  | PenToolConfig
-  | HighlighterToolConfig
-  | AreaToolConfig
-  | EraserToolConfig;
-
-export type ToolConfigs = {
-  [Tools.PEN]: PenToolConfig;
-  [Tools.HIGHLIGHTER]: HighlighterToolConfig;
-  [Tools.AREA]: AreaToolConfig;
-  [Tools.ERASER]: EraserToolConfig;
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends Array<infer U>
+    ? Array<U> // Arrays: Treat as atomic (replace, don't merge by index)
+    : T[P] extends object
+      ? DeepPartial<T[P]> // Objects: Go deeper
+      : T[P]; // Primitives: Stop
 };
-
-export interface PenToolConfig {
-  tool: typeof Tools.PEN;
-  size: number;
-  opacity: number;
-  blendMode: BlendMode;
-}
-
-export interface HighlighterToolConfig {
-  tool: typeof Tools.HIGHLIGHTER;
-  size: number;
-  opacity: number;
-  blendMode: BlendMode;
-}
-
-export interface AreaToolConfig {
-  tool: typeof Tools.AREA;
-  opacity: number;
-  blendMode: BlendMode;
-  borderRadius: number;
-}
-
-export interface EraserToolConfig {
-  tool: typeof Tools.ERASER;
-  size: number;
-  eraserMode: EraseMode;
-}
 
 export interface Point {
   x: number;
@@ -127,11 +74,6 @@ export interface CanvasState {
   hasImage: boolean;
 }
 
-export interface ColorPalette {
-  name: string;
-  colors: string[];
-}
-
 export interface RulerState {
   visible: boolean;
   x: number;
@@ -179,17 +121,4 @@ export interface PreviewState<T extends Tool> {
   startPoint: Point;
   currentPoint: Point;
   points?: Point[];
-}
-
-// Color types for blend modes
-export interface HSL {
-  h: number;
-  s: number;
-  l: number;
-}
-
-export interface RGB {
-  r: number;
-  g: number;
-  b: number;
 }

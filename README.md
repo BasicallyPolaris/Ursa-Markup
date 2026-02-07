@@ -18,7 +18,7 @@ A cross-platform image annotation tool inspired by the Windows Snipping Tool. Bu
 
 ### Canvas Features
 
-- **Zoom**: 10% - 500% (Ctrl+Scroll, Ctrl+=, Ctrl+-)
+- **Zoom**: Ctrl+Scroll, Ctrl+=, Ctrl+-
 - **Pan**: Ctrl+Click and drag
 - **Fit/Stretch/Center**: Multiple view modes
 
@@ -99,26 +99,28 @@ bun run tauri build
 
 ```
 omnimark/
-├── src-tauri/              # Rust backend
+├── src-tauri/                    # Rust backend
 │   ├── src/
-│   │   └── lib.rs          # Tauri commands & setup
-│   ├── capabilities/       # Tauri permission configs
+│   │   └── lib.rs                # Tauri commands & setup
+│   ├── capabilities/             # Tauri permission configs
 │   ├── Cargo.toml
 │   └── tauri.conf.json
-├── src/                    # React frontend
+├── src/                          # React frontend
 │   ├── components/
-│   │   ├── canvas/         # Drawing canvas components
-│   │   ├── toolbar/        # Toolbar UI
-│   │   ├── tabs/           # Tab bar and dialogs
-│   │   ├── settings/       # Settings window
-│   │   └── ui/             # Base UI components
-│   ├── contexts/           # React contexts (settings, theme, tabs, etc.)
-│   ├── core/               # Domain logic (Document, BrushEngine, Ruler, etc.)
-│   ├── services/           # Singleton services (IO, Settings, Theme, Window)
-│   ├── hooks/              # Custom React hooks
-│   ├── workers/            # Web workers (clipboard encoding)
-│   ├── lib/                # Utilities
-│   ├── types/              # TypeScript types
+│   │   ├── canvas/               # Drawing canvas components
+│   │   ├── toolbar/              # Toolbar UI
+│   │   ├── tabs/                 # Tab bar and dialogs
+│   │   ├── settings/             # Settings window
+│   │   └── ui/                   # Base UI components
+│   ├── contexts/                 # React contexts (settings, theme, tabs, etc.)
+│   ├── core/                     # Domain logic (Document, BrushEngine, Ruler, etc.)
+│   ├── services/                 # Singleton services (IO, Settings, Theme, Window)
+│   │   ├── ...
+│   │   └── settings/config.ts    # Stores app wide configurations for Tools, App, ...
+│   ├── hooks/                    # Custom React hooks
+│   ├── workers/                  # Web workers (clipboard encoding)
+│   ├── lib/                      # Utilities
+│   ├── types/                    # TypeScript types
 │   ├── App.tsx
 │   └── main.tsx
 ├── public/
@@ -135,11 +137,11 @@ OmniMark supports full UI theming. See [THEMING.md](THEMING.md) for details.
 The theme file is located at:
 
 - **User config**: `~/.config/omnimark/theme.json` (created on first run)
-- **Bundled default (developer)**: `src/lib/default-config.json` (canonical defaults in source)
+- **Bundled default (developer)**: `src/lib/theme.json` (canonical defaults in source)
 
 ### Color Palettes
 
-Edit the `palettes` section in your user `~/.config/omnimark/theme.json` to customize palettes. For application defaults (developer), edit `src/lib/default-config.json`.
+Edit the `palettes` section in your user `~/.config/omnimark/theme.json` to customize palettes. For application defaults (developer), edit `src/lib/theme.json`.
 
 ```json
 {

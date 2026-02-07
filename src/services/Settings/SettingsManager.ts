@@ -1,9 +1,11 @@
-import { Store } from "@tauri-apps/plugin-store";
-import { mkdir } from "@tauri-apps/plugin-fs";
 import { appConfigDir } from "@tauri-apps/api/path";
-import type { AppSettings, ServiceEvents } from "./types";
-import { DEFAULT_SETTINGS } from "./AppSettings";
-import { themeManager } from "./ThemeManager";
+import { mkdir } from "@tauri-apps/plugin-fs";
+import { Store } from "@tauri-apps/plugin-store";
+import { themeManager } from "~/services";
+import { DeepPartial } from "~/types";
+import type { AppSettings, ServiceEvents } from "~/types/settings";
+import { deepMerge } from "~/utils/settings";
+import { DEFAULT_SETTINGS } from "./config";
 
 type EventCallback<T> = (payload: T) => void;
 
@@ -71,13 +73,8 @@ export class SettingsManager {
       const saved = await this.store.get<AppSettings>("appSettings");
 
       if (saved) {
-        const merged = { ...DEFAULT_SETTINGS, ...saved };
-        
-        // Ensure defaultColor matches the first color of the selected palette's presets
-        if (merged.selectedPalette && merged.colorPresets.length > 0) {
-          merged.defaultColor = merged.colorPresets[0];
-        }
-        
+        const merged = deepMerge(DEFAULT_SETTINGS, saved);
+
         this.savedSettings = merged;
         this.draftSettings = { ...merged };
       }
@@ -98,22 +95,22 @@ export class SettingsManager {
 
     try {
       // If a palette is selected, apply its colors to colorPresets before saving
-      if (this.draftSettings.selectedPalette) {
+      if (this.draftSettings.activePalette) {
         const palette = themeManager.getActivePalette(
-          this.draftSettings.selectedPalette,
+          this.draftSettings.activePalette,
         );
         if (palette) {
           // Take up to 7 colors from the palette
           const newPresets = palette.colors.slice(0, 7);
           // Pad with default colors if palette has fewer than 7
           while (newPresets.length < 7) {
-            newPresets.push(DEFAULT_SETTINGS.colorPresets[newPresets.length]);
+            newPresets.push(
+              DEFAULT_SETTINGS.activePaletteColors[newPresets.length],
+            );
           }
           this.draftSettings = {
             ...this.draftSettings,
-            colorPresets: newPresets,
-            // Set defaultColor to the first color of the palette
-            defaultColor: newPresets[0],
+            activePaletteColors: newPresets,
           };
         }
       }
@@ -149,8 +146,8 @@ export class SettingsManager {
   /**
    * Update draft settings (doesn't save to disk)
    */
-  updateDraft(updates: Partial<AppSettings>): void {
-    this.draftSettings = { ...this.draftSettings, ...updates };
+  updateDraft(updates: DeepPartial<AppSettings>): void {
+    this.draftSettings = deepMerge(this.draftSettings, updates);
     this.emit("settingsChanged", this.draftSettings);
   }
 

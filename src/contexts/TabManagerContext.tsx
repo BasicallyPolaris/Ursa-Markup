@@ -4,13 +4,13 @@
 
 import React, {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   useCallback,
+  useContext,
+  useEffect,
+  useState,
 } from "react";
-import type { Document } from "../core";
-import { tabManager } from "../services";
+import type { Document } from "~/core";
+import { tabManager } from "~/services";
 
 interface PendingCloseDocument {
   id: string;

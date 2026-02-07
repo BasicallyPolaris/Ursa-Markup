@@ -1,26 +1,20 @@
 import {
+  type AnyPreviewState,
+  type AnyStroke,
+  type AnyStrokeGroup,
   type Point,
   type Size,
-  type ViewState,
-  type StrokeHistoryState,
-  type AnyStroke,
   type Stroke,
-  type AnyStrokeGroup,
-  type AnyPreviewState,
-  Tools,
-  BlendModes,
-  EraseModes,
-} from "../types";
+  type StrokeHistoryState,
+  type ViewState,
+} from "~/types";
+
+import { BlendModes, EraseModes, Tools } from "~/types/tools";
 import { BrushEngine } from "./BrushEngine";
 import { Ruler } from "./Ruler";
 
 /**
- * CanvasEngine manages the multi-layer canvas system:
- * - Base canvas: Original image
- * - Draw canvas: User strokes (normal blend mode)
- * - Multiply canvas: Strokes with multiply blend mode (rendered against base)
- * - Composite canvas: Pre-composited result (cached for fast pan/zoom)
- * - Display canvas: Final view with zoom/pan transform
+ * CanvasEngine manages the multi-layer canvas system.
  */
 export class CanvasEngine {
   // Canvas elements
@@ -62,26 +56,22 @@ export class CanvasEngine {
   initialize(container: HTMLElement): void {
     this.container = container;
 
-    // Cleanup existing children if any (prevents duplicates on HMR)
     while (this.container.firstChild) {
       this.container.removeChild(this.container.firstChild);
     }
 
-    // Create Canvases
     this.baseCanvas = this.createCanvas("base-canvas", false);
     this.drawCanvas = this.createCanvas("draw-canvas", false);
     this.multiplyCanvas = this.createCanvas("multiply-canvas", false);
     this.compositeCanvas = this.createCanvas("composite-canvas", false);
     this.displayCanvas = this.createCanvas("display-canvas", true);
 
-    // Initialize Contexts
     this.baseCtx = this.setupContext(this.baseCanvas);
     this.drawCtx = this.setupContext(this.drawCanvas);
     this.multiplyCtx = this.setupContext(this.multiplyCanvas);
     this.compositeCtx = this.setupContext(this.compositeCanvas);
     this.displayCtx = this.setupContext(this.displayCanvas);
 
-    // Mount Display Canvas
     if (this.displayCanvas && this.container) {
       this.displayCanvas.style.width = "100%";
       this.displayCanvas.style.height = "100%";
@@ -93,7 +83,6 @@ export class CanvasEngine {
   // --- Image Loading ---
 
   async loadImage(imageSrc: string): Promise<void> {
-    console.log("[CANVAS ENGINE] loadImage called");
     if (this.isImageLoading) return;
     this.isImageLoading = true;
     this.resetIncrementalState();
@@ -128,16 +117,11 @@ export class CanvasEngine {
 
   // --- Rendering Lifecycle ---
 
-  /**
-   * Replay strokes to the appropriate canvases.
-   * Handles both incremental updates (fast) and full replays (slow but accurate).
-   */
   replayStrokes(strokeHistory: StrokeHistoryState): void {
     if (!this.drawCtx || !this.multiplyCtx) return;
 
     const { groups, currentIndex } = strokeHistory;
 
-    // Check for incremental update capability
     const isIncrementalAdd =
       currentIndex === this.lastRenderedIndex + 1 &&
       groups.length === this.lastRenderedGroupCount + 1 &&
@@ -145,15 +129,11 @@ export class CanvasEngine {
 
     if (isIncrementalAdd) {
       const newGroup = groups[currentIndex];
-      // Type guard: Check if the new group contains eraser strokes.
-      // Since AnyStrokeGroup is homogeneous, we check the first stroke.
       const firstStroke = newGroup?.strokes[0];
       const isEraser = firstStroke?.tool === Tools.ERASER;
 
       if (newGroup && !isEraser) {
-        // Safe to draw just the new strokes
         for (const stroke of newGroup.strokes) {
-          // We can force cast here because we know it's not an eraser
           this.replayStroke(stroke as AnyStroke);
         }
         this.lastRenderedIndex = currentIndex;
@@ -163,15 +143,12 @@ export class CanvasEngine {
       }
     }
 
-    // --- Full Replay ---
-
+    // Full Replay
     this.clearCanvas(this.drawCtx);
     this.clearCanvas(this.multiplyCtx);
 
-    // 1. Calculate which strokes are actually visible (Handle Object Eraser)
     const visibleStrokes = this.computeVisibleStrokes(groups, currentIndex);
 
-    // 2. Draw them
     for (const stroke of visibleStrokes) {
       this.replayStroke(stroke);
     }
@@ -181,17 +158,11 @@ export class CanvasEngine {
     this.updateComposite();
   }
 
-  /**
-   * Single stroke renderer.
-   * Routes to the correct canvas layer (multiply vs draw).
-   * Note: Erasers are NOT drawn here; they are handled by computeVisibleStrokes.
-   */
   private replayStroke(stroke: AnyStroke): void {
-    const config = stroke.toolConfig;
-    const color = stroke.color;
-
     const isMultiply =
-      "blendMode" in config && config.blendMode === BlendModes.MULTIPLY;
+      "blendMode" in stroke.toolConfig &&
+      stroke.toolConfig.blendMode === BlendModes.MULTIPLY;
+
     const ctx = isMultiply ? this.multiplyCtx : this.drawCtx;
     if (!ctx) return;
 
@@ -203,7 +174,7 @@ export class CanvasEngine {
           ctx,
           stroke.points,
           stroke.toolConfig,
-          color,
+          stroke.color,
         );
         break;
       case Tools.HIGHLIGHTER:
@@ -211,24 +182,25 @@ export class CanvasEngine {
           ctx,
           stroke.points,
           stroke.toolConfig,
-          color,
+          stroke.color,
         );
         break;
       case Tools.AREA:
         if (stroke.points.length >= 2) {
           const start = stroke.points[0];
           const end = stroke.points[stroke.points.length - 1];
-          this.brushEngine.drawArea(ctx, start, end, stroke.toolConfig, color);
+          this.brushEngine.drawArea(
+            ctx,
+            start,
+            end,
+            stroke.toolConfig,
+            stroke.color,
+          );
         }
         break;
-      // Eraser logic is handled in computeVisibleStrokes
     }
   }
 
-  /**
-   * Filters the history to determine which strokes should be drawn.
-   * Handles "Object Eraser" logic (removing strokes that were touched by an eraser).
-   */
   private computeVisibleStrokes(
     groups: AnyStrokeGroup[],
     maxIndex: number,
@@ -239,13 +211,10 @@ export class CanvasEngine {
       const group = groups[i];
       if (!group) continue;
 
-      // Check tool type of the group (homogenous)
       const firstStroke = group.strokes[0];
       if (!firstStroke) continue;
 
       if (firstStroke.tool === Tools.ERASER) {
-        // Handle Object Eraser Logic
-        // We cast group to the specific Eraser group type to satisfy TS
         const eraserGroup = group as unknown as { strokes: Stroke<"eraser">[] };
         for (const eraserStroke of eraserGroup.strokes) {
           try {
@@ -255,7 +224,6 @@ export class CanvasEngine {
           }
         }
       } else {
-        // Add standard strokes
         for (const stroke of group.strokes) {
           activeStrokes.push(stroke as AnyStroke);
         }
@@ -264,9 +232,6 @@ export class CanvasEngine {
     return activeStrokes;
   }
 
-  /**
-   * Mutates the activeStrokes array by removing strokes that collide with the eraser.
-   */
   private applyObjectEraser(
     eraserStroke: Stroke<"eraser">,
     activeStrokes: AnyStroke[],
@@ -275,7 +240,6 @@ export class CanvasEngine {
     const mode = eraserStroke.toolConfig.eraserMode;
     const eraserPoints = eraserStroke.points;
 
-    // Bounding box of eraser stroke
     const eXs = eraserPoints.map((p) => p.x);
     const eYs = eraserPoints.map((p) => p.y);
     const eMinX = Math.min(...eXs);
@@ -283,12 +247,10 @@ export class CanvasEngine {
     const eMinY = Math.min(...eYs);
     const eMaxY = Math.max(...eYs);
 
-    // Iterate backwards so we can splice safely
     for (let i = activeStrokes.length - 1; i >= 0; i--) {
       const target = activeStrokes[i];
       if (target.tool === Tools.ERASER) continue;
 
-      // Bounding box of target
       const tPoints = target.points;
       const tXs = tPoints.map((p) => p.x);
       const tYs = tPoints.map((p) => p.y);
@@ -297,7 +259,6 @@ export class CanvasEngine {
       const tMinY = Math.min(...tYs);
       const tMaxY = Math.max(...tYs);
 
-      // Area tool doesn't have size, use 0 or a fixed padding
       let targetSize = 0;
       if ("size" in target.toolConfig) {
         targetSize = target.toolConfig.size;
@@ -305,7 +266,6 @@ export class CanvasEngine {
 
       const padding = targetSize / 2 + eraserSize / 2;
 
-      // AABB overlap check
       if (
         tMaxX < eMinX - padding ||
         tMinX > eMaxX + padding ||
@@ -315,11 +275,9 @@ export class CanvasEngine {
         continue;
       }
 
-      // Detailed collision check
       let shouldRemove = false;
 
       if (mode === EraseModes.CONTAINED) {
-        // Strict containment
         if (
           tMinX >= eMinX &&
           tMaxX <= eMaxX &&
@@ -329,7 +287,6 @@ export class CanvasEngine {
           shouldRemove = true;
         }
       } else {
-        // FULL_STROKE (default intersection)
         const thresholdSq = padding * padding;
 
         outerLoop: for (const tp of tPoints) {
@@ -356,35 +313,23 @@ export class CanvasEngine {
     if (!this.compositeCtx || !this.compositeCanvas || !this.baseCanvas) return;
 
     this.clearCanvas(this.compositeCtx);
-
-    // 1. Base Image
     this.compositeCtx.drawImage(this.baseCanvas, 0, 0);
 
-    // 2. Multiply Layer
     if (this.multiplyCanvas) {
       this.compositeCtx.globalCompositeOperation = "multiply";
       this.compositeCtx.drawImage(this.multiplyCanvas, 0, 0);
       this.compositeCtx.globalCompositeOperation = "source-over";
     }
 
-    // 3. Normal Draw Layer
     if (this.drawCanvas) {
       this.compositeCtx.drawImage(this.drawCanvas, 0, 0);
     }
   }
 
   render(viewState: ViewState, ruler: Ruler, preview?: AnyPreviewState): void {
-    console.log("[CANVAS ENGINE RENDER] viewState.zoom:", viewState.zoom, "viewState.viewOffset:", viewState.viewOffset, "canvasSize:", this._canvasSize);
-    if (!this.displayCanvas || !this.displayCtx || !this.container) {
-      console.log("[CANVAS ENGINE RENDER] Early return - missing canvas/container");
-      return;
-    }
-    if (this._canvasSize.width === 0) {
-      console.log("[CANVAS ENGINE RENDER] Early return - canvasSize is 0");
-      return;
-    }
+    if (!this.displayCanvas || !this.displayCtx || !this.container) return;
+    if (this._canvasSize.width === 0) return;
 
-    // Resize display canvas to match container window (responsive)
     const rect = this.container.getBoundingClientRect();
     if (
       this.displayCanvas.width !== rect.width ||
@@ -397,7 +342,6 @@ export class CanvasEngine {
 
     this.clearCanvas(this.displayCtx);
 
-    // Apply View Transforms
     this.displayCtx.save();
     this.displayCtx.translate(
       -viewState.viewOffset.x * viewState.zoom,
@@ -405,19 +349,16 @@ export class CanvasEngine {
     );
     this.displayCtx.scale(viewState.zoom, viewState.zoom);
 
-    // Draw Composite
     if (this.compositeCanvas) {
       this.displayCtx.drawImage(this.compositeCanvas, 0, 0);
     }
 
-    // Draw Active Preview
     if (preview) {
       this.renderPreview(preview);
     }
 
     this.displayCtx.restore();
 
-    // Draw UI Overlays (Ruler) in screen space
     ruler.render(this.displayCtx, {
       width: this.displayCanvas.width,
       height: this.displayCanvas.height,
@@ -430,40 +371,43 @@ export class CanvasEngine {
   private renderPreview(preview: AnyPreviewState): void {
     if (!this.displayCtx) return;
     const ctx = this.displayCtx;
-    const { toolConfig, tool, color } = preview; // <--- Destructure color
 
     ctx.save();
 
-    // Handle Blend Modes
     if (
-      "blendMode" in toolConfig &&
-      toolConfig.blendMode === BlendModes.MULTIPLY
+      "blendMode" in preview.toolConfig &&
+      preview.toolConfig.blendMode === BlendModes.MULTIPLY
     ) {
-      ctx.globalCompositeOperation = "multiply";
+      ctx.globalCompositeOperation = BlendModes.MULTIPLY;
     }
 
-    if (tool === Tools.AREA) {
+    if (preview.tool === Tools.AREA) {
       const { startPoint, currentPoint } = preview;
       this.brushEngine.drawArea(
         ctx,
         startPoint,
         currentPoint,
-        toolConfig,
-        color,
+        preview.toolConfig,
+        preview.color,
       );
     } else if (
-      (tool === Tools.PEN || tool === Tools.HIGHLIGHTER) &&
+      (preview.tool === Tools.PEN || preview.tool === Tools.HIGHLIGHTER) &&
       preview.points
     ) {
-      if (tool === Tools.HIGHLIGHTER) {
+      if (preview.tool === Tools.HIGHLIGHTER) {
         this.brushEngine.drawHighlighterStroke(
           ctx,
           preview.points,
-          toolConfig,
-          color,
+          preview.toolConfig,
+          preview.color,
         );
       } else {
-        this.brushEngine.drawPenStroke(ctx, preview.points, toolConfig, color);
+        this.brushEngine.drawPenStroke(
+          ctx,
+          preview.points,
+          preview.toolConfig,
+          preview.color,
+        );
       }
     }
 

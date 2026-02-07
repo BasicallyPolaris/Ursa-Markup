@@ -2,17 +2,17 @@
  * SettingsContext - Bridges SettingsManager with React
  */
 
+import { listen } from "@tauri-apps/api/event";
 import React, {
   createContext,
-  useContext,
-  useState,
-  useEffect,
   useCallback,
+  useContext,
+  useEffect,
   useRef,
+  useState,
 } from "react";
-import { listen } from "@tauri-apps/api/event";
-import type { AppSettings } from "../services";
-import { settingsManager, windowManager } from "../services";
+import { settingsManager, windowManager } from "~/services";
+import type { AppSettings } from "~/types/settings";
 
 interface SettingsContextValue {
   settings: AppSettings;
