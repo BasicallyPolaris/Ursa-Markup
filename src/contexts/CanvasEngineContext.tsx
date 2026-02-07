@@ -55,15 +55,37 @@ export function CanvasEngineProvider({
   const [viewOffset, setViewOffsetState] = useState<Point>(document.viewOffset);
   const [canvasSize, setCanvasSize] = useState<Size>(document.canvasSize);
 
+  // Sync local state with document when document changes
+  // This handles the case where an empty document is reused and loadImage() resets its state
+  useEffect(() => {
+    const handleDocumentChange = () => {
+      console.log("[DOC CHANGE] zoom:", document.zoom, "viewOffset:", document.viewOffset, "canvasSize:", document.canvasSize);
+      setZoomState(document.zoom);
+      setViewOffsetState(document.viewOffset);
+      setCanvasSize(document.canvasSize);
+    };
+
+    document.onChange(handleDocumentChange);
+    return () => {
+      document.offChange(handleDocumentChange);
+    };
+  }, [document]);
+
   // Initialize engine when container is available
   useEffect(() => {
+    console.log("[CANVAS ENGINE CONTEXT] Init effect running, engine:", engine ? "exists" : "null", "container:", containerRef.current ? "exists" : "null");
     const container = containerRef.current;
-    if (!container) return;
+    if (!container) {
+      console.log("[CANVAS ENGINE CONTEXT] No container, returning");
+      return;
+    }
 
     if (!engine) {
+      console.log("[CANVAS ENGINE CONTEXT] Creating new engine");
       const newEngine = new CanvasEngineClass();
       newEngine.initialize(container);
       setEngine(newEngine);
+      console.log("[CANVAS ENGINE CONTEXT] Engine set");
     }
 
     return () => {

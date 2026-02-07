@@ -72,6 +72,12 @@ export class SettingsManager {
 
       if (saved) {
         const merged = { ...DEFAULT_SETTINGS, ...saved };
+        
+        // Ensure defaultColor matches the first color of the selected palette's presets
+        if (merged.selectedPalette && merged.colorPresets.length > 0) {
+          merged.defaultColor = merged.colorPresets[0];
+        }
+        
         this.savedSettings = merged;
         this.draftSettings = { ...merged };
       }
@@ -106,6 +112,8 @@ export class SettingsManager {
           this.draftSettings = {
             ...this.draftSettings,
             colorPresets: newPresets,
+            // Set defaultColor to the first color of the palette
+            defaultColor: newPresets[0],
           };
         }
       }

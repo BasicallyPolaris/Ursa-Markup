@@ -34,6 +34,7 @@ export function CanvasContainer({
   className,
   containerRef: externalRef,
 }: CanvasContainerProps) {
+  console.log("[CANVAS CONTAINER] Render");
   const localRef = useRef<HTMLDivElement>(null);
   const containerRef = (externalRef ||
     localRef) as React.MutableRefObject<HTMLDivElement | null>;
@@ -66,6 +67,7 @@ export function CanvasContainer({
     zoomAroundPoint,
     canvasSize,
     setCanvasSize,
+    setCanvasRef,
   } = useCanvasEngine();
 
   const { tool, toolConfig, activeColor } = useDrawing();
@@ -158,6 +160,18 @@ export function CanvasContainer({
     [ruler],
   );
 
+  // Notify CanvasEngineContext when container is ready
+  useEffect(() => {
+    console.log("[CANVAS CONTAINER] setCanvasRef effect, container:", containerRef.current ? "exists" : "null");
+    if (typeof setCanvasRef === "function") {
+      setCanvasRef(containerRef.current);
+      return () => {
+        setCanvasRef(null);
+      };
+    }
+    return () => {};
+  }, [containerRef.current, setCanvasRef]);
+
   // --- Lifecycle Effects ---
 
   // 1. Initial Load & Resize Observer
@@ -184,11 +198,13 @@ export function CanvasContainer({
 
   // 2. Load Image & Initial Setup
   useEffect(() => {
+    console.log("[CANVAS CONTAINER LOAD EFFECT] imageSrc:", document?.imageSrc ? "exists" : "null", "engine:", engine ? "exists" : "null");
     if (!document?.imageSrc || !engine) return;
 
     let mounted = true;
 
     engine.loadImage(document.imageSrc).then(() => {
+      console.log("[CANVAS CONTAINER LOAD EFFECT] Image loaded, engine.canvasSize:", engine.canvasSize);
       if (!mounted) return;
 
       if (engine.canvasSize.width > 0) {
@@ -232,12 +248,15 @@ export function CanvasContainer({
   // 4. The Render Loop
   // React is driving the frame loop here via state updates (isDrawing, currentPoint)
   useEffect(() => {
-    if (!engine) return;
+    console.log("[CANVAS CONTAINER RENDER EFFECT] engine:", engine ? "exists" : "null", "canvasSize:", canvasSize, "zoom:", zoom, "viewOffset:", viewOffset);
+    if (!engine) {
+      console.log("[CANVAS CONTAINER RENDER EFFECT] Early return - no engine");
+      return;
+    }
 
     const previewState =
       isDrawing &&
       startPointRef.current &&
-      tool != Tools.AREA &&
       tool != Tools.ERASER
         ? ({
             tool,
@@ -249,7 +268,9 @@ export function CanvasContainer({
           } as AnyPreviewState)
         : undefined;
 
+    console.log("[CANVAS CONTAINER RENDER EFFECT] Calling engine.render with canvasSize:", canvasSize);
     engine.render({ zoom, viewOffset, canvasSize }, ruler, previewState);
+    console.log("[CANVAS CONTAINER RENDER EFFECT] engine.render completed");
   }, [
     engine,
     zoom,
@@ -260,6 +281,7 @@ export function CanvasContainer({
     currentPoint,
     tool,
     toolConfig,
+    activeColor,
   ]);
 
   // --- Event Handlers ---
@@ -321,7 +343,7 @@ export function CanvasContainer({
       startStrokeGroup();
       startStroke(tool, toolConfig, activeColor, startDrawPoint);
     },
-    [tool, toolConfig, ruler, getScreenToCanvas, getRelativePoint],
+    [tool, toolConfig, activeColor, ruler, getScreenToCanvas, getRelativePoint],
   );
 
   const handleMouseMove = useCallback(
@@ -483,12 +505,30 @@ export function CanvasContainer({
           y: currentOffset.y,
         });
       }
-      // 3. Rotate Ruler (Ruler Visible)
+      // 3. Rotate Ruler (Only if mouse is on the ruler)
       else if (ruler.visible) {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? 1 : -1;
-        rotateRuler(delta);
-        setRulerHash((h) => h + 1);
+        const screenPoint = {
+          x: e.clientX - containerRectRef.current.left,
+          y: e.clientY - containerRectRef.current.top,
+        };
+        const isOnRuler = ruler.isPointOnRuler(screenPoint, {
+          width: containerRectRef.current.width,
+          height: containerRectRef.current.height,
+        });
+
+        if (isOnRuler) {
+          e.preventDefault();
+          const delta = e.deltaY > 0 ? 1 : -1;
+          rotateRuler(delta);
+          setRulerHash((h) => h + 1);
+        } else {
+          // Mouse not on ruler - scroll the canvas instead
+          e.preventDefault();
+          setViewOffset({
+            x: currentOffset.x,
+            y: currentOffset.y + (e.deltaY * scrollSpeed) / currentZoom,
+          });
+        }
       }
       // 4. Vertical Pan (Default)
       else {
@@ -506,7 +546,7 @@ export function CanvasContainer({
     });
     return () =>
       container.removeEventListener("wheel", handleWheel, { capture: true });
-  }, [containerRef, ruler.visible]); // Deps minimized: zoom/offset read from Ref
+  }, [containerRef, ruler.visible, zoomAroundPoint, setViewOffset, rotateRuler]);
 
   // --- Render ---
 
