@@ -37,7 +37,7 @@ export function ToolsSettings({
       <SettingsSection
         title="Pen Tool Defaults"
         description="Freehand drawing with solid strokes"
-        icon={<Pencil className="w-4 h-4" />}
+        icon={<Pencil className="size-4" />}
       >
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
@@ -88,7 +88,7 @@ export function ToolsSettings({
       <SettingsSection
         title="Highlighter Tool Defaults"
         description="Highlighter with customizable blend modes"
-        icon={<Highlighter className="w-4 h-4" />}
+        icon={<Highlighter className="size-4" />}
       >
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
@@ -159,7 +159,7 @@ export function ToolsSettings({
       <SettingsSection
         title="Area Tool Defaults"
         description="Rectangular highlight regions"
-        icon={<Square className="w-4 h-4" />}
+        icon={<Square className="size-4" />}
       >
         <SettingsGroup title="Appearance">
           <SettingsSliderRow
@@ -230,7 +230,7 @@ export function ToolsSettings({
       <SettingsSection
         title="Eraser Tool Defaults"
         description="Remove strokes with an eraser brush"
-        icon={<Eraser className="w-4 h-4" />}
+        icon={<Eraser className="size-4" />}
       >
         <SettingsGroup title="Appearance">
           <SettingsSliderRow

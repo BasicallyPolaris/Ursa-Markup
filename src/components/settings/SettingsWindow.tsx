@@ -35,18 +35,18 @@ const tabs: Tab[] = [
   {
     id: TabIds.GENERAL,
     label: "General",
-    icon: <Settings className="w-4 h-4" />,
+    icon: <Settings className="size-4" />,
   },
-  { id: TabIds.COLORS, label: "Colors", icon: <Palette className="w-4 h-4" /> },
+  { id: TabIds.COLORS, label: "Colors", icon: <Palette className="size-4" /> },
   {
     id: TabIds.TOOLS,
     label: "Tool Defaults",
-    icon: <Wrench className="w-4 h-4" />,
+    icon: <Wrench className="size-4" />,
   },
   {
     id: TabIds.SHORTCUTS,
     label: "Shortcuts",
-    icon: <Keyboard className="w-4 h-4" />,
+    icon: <Keyboard className="size-4" />,
   },
 ];
 

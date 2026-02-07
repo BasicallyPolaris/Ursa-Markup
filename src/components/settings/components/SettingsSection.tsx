@@ -25,7 +25,7 @@ export function SettingsSection({
       {/* Section Header */}
       <div className="flex items-center gap-3 px-4 py-3 bg-surface-bg/50 border-b border-toolbar-border">
         {icon && (
-          <div className="flex items-center justify-center w-8 h-8 rounded-md bg-surface-bg-active border border-toolbar-border text-text-primary">
+          <div className="flex items-center justify-center size-8 rounded-md bg-surface-bg-active border border-toolbar-border text-text-primary">
             {icon}
           </div>
         )}
