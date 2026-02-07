@@ -160,9 +160,12 @@ export function CanvasContainer({
     [ruler],
   );
 
-  // Notify CanvasEngineContext when container is ready
-  useEffect(() => {
-    console.log("[CANVAS CONTAINER] setCanvasRef effect, container:", containerRef.current ? "exists" : "null");
+  // Notify CanvasEngineContext when container is ready.
+  // Use useLayoutEffect so the provider is notified synchronously after DOM
+  // mutations but before the regular useEffect callbacks run. This ensures
+  // the engine is created before the image load effect attempts to use it.
+  useLayoutEffect(() => {
+    console.log("[CANVAS CONTAINER] setCanvasRef layout effect, container:", containerRef.current ? "exists" : "null");
     if (typeof setCanvasRef === "function") {
       setCanvasRef(containerRef.current);
       return () => {
