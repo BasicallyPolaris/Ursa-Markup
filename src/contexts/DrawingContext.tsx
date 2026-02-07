@@ -7,13 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import {
-  BlendModes,
-  EraseModes,
-  Tools,
-  type Tool,
-  type ToolConfigs,
-} from "~/types/tools";
+import { Tools, type Tool, type ToolConfigs } from "~/types/tools";
 import { useSettings } from "./SettingsContext";
 
 interface DrawingActions {
@@ -36,34 +30,6 @@ type DrawingContextValue = DrawingActions &
 
 const DrawingContext = createContext<DrawingContextValue | null>(null);
 
-// --- Helpers ---
-
-const getDefaultConfigs = (settings: any): ToolConfigs => ({
-  [Tools.PEN]: {
-    tool: Tools.PEN,
-    size: settings.defaultPenSize,
-    opacity: settings.defaultPenOpacity,
-    blendMode: settings.defaultPenBlendMode ?? BlendModes.NORMAL,
-  },
-  [Tools.HIGHLIGHTER]: {
-    tool: Tools.HIGHLIGHTER,
-    size: settings.defaultHighlighterSize,
-    opacity: settings.defaultHighlighterOpacity,
-    blendMode: settings.defaultHighlighterBlendMode ?? BlendModes.MULTIPLY,
-  },
-  [Tools.AREA]: {
-    tool: Tools.AREA,
-    opacity: settings.defaultAreaOpacity,
-    blendMode: settings.defaultAreaBlendMode ?? BlendModes.MULTIPLY,
-    borderRadius: settings.defaultAreaBorderRadius,
-  },
-  [Tools.ERASER]: {
-    tool: Tools.ERASER,
-    size: settings.defaultEraserSize || 1,
-    eraserMode: settings.defaultEraseMode || EraseModes.FULL_STROKE,
-  },
-});
-
 interface DrawingProviderProps {
   children: React.ReactNode;
   initialTool?: Tool;
@@ -82,8 +48,8 @@ export function DrawingProvider({
   const [tool, setTool] = useState<Tool>(initialTool);
 
   // Lazy initialization for configs using the helper
-  const [toolConfigs, setToolConfigs] = useState<ToolConfigs>(() =>
-    getDefaultConfigs(settings),
+  const [toolConfigs, setToolConfigs] = useState<ToolConfigs>(
+    () => settings.toolConfigs,
   );
 
   const isInitialized = useRef(false);
@@ -92,7 +58,7 @@ export function DrawingProvider({
   // We use a ref to prevent overwriting user changes if settings re-emit later.
   useEffect(() => {
     if (isLoaded && !isInitialized.current) {
-      setToolConfigs(getDefaultConfigs(settings));
+      setToolConfigs(settings.toolConfigs);
       // Also sync the active color from settings
       setActiveColor(defaultColor);
       isInitialized.current = true;
