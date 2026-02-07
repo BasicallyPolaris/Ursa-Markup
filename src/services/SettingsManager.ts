@@ -2,7 +2,7 @@ import { Store } from "@tauri-apps/plugin-store";
 import { mkdir } from "@tauri-apps/plugin-fs";
 import { appConfigDir } from "@tauri-apps/api/path";
 import type { AppSettings, ServiceEvents } from "./types";
-import { DEFAULT_SETTINGS } from "./types";
+import { DEFAULT_SETTINGS } from "./AppSettings";
 import { themeManager } from "./ThemeManager";
 
 type EventCallback<T> = (payload: T) => void;
@@ -61,7 +61,10 @@ export class SettingsManager {
         await mkdir(configDir, { recursive: true });
       } catch (mkdirError) {
         // Directory may already exist or other error - log but continue
-        console.log("Config directory creation (may already exist):", mkdirError);
+        console.log(
+          "Config directory creation (may already exist):",
+          mkdirError,
+        );
       }
 
       this.store = await Store.load("settings.json");

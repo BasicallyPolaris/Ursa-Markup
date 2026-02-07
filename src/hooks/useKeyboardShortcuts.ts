@@ -4,19 +4,16 @@ import { useTabManager } from "../contexts/TabManagerContext";
 import { useDocument } from "../contexts/DocumentContext";
 import { useCanvasEngine } from "../contexts/CanvasEngineContext";
 import { useDrawing } from "../contexts/DrawingContext";
-import { services } from "../services";
-import { registerPendingCopy } from "./useClipboardEvents";
-import type { Tool } from "../types";
-import {
-  matchesHotkey,
-  formatHotkey,
-  DEFAULT_HOTKEYS,
-} from "../services/types";
+import { matchesHotkey, formatHotkey } from "../services/types";
+import { DEFAULT_HOTKEYS } from "../services/AppSettings";
 import type {
   HotkeyAction,
   HotkeySettings,
   HotkeyBinding,
 } from "../services/types";
+import { services } from "../services";
+import { registerPendingCopy } from "./useClipboardEvents";
+import { Tool, Tools } from "../types";
 
 /**
  * Hook to get a formatted hotkey string for a specific action
@@ -60,7 +57,7 @@ export function useFileActions() {
     const currentEngine = engineRef.current;
     if (!activeDoc || !currentEngine) return;
 
-    const canvas = currentEngine.getCombinedCanvas();
+    const canvas = currentEngine.getFreshCombinedCanvas();
     if (!canvas) return;
 
     const defaultPath = activeDoc.filePath || "annotated-image.png";
@@ -75,7 +72,7 @@ export function useFileActions() {
     const currentEngine = engineRef.current;
     if (!currentEngine || !activeDoc) return;
 
-    const canvas = currentEngine.getCombinedCanvas();
+    const canvas = currentEngine.getFreshCombinedCanvas();
     if (canvas) {
       const version = activeDoc.version;
       // Register as manual copy (show toast on success)
@@ -113,9 +110,7 @@ export function useKeyboardShortcuts() {
   } = useTabManager();
 
   const { undo, redo, toggleRuler } = useDocument();
-
-  const { switchTool, updateBrush } = useDrawing();
-
+  const { switchTool, setActiveColor } = useDrawing();
   const { zoom, setZoom, fitToWindow, stretchToFill, centerImage } =
     useCanvasEngine();
 
@@ -155,10 +150,10 @@ export function useKeyboardShortcuts() {
   const handleColorChange = useCallback(
     (index: number) => {
       if (index < settings.colorPresets.length) {
-        updateBrush({ color: settings.colorPresets[index] });
+        setActiveColor(settings.colorPresets[index]);
       }
     },
-    [settings.colorPresets, updateBrush],
+    [settings.colorPresets],
   );
 
   const handleCloseTab = useCallback(() => {
@@ -169,7 +164,6 @@ export function useKeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Skip hotkeys when typing in an input field
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
@@ -179,16 +173,16 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // Map hotkey actions to handlers - defined inside effect to capture current values
       const actionHandlers: Record<HotkeyAction, (() => void) | null> = {
         "file.open": handleOpen,
         "file.save": handleSave,
         "file.copy": handleCopy,
         "edit.undo": handleUndo,
         "edit.redo": handleRedo,
-        "tool.pen": () => handleToolChange("pen"),
-        "tool.highlighter": () => handleToolChange("highlighter"),
-        "tool.area": () => handleToolChange("area"),
+        "tool.pen": () => handleToolChange(Tools.PEN),
+        "tool.highlighter": () => handleToolChange(Tools.HIGHLIGHTER),
+        "tool.area": () => handleToolChange(Tools.AREA),
+        "tool.eraser": () => handleToolChange(Tools.ERASER),
         "color.1": () => handleColorChange(0),
         "color.2": () => handleColorChange(1),
         "color.3": () => handleColorChange(2),
@@ -209,14 +203,11 @@ export function useKeyboardShortcuts() {
         "tab.previous": switchToPreviousTab,
       };
 
-      // Check each hotkey action
       for (const [action, binding] of Object.entries(hotkeys) as [
         HotkeyAction,
         HotkeyBinding,
       ][]) {
-        // Skip unbound hotkeys (empty key)
         if (!binding.key || binding.key === "") continue;
-
         if (matchesHotkey(e, binding)) {
           const handler = actionHandlers[action];
           if (handler) {
@@ -231,25 +222,25 @@ export function useKeyboardShortcuts() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
-    hotkeys,
-    handleOpen,
-    handleSave,
-    handleCopy,
-    handleUndo,
-    handleRedo,
-    handleToggleRuler,
-    handleZoomIn,
-    handleZoomOut,
+    settings,
+    undo,
+    redo,
+    toggleRuler,
+    switchTool,
+    setActiveColor,
+    zoom,
+    setZoom,
     fitToWindow,
     stretchToFill,
     centerImage,
     addTab,
-    handleCloseTab,
+    closeTab,
     activeDocumentId,
     documents.length,
     switchToNextTab,
     switchToPreviousTab,
-    handleToolChange,
-    handleColorChange,
+    handleOpen,
+    handleSave,
+    handleCopy,
   ]);
 }

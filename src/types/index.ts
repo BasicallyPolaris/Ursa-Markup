@@ -1,5 +1,65 @@
-export type Tool = "pen" | "highlighter" | "area";
-export type BlendMode = "normal" | "multiply";
+export const BlendModes = {
+  NORMAL: "source-over",
+  MULTIPLY: "multiply",
+} as const;
+
+export type BlendMode = (typeof BlendModes)[keyof typeof BlendModes];
+
+export const EraseModes = {
+  FULL_STROKE: "full-stroke",
+  CONTAINED: "contained",
+} as const;
+
+export type EraseMode = (typeof EraseModes)[keyof typeof EraseModes];
+
+export const Tools = {
+  PEN: "pen",
+  HIGHLIGHTER: "highlighter",
+  AREA: "area",
+  ERASER: "eraser",
+} as const;
+
+export type Tool = (typeof Tools)[keyof typeof Tools];
+
+export type ToolConfig =
+  | PenToolConfig
+  | HighlighterToolConfig
+  | AreaToolConfig
+  | EraserToolConfig;
+
+export type ToolConfigs = {
+  [Tools.PEN]: PenToolConfig;
+  [Tools.HIGHLIGHTER]: HighlighterToolConfig;
+  [Tools.AREA]: AreaToolConfig;
+  [Tools.ERASER]: EraserToolConfig;
+};
+
+export interface PenToolConfig {
+  tool: typeof Tools.PEN;
+  size: number;
+  opacity: number;
+  blendMode: BlendMode;
+}
+
+export interface HighlighterToolConfig {
+  tool: typeof Tools.HIGHLIGHTER;
+  size: number;
+  opacity: number;
+  blendMode: BlendMode;
+}
+
+export interface AreaToolConfig {
+  tool: typeof Tools.AREA;
+  opacity: number;
+  blendMode: BlendMode;
+  borderRadius: number;
+}
+
+export interface EraserToolConfig {
+  tool: typeof Tools.ERASER;
+  size: number;
+  eraserMode: EraseMode;
+}
 
 export interface Point {
   x: number;
@@ -19,26 +79,30 @@ export interface RulerState {
   isDragging: boolean;
 }
 
-export interface Stroke {
+export interface Stroke<T extends Tool> {
   id: string;
-  tool: Tool;
+  tool: T;
+  color: string;
+  toolConfig: ToolConfigs[T];
   points: Point[];
-  brushSettings: BrushSettings;
   timestamp: number;
 }
 
-export interface StrokeGroup {
+export type AnyStroke = { [K in Tool]: Stroke<K> }[Tool];
+
+export interface StrokeGroup<T extends Tool> {
   id: string;
-  strokes: Stroke[];
+  strokes: Stroke<T>[];
   timestamp: number;
 }
+
+export type AnyStrokeGroup = { [K in Tool]: StrokeGroup<K> }[Tool];
 
 export interface StrokeHistoryState {
-  groups: StrokeGroup[];
+  groups: AnyStrokeGroup[];
   currentIndex: number;
 }
 
-// Tab state for multi-tab support
 export interface Tab {
   id: string;
   filePath: string | null;
@@ -50,21 +114,13 @@ export interface Tab {
   rulerPosition: { x: number; y: number; angle: number };
   hasChanges: boolean;
   recentDir: string | null;
-  strokeHistory: StrokeGroup[];
+  strokeHistory: AnyStrokeGroup[];
   strokeHistoryIndex: number;
-}
-
-export interface BrushSettings {
-  size: number;
-  color: string;
-  opacity: number;
-  blendMode: BlendMode;
-  borderRadius?: number;
 }
 
 export interface CanvasState {
   tool: Tool;
-  brush: BrushSettings;
+  toolConfigs: ToolConfigs;
   ruler: RulerState;
   canUndo: boolean;
   canRedo: boolean;
@@ -74,26 +130,6 @@ export interface CanvasState {
 export interface ColorPalette {
   name: string;
   colors: string[];
-}
-
-// Tool configuration types for theme system
-export interface PenToolConfig {
-  minSize: number;
-  maxSize: number;
-  defaultSize: number;
-}
-
-export interface HighlighterToolConfig {
-  opacity: number;
-  minSize: number;
-  maxSize: number;
-  defaultSize: number;
-}
-
-export interface AreaToolConfig {
-  opacity: number;
-  defaultSize: number;
-  borderRadius: number;
 }
 
 export interface RulerState {
@@ -111,12 +147,6 @@ export interface RulerSnapInfo {
   onRuler: boolean;
 }
 
-export interface ToolConfig {
-  pen: PenToolConfig;
-  highlighter: HighlighterToolConfig;
-  area: AreaToolConfig;
-}
-
 export interface DocumentState {
   id: string;
   filePath: string | null;
@@ -128,7 +158,7 @@ export interface DocumentState {
   rulerPosition: { x: number; y: number; angle: number };
   hasChanges: boolean;
   recentDir: string | null;
-  strokeHistory: StrokeGroup[];
+  strokeHistory: AnyStrokeGroup[];
   strokeHistoryIndex: number;
 }
 
@@ -138,13 +168,17 @@ export interface ViewState {
   canvasSize: Size;
 }
 
-export interface PreviewState {
-  tool: Tool;
+export type AnyPreviewState = {
+  [K in Tool]: PreviewState<K>;
+}[Tool];
+
+export interface PreviewState<T extends Tool> {
+  tool: T;
+  color: string;
+  toolConfig: ToolConfigs[T];
   startPoint: Point;
   currentPoint: Point;
-  brush: BrushSettings;
   points?: Point[];
-  blendMode?: BlendMode;
 }
 
 // Color types for blend modes

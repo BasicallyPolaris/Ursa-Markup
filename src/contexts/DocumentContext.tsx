@@ -9,8 +9,8 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import type { Document, StrokeHistory, Ruler } from "../core";
-import type { Point, Tool, BrushSettings } from "../types";
+import { Document, StrokeHistory, Ruler } from "../core";
+import type { Point, Tool, ToolConfigs } from "../types";
 
 interface DocumentContextValue {
   document: Document;
@@ -22,17 +22,16 @@ interface DocumentContextValue {
   };
   ruler: Ruler;
   startStrokeGroup: () => void;
-  startStroke: (
-    tool: Tool,
-    brush: BrushSettings,
+  startStroke: <T extends Tool>(
+    tool: T,
+    toolConfig: ToolConfigs[T],
+    color: string,
     point: Point,
-    blendMode?: "normal" | "color" | "multiply",
   ) => void;
   addPointToStroke: (point: Point) => void;
   endStrokeGroup: () => void;
   undo: () => void;
   redo: () => void;
-  // Ruler actions
   toggleRuler: () => void;
   showRuler: () => void;
   hideRuler: () => void;
@@ -72,7 +71,7 @@ export function DocumentProvider({
 
     return () => {
       mounted = false;
-      document.offChange();
+      document.offChange(handleChange);
     };
   }, [document]);
 
@@ -82,8 +81,13 @@ export function DocumentProvider({
   }, [document]);
 
   const startStroke = useCallback(
-    (tool: Tool, brush: BrushSettings, point: Point) => {
-      document.strokeHistory.startStroke(tool, brush, point);
+    <T extends Tool>(
+      tool: T,
+      toolConfig: ToolConfigs[T],
+      color: string,
+      point: Point,
+    ) => {
+      document.strokeHistory.startStroke(tool, toolConfig, color, point);
       document.markAsChanged();
     },
     [document],
@@ -101,13 +105,17 @@ export function DocumentProvider({
   }, [document]);
 
   const undo = useCallback(() => {
-    document.strokeHistory.undo();
-    document.markAsChanged();
+    if (document.strokeHistory.canUndo()) {
+      document.strokeHistory.undo();
+      document.markAsChanged();
+    }
   }, [document]);
 
   const redo = useCallback(() => {
-    document.strokeHistory.redo();
-    document.markAsChanged();
+    if (document.strokeHistory.canRedo()) {
+      document.strokeHistory.redo();
+      document.markAsChanged();
+    }
   }, [document]);
 
   // Ruler actions
@@ -137,7 +145,7 @@ export function DocumentProvider({
   const setRulerAngle = useCallback(
     (angle: number) => {
       document.ruler.setAngle(angle);
-      document.markAsChanged();
+      forceUpdate({});
     },
     [document],
   );
@@ -145,7 +153,7 @@ export function DocumentProvider({
   const startDragRuler = useCallback(
     (point: Point) => {
       document.ruler.startDrag(point);
-      forceUpdate({}); // Trigger re-render so ruler.isDragging is picked up
+      forceUpdate({});
     },
     [document],
   );
@@ -153,15 +161,16 @@ export function DocumentProvider({
   const dragRulerTo = useCallback(
     (point: Point) => {
       document.ruler.dragTo(point);
-      // No need to call forceUpdate here - the animation loop handles rendering
-      // But we do need to update state so React knows about the change
+      // Trigger a React update so components depending on ruler state re-render.
+      // Previously an animation loop handled this; now we update on demand.
+      forceUpdate({});
     },
     [document],
   );
 
   const endDragRuler = useCallback(() => {
     document.ruler.endDrag();
-    document.markAsChanged();
+    forceUpdate({});
   }, [document]);
 
   const autoCenter = useCallback(

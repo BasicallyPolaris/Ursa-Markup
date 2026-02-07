@@ -16,6 +16,7 @@ import {
   Settings,
   Layers,
   Blend,
+  Eraser,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { ToolButton } from "../ui/tool-button";
@@ -41,7 +42,7 @@ import { useCanvasEngine } from "../../contexts/CanvasEngineContext";
 import { useDrawing } from "../../contexts/DrawingContext";
 import { useHotkeys, useFileActions } from "../../hooks/useKeyboardShortcuts";
 import { formatHotkey } from "../../services/types";
-import type { Tool, BrushSettings } from "../../types";
+import { BlendModes, Tools, type BlendMode, type Tool } from "../../types";
 import { cn } from "../../lib/utils";
 
 export function Toolbar() {
@@ -54,8 +55,14 @@ export function Toolbar() {
   const { handleOpen, handleSave, handleCopy } = useFileActions();
 
   // Use shared drawing state from context
-  const { tool, brush, blendMode, setBlendMode, updateBrush, switchTool } =
-    useDrawing();
+  const {
+    tool,
+    switchTool,
+    toolConfig,
+    updateToolConfig,
+    activeColor,
+    setActiveColor,
+  } = useDrawing();
 
   // Use colorPresets from settings (consistent with hotkeys)
   const colorPresets = settings.colorPresets;
@@ -82,13 +89,6 @@ export function Toolbar() {
       switchTool(newTool);
     },
     [switchTool],
-  );
-
-  const handleBrushChange = useCallback(
-    (changes: Partial<BrushSettings>) => {
-      updateBrush(changes);
-    },
-    [updateBrush],
   );
 
   const handleSettings = useCallback(() => {
@@ -149,10 +149,10 @@ export function Toolbar() {
   }, [centerImage]);
 
   const handleBlendModeChange = useCallback(
-    (mode: "normal" | "multiply") => {
-      setBlendMode(mode);
+    (blendMode: BlendMode) => {
+      updateToolConfig(tool, { blendMode });
     },
-    [setBlendMode],
+    [updateToolConfig],
   );
 
   const handleUndo = useCallback(() => {
@@ -313,6 +313,18 @@ export function Toolbar() {
                 Area ({formatHotkey(hotkeys["tool.area"])})
               </TooltipContent>
             </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <ToolButton
+                  active={tool === "eraser"}
+                  icon={<Eraser className="size-4" />}
+                  onClick={() => handleToolChange("eraser")}
+                />
+              </TooltipTrigger>
+              <TooltipContent>
+                Eraser ({formatHotkey(hotkeys["tool.eraser"])})
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           <div className="w-px h-8 bg-text-secondary/20" />
@@ -323,10 +335,10 @@ export function Toolbar() {
               <Tooltip key={`${color}-${index}`}>
                 <TooltipTrigger asChild>
                   <button
-                    onClick={() => handleBrushChange({ color })}
+                    onClick={() => setActiveColor(color)}
                     className={cn(
                       "w-6 h-6 rounded-full transition-all",
-                      brush.color === color
+                      activeColor === color
                         ? "ring-2 ring-text-primary/60 ring-offset-1 ring-offset-toolbar-bg-secondary scale-110"
                         : "hover:scale-105 hover:ring-2 hover:ring-text-primary/30",
                     )}
@@ -348,115 +360,121 @@ export function Toolbar() {
 
           <div className="w-px h-8 bg-surface-bg" />
 
-          {/* Size or Radius Controls */}
+          {/* Size and Radius Controls */}
           <div className="flex items-center gap-4">
-            {tool !== "area" ? (
+            {"size" in toolConfig && (
               <div className="flex flex-col gap-1 w-24">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-text-muted">Size</span>
                   <span className="text-xs text-text-secondary font-mono">
-                    {brush.size}px
+                    {toolConfig.size}px
                   </span>
                 </div>
                 <Slider
-                  value={[brush.size]}
+                  value={[toolConfig.size]}
                   min={1}
                   max={tool === "highlighter" ? 40 : 20}
                   step={1}
                   onValueChange={([value]) =>
-                    handleBrushChange({ size: value })
-                  }
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1 w-24">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-text-muted">Radius</span>
-                  <span className="text-xs text-text-secondary font-mono">
-                    {brush.borderRadius || 0}px
-                  </span>
-                </div>
-                <Slider
-                  value={[brush.borderRadius || 0]}
-                  min={0}
-                  max={50}
-                  step={1}
-                  onValueChange={([value]) =>
-                    handleBrushChange({ borderRadius: value })
+                    updateToolConfig(tool, { size: value })
                   }
                 />
               </div>
             )}
-
-            {/* Opacity Slider */}
-            <div className="flex flex-col gap-1 w-24">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-text-muted">Opacity</span>
-                <span className="text-xs text-text-secondary font-mono">
-                  {Math.round(brush.opacity * 100)}%
-                </span>
+            {"borderRadius" in toolConfig && (
+              <div className="flex flex-col gap-1 w-24">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-muted">Radius</span>
+                  <span className="text-xs text-text-secondary font-mono">
+                    {toolConfig.borderRadius || 0}px
+                  </span>
+                </div>
+                <Slider
+                  value={[toolConfig.borderRadius || 0]}
+                  min={0}
+                  max={50}
+                  step={1}
+                  onValueChange={([value]) =>
+                    updateToolConfig(tool, { borderRadius: value })
+                  }
+                />
               </div>
-              <Slider
-                value={[brush.opacity * 100]}
-                min={10}
-                max={100}
-                step={5}
-                onValueChange={([value]) =>
-                  handleBrushChange({ opacity: value / 100 })
-                }
-              />
-            </div>
-
-            {/* Brush Preview */}
-            <div className="flex items-center justify-center w-10 h-10 bg-surface-bg rounded-lg border border-toolbar-border">
-              {tool === "highlighter" ? (
-                <div
-                  className="bg-current"
-                  style={{
-                    height: Math.min(28, brush.size),
-                    width: Math.min(20, brush.size * 0.3),
-                    backgroundColor: brush.color,
-                    opacity: brush.opacity,
-                  }}
+            )}
+            {"opacity" in toolConfig && (
+              <div className="flex flex-col gap-1 w-24">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-muted">Opacity</span>
+                  <span className="text-xs text-text-secondary font-mono">
+                    {Math.round(toolConfig.opacity * 100)}%
+                  </span>
+                </div>
+                <Slider
+                  value={[toolConfig.opacity * 100]}
+                  min={10}
+                  max={100}
+                  step={5}
+                  onValueChange={([value]) =>
+                    updateToolConfig(tool, { opacity: value / 100 })
+                  }
                 />
-              ) : tool === "area" ? (
-                <div
-                  style={{
-                    width: 24,
-                    height: 18,
-                    backgroundColor: brush.color,
-                    opacity: brush.opacity,
-                    borderRadius: Math.min(brush.borderRadius || 0, 9),
-                  }}
-                />
-              ) : (
-                <div
-                  className="rounded-full"
-                  style={{
-                    width: Math.min(32, Math.max(4, brush.size)),
-                    height: Math.min(32, Math.max(4, brush.size)),
-                    backgroundColor: brush.color,
-                    opacity: brush.opacity,
-                  }}
-                />
-              )}
-            </div>
+              </div>
+            )}
+            {/* Brush Previews */}
+            {(tool === Tools.PEN ||
+              tool === Tools.HIGHLIGHTER ||
+              tool === Tools.AREA) && (
+              <div className="flex items-center justify-center w-10 h-10 bg-surface-bg rounded-lg border border-toolbar-border">
+                {tool === Tools.PEN && (
+                  <div
+                    className="bg-current"
+                    style={{
+                      width: Math.min(32, Math.max(4, toolConfig.size)),
+                      height: Math.min(32, Math.max(4, toolConfig.size)),
+                      backgroundColor: activeColor,
+                      opacity: toolConfig.opacity,
+                    }}
+                  />
+                )}
+                {tool === Tools.AREA && (
+                  <div
+                    style={{
+                      width: 24,
+                      height: 18,
+                      backgroundColor: activeColor,
+                      opacity: toolConfig.opacity,
+                      borderRadius: Math.min(toolConfig.borderRadius, 9),
+                    }}
+                  />
+                )}
+                {tool === Tools.HIGHLIGHTER && (
+                  <div
+                    className="bg-current"
+                    style={{
+                      height: Math.min(28, toolConfig.size),
+                      width: Math.min(20, toolConfig.size * 0.3),
+                      backgroundColor: activeColor,
+                      opacity: toolConfig.opacity,
+                    }}
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           <div className="w-px h-8 bg-surface-bg" />
 
           {/* Blend Mode Select - shown for drawing tools */}
-          {(tool === "pen" || tool === "highlighter" || tool === "area") && (
+          {(tool === Tools.PEN ||
+            tool === Tools.HIGHLIGHTER ||
+            tool === Tools.AREA) && (
             <Select
-              value={blendMode}
-              onValueChange={(value) =>
-                handleBlendModeChange(value as "normal" | "multiply")
-              }
+              value={toolConfig}
+              onValueChange={() => handleBlendModeChange(toolConfig.blendMode)}
             >
               <SelectTrigger className="w-27.5">
                 <SelectValue>
                   <span className="flex items-center gap-1.5">
-                    {blendMode === "normal" ? (
+                    {toolConfig.blendMode === BlendModes.NORMAL ? (
                       <>
                         <Layers className="size-3" />
                         Normal

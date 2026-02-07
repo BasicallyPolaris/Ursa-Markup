@@ -1,4 +1,4 @@
-import { Pencil, Highlighter, Square } from "lucide-react";
+import { Pencil, Highlighter, Square, Eraser } from "lucide-react";
 import { Slider } from "../../ui/slider";
 import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
 import {
@@ -8,6 +8,7 @@ import {
   SettingsGroup,
 } from "../components/SettingsSection";
 import type { AppSettings } from "../../../services/types";
+import { BlendModes } from "../../../types";
 
 interface ToolsSettingsProps {
   settings: AppSettings;
@@ -16,8 +17,8 @@ interface ToolsSettingsProps {
 
 export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
   const blendModeOptions = [
-    { value: "normal" as const, label: "Normal" },
-    { value: "multiply" as const, label: "Multiply" },
+    { value: BlendModes.NORMAL, label: "Normal" },
+    { value: BlendModes.MULTIPLY, label: "Multiply" },
   ];
 
   return (
@@ -175,6 +176,51 @@ export function ToolsSettings({ settings, updateDraft }: ToolsSettingsProps) {
                 value={settings.defaultAreaBlendMode}
                 onChange={(value) =>
                   updateDraft({ defaultAreaBlendMode: value })
+                }
+                className="w-40"
+              />
+            </SettingsRow>
+          </SettingsGroup>
+        </div>
+      </SettingsSection>
+      {/* Eraser Tool Settings */}
+      <SettingsSection
+        title="Eraser Tool Defaults"
+        description="Remove strokes with an eraser brush"
+        icon={<Eraser className="w-4 h-4" />}
+      >
+        <SettingsGroup title="Appearance">
+          <SettingsSliderRow
+            label="Size"
+            value={(settings as any).defaultEraserSize || 10}
+            unit="px"
+          >
+            <Slider
+              value={[(settings as any).defaultEraserSize || 10]}
+              onValueChange={([value]) =>
+                updateDraft({ defaultEraserSize: value })
+              }
+              min={5}
+              max={80}
+              step={1}
+            />
+          </SettingsSliderRow>
+        </SettingsGroup>
+
+        <div className="border-t border-toolbar-border/50 pt-4">
+          <SettingsGroup title="Behavior">
+            <SettingsRow
+              label="Eraser mode"
+              description="How eraser selects strokes to remove"
+            >
+              <ToggleButtonGroup
+                options={[
+                  { value: "full-stroke", label: "Full Stroke" },
+                  { value: "contained", label: "Contained" },
+                ]}
+                value={(settings as any).defaultEraserMode || "full-stroke"}
+                onChange={(value) =>
+                  updateDraft({ defaultEraseMode: value as any })
                 }
                 className="w-40"
               />

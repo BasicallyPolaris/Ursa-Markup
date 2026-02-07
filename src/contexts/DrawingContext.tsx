@@ -1,47 +1,68 @@
-/**
- * DrawingContext - Shared state for drawing tools and brush settings
- * Connects Toolbar with CanvasContainer
- *
- * Each tool maintains its own session settings that persist until app restart.
- * Switching between tools restores that tool's last-used settings.
- */
-
 import React, {
   createContext,
   useContext,
   useState,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
 } from "react";
-import type { Tool, BrushSettings } from "../types";
+import {
+  type Tool,
+  Tools,
+  BlendModes,
+  EraseModes,
+  type ToolConfigs,
+} from "../types";
 import { useSettings } from "./SettingsContext";
 
-type BlendMode = "normal" | "multiply";
-
-/** Per-tool configuration that persists during the session */
-interface ToolConfig {
-  size: number;
-  opacity: number;
-  blendMode: BlendMode;
-  borderRadius?: number;
-}
-
-interface DrawingContextValue {
-  tool: Tool;
-  brush: BrushSettings;
-  blendMode: BlendMode;
-  setTool: (tool: Tool) => void;
-  setBrush: (
-    brush: BrushSettings | ((prev: BrushSettings) => BrushSettings),
-  ) => void;
-  setBlendMode: (mode: BlendMode) => void;
-  updateBrush: (changes: Partial<BrushSettings>) => void;
-  /** Switch tool and restore that tool's session settings */
+interface DrawingActions {
   switchTool: (tool: Tool) => void;
+  updateToolConfig: <T extends Tool>(
+    tool: T,
+    changes: Partial<ToolConfigs[T]>,
+  ) => void;
+  activeColor: string;
+  setActiveColor: (color: string) => void;
 }
+
+type DrawingContextValue = DrawingActions &
+  {
+    [K in Tool]: {
+      tool: K;
+      toolConfig: ToolConfigs[K];
+    };
+  }[Tool];
 
 const DrawingContext = createContext<DrawingContextValue | null>(null);
+
+// --- Helpers ---
+
+const getDefaultConfigs = (settings: any): ToolConfigs => ({
+  [Tools.PEN]: {
+    tool: Tools.PEN,
+    size: settings.defaultPenSize,
+    opacity: settings.defaultPenOpacity,
+    blendMode: settings.defaultPenBlendMode ?? BlendModes.NORMAL,
+  },
+  [Tools.HIGHLIGHTER]: {
+    tool: Tools.HIGHLIGHTER,
+    size: settings.defaultHighlighterSize,
+    opacity: settings.defaultHighlighterOpacity,
+    blendMode: settings.defaultHighlighterBlendMode ?? BlendModes.MULTIPLY,
+  },
+  [Tools.AREA]: {
+    tool: Tools.AREA,
+    opacity: settings.defaultAreaOpacity,
+    blendMode: settings.defaultAreaBlendMode ?? BlendModes.MULTIPLY,
+    borderRadius: settings.defaultAreaBorderRadius,
+  },
+  [Tools.ERASER]: {
+    tool: Tools.ERASER,
+    size: settings.defaultEraserSize || 1,
+    eraserMode: settings.defaultEraseMode || EraseModes.FULL_STROKE,
+  },
+});
 
 interface DrawingProviderProps {
   children: React.ReactNode;
@@ -50,72 +71,35 @@ interface DrawingProviderProps {
 
 export function DrawingProvider({
   children,
-  initialTool = "pen",
+  initialTool = Tools.PEN,
 }: DrawingProviderProps) {
-  const { settings } = useSettings();
+  const { settings, isLoaded } = useSettings();
 
-  // Initialize with first color from settings colorPresets
-  const initialColor = settings.colorPresets[0] || "#FF6B6B";
-
-  // Per-tool session configs - initialized from user settings, but maintained per-session
-  const [toolConfigs, setToolConfigs] = useState<Record<Tool, ToolConfig>>(
-    () => ({
-      pen: {
-        size: settings.defaultPenSize,
-        opacity: settings.defaultPenOpacity,
-        blendMode: settings.defaultPenBlendMode ?? "normal",
-      },
-      highlighter: {
-        size: settings.defaultHighlighterSize,
-        opacity: settings.defaultHighlighterOpacity,
-        blendMode: settings.defaultHighlighterBlendMode ?? "multiply",
-      },
-      area: {
-        size: 1, // Not used for area tool
-        opacity: settings.defaultAreaOpacity,
-        blendMode: settings.defaultAreaBlendMode ?? "multiply",
-        borderRadius: settings.defaultAreaBorderRadius,
-      },
-    }),
+  // Lazy initialization for color
+  const [activeColor, setActiveColor] = useState<string>(
+    () => settings.defaultColor,
   );
 
-  const [tool, setToolState] = useState<Tool>(initialTool);
+  const [tool, setTool] = useState<Tool>(initialTool);
 
-  // Current brush state derived from tool config + shared color
-  const [color, setColor] = useState<string>(initialColor);
+  // Lazy initialization for configs using the helper
+  const [toolConfigs, setToolConfigs] = useState<ToolConfigs>(() =>
+    getDefaultConfigs(settings),
+  );
 
-  // Get current tool's config
-  const currentConfig = toolConfigs[tool];
-
-  // Build brush from current tool config and shared color
-  const brush: BrushSettings = {
-    size: currentConfig.size,
-    color: color,
-    blendMode: currentConfig.blendMode,
-    opacity: currentConfig.opacity,
-    borderRadius: currentConfig.borderRadius,
-  };
-
-  const blendMode = currentConfig.blendMode;
-
-  // Track if this is the first render to avoid resetting configs on settings change
   const isInitialized = useRef(false);
 
+  // Sync settings ONLY when they transition from unloaded to loaded.
+  // We use a ref to prevent overwriting user changes if settings re-emit later.
   useEffect(() => {
-    isInitialized.current = true;
-  }, []);
-
-  // Sync brush color if it doesn't match any preset (e.g., on settings change)
-  useEffect(() => {
-    // If current brush color is not in presets, update to first preset
-    if (!settings.colorPresets.includes(color)) {
-      setColor(settings.colorPresets[0] || color);
+    if (isLoaded && !isInitialized.current) {
+      setToolConfigs(getDefaultConfigs(settings));
+      isInitialized.current = true;
     }
-  }, [settings.colorPresets, color]);
+  }, [isLoaded, settings]);
 
-  /** Update the current tool's config */
   const updateToolConfig = useCallback(
-    (toolToUpdate: Tool, changes: Partial<ToolConfig>) => {
+    <T extends Tool>(toolToUpdate: T, changes: Partial<ToolConfigs[T]>) => {
       setToolConfigs((prev) => ({
         ...prev,
         [toolToUpdate]: { ...prev[toolToUpdate], ...changes },
@@ -124,63 +108,22 @@ export function DrawingProvider({
     [],
   );
 
-  const updateBrush = useCallback(
-    (changes: Partial<BrushSettings>) => {
-      // Update color separately (shared across tools)
-      if (changes.color !== undefined) {
-        setColor(changes.color);
-      }
-
-      // Update tool-specific settings in the current tool's config
-      const toolConfigChanges: Partial<ToolConfig> = {};
-      if (changes.size !== undefined) toolConfigChanges.size = changes.size;
-      if (changes.opacity !== undefined)
-        toolConfigChanges.opacity = changes.opacity;
-      if (changes.borderRadius !== undefined)
-        toolConfigChanges.borderRadius = changes.borderRadius;
-
-      if (Object.keys(toolConfigChanges).length > 0) {
-        updateToolConfig(tool, toolConfigChanges);
-      }
-    },
-    [tool, updateToolConfig],
-  );
-
-  const setBlendMode = useCallback(
-    (mode: BlendMode) => {
-      updateToolConfig(tool, { blendMode: mode });
-    },
-    [tool, updateToolConfig],
-  );
-
-  const setBrush = useCallback(
-    (brushOrFn: BrushSettings | ((prev: BrushSettings) => BrushSettings)) => {
-      const newBrush =
-        typeof brushOrFn === "function" ? brushOrFn(brush) : brushOrFn;
-      updateBrush(newBrush);
-    },
-    [brush, updateBrush],
-  );
-
-  /**
-   * Switch tool and restore that tool's session settings.
-   * No longer resets to defaults - each tool remembers its last-used settings.
-   */
   const switchTool = useCallback((newTool: Tool) => {
-    setToolState(newTool);
-    // Tool config is automatically applied via the derived brush state
+    setTool(newTool);
   }, []);
 
-  const value: DrawingContextValue = {
-    tool,
-    brush,
-    blendMode,
-    setTool: setToolState,
-    setBrush,
-    setBlendMode,
-    updateBrush,
-    switchTool,
-  };
+  const value = useMemo(() => {
+    const contextValue = {
+      tool,
+      toolConfig: toolConfigs[tool],
+      switchTool,
+      updateToolConfig,
+      activeColor,
+      setActiveColor,
+    };
+
+    return contextValue as DrawingContextValue;
+  }, [tool, toolConfigs, switchTool, updateToolConfig, activeColor]);
 
   return (
     <DrawingContext.Provider value={value}>{children}</DrawingContext.Provider>
@@ -194,5 +137,3 @@ export function useDrawing(): DrawingContextValue {
   }
   return context;
 }
-
-export { DrawingContext };
