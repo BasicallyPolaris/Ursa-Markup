@@ -133,6 +133,19 @@ export class StrokeHistory {
   }
 
   /**
+   * Aborts the current stroke group being recorded.
+   * Discards all points/strokes in the current group and resets recording state.
+   * Does NOT affect the history stack.
+   *
+   * Use this when a stroke is cancelled (e.g. Esc key) or invalid (e.g. Eraser hit nothing).
+   */
+  abortGroup(): void {
+    this.isRecording = false;
+    this.currentGroup = null;
+    this.currentStroke = null;
+  }
+
+  /**
    * Undo the last stroke group
    * Returns the new index after undo
    */

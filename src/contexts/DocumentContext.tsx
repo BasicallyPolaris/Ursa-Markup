@@ -31,6 +31,7 @@ interface DocumentContextValue {
   ) => void;
   addPointToStroke: (point: Point) => void;
   endStrokeGroup: () => void;
+  abortStrokeGroup: () => void;
   undo: () => void;
   redo: () => void;
   toggleRuler: () => void;
@@ -105,6 +106,11 @@ export function DocumentProvider({
     document.strokeHistory.endGroup();
   }, [document]);
 
+  const abortStrokeGroup = useCallback(() => {
+    document.strokeHistory.abortGroup();
+    forceUpdate({});
+  }, [document]);
+
   const undo = useCallback(() => {
     if (document.strokeHistory.canUndo()) {
       document.strokeHistory.undo();
@@ -135,18 +141,17 @@ export function DocumentProvider({
     forceUpdate({});
   }, [document]);
 
-  const rotateRuler = useCallback(
-    (delta: number) => {
-      document.ruler.rotate(delta);
+  const setRulerAngle = useCallback(
+    (angle: number) => {
+      document.ruler.setAngle(angle);
       forceUpdate({});
     },
     [document],
   );
 
-  const setRulerAngle = useCallback(
-    (angle: number) => {
-      document.ruler.setAngle(angle);
-      forceUpdate({});
+  const rotateRuler = useCallback(
+    (delta: number) => {
+      document.ruler.rotate(delta);
     },
     [document],
   );
@@ -159,20 +164,17 @@ export function DocumentProvider({
     [document],
   );
 
-  const dragRulerTo = useCallback(
-    (point: Point) => {
-      document.ruler.dragTo(point);
-      // Trigger a React update so components depending on ruler state re-render.
-      // Previously an animation loop handled this; now we update on demand.
-      forceUpdate({});
-    },
-    [document],
-  );
-
   const endDragRuler = useCallback(() => {
     document.ruler.endDrag();
     forceUpdate({});
   }, [document]);
+
+  const dragRulerTo = useCallback(
+    (point: Point) => {
+      document.ruler.dragTo(point);
+    },
+    [document],
+  );
 
   const autoCenter = useCallback(
     (width: number, height: number) => {
@@ -201,6 +203,7 @@ export function DocumentProvider({
     startStroke,
     addPointToStroke,
     endStrokeGroup,
+    abortStrokeGroup,
     undo,
     redo,
     toggleRuler,
