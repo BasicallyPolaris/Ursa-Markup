@@ -278,12 +278,12 @@ export class IOService {
    * Listen for files opened via CLI (single-instance)
    */
   async listenForFiles(
-    callback: (filePath: string) => void,
+    callback: (filePaths: string[]) => void,
   ): Promise<UnlistenFn> {
-    const unlisten = await listen("open-file", (event) => {
-      const payload = event.payload as { file_path: string };
-      if (payload?.file_path) {
-        callback(payload.file_path);
+    const unlisten = await listen("open-files", (event) => {
+      const payload = event.payload as { file_paths: string[] };
+      if (payload?.file_paths && payload.file_paths.length > 0) {
+        callback(payload.file_paths);
       }
     });
 
@@ -291,17 +291,17 @@ export class IOService {
   }
 
   /**
-   * Get any pending file from initial launch
+   * Get any pending files from initial launch
    */
-  async getPendingFile(): Promise<string | null> {
+  async getPendingFiles(): Promise<string[]> {
     try {
       // Small delay to ensure backend is ready
       await new Promise((resolve) => setTimeout(resolve, 150));
-      const pendingFile = await invoke<string | null>("get_pending_file");
-      return pendingFile;
+      const pendingFiles = await invoke<string[]>("get_pending_files");
+      return pendingFiles || [];
     } catch {
-      // No pending file or backend not ready
-      return null;
+      // No pending files or backend not ready
+      return [];
     }
   }
 }

@@ -6,6 +6,7 @@ import { CloseTabDialog } from "./components/tabs/CloseTabDialog";
 import { TabBar } from "./components/tabs/TabBar";
 import { Toolbar } from "./components/toolbar/Toolbar";
 import { Toaster } from "./components/ui/sonner";
+import { toast } from "sonner";
 import {
   CanvasEngineProvider,
   DocumentProvider,
@@ -213,35 +214,38 @@ function App() {
 
   // Handle CLI file opening (initial launch + single-instance)
   useEffect(() => {
-    // Helper to open a file from CLI
-    const openFileFromCLI = async (filePath: string) => {
-      try {
-        const fileData = await services.ioService.readFile(filePath);
-        const blob = new Blob([fileData]);
-        const url = URL.createObjectURL(blob);
-        services.tabManager.createDocument(filePath, undefined, url);
-      } catch (error) {
-        console.error("Failed to open CLI file:", error);
+    // Helper to open files from CLI
+    const openFilesFromCLI = async (filePaths: string[]) => {
+      for (const filePath of filePaths) {
+        try {
+          const fileData = await services.ioService.readFile(filePath);
+          const blob = new Blob([fileData]);
+          const url = URL.createObjectURL(blob);
+          services.tabManager.createDocument(filePath, undefined, url);
+        } catch (error) {
+          console.error("Failed to open CLI file:", filePath, error);
+          toast.error(`Could not open file: ${filePath}`);
+        }
       }
     };
 
     // Listen for single-instance file open events
     const setupListener = async () => {
-      return await services.ioService.listenForFiles((filePath) => {
-        openFileFromCLI(filePath);
+      return await services.ioService.listenForFiles((filePaths) => {
+        openFilesFromCLI(filePaths);
       });
     };
 
-    // Check for pending file from initial launch
-    const checkPendingFile = async () => {
-      const pendingFile = await services.ioService.getPendingFile();
-      if (pendingFile) {
-        await openFileFromCLI(pendingFile);
+    // Check for pending files from initial launch
+    const checkPendingFiles = async () => {
+      const pendingFiles = await services.ioService.getPendingFiles();
+      if (pendingFiles.length > 0) {
+        await openFilesFromCLI(pendingFiles);
       }
     };
 
     const unlistenPromise = setupListener();
-    checkPendingFile();
+    checkPendingFiles();
 
     return () => {
       unlistenPromise.then((unlisten) => unlisten());
