@@ -90,7 +90,6 @@ export function DocumentProvider({
       point: Point,
     ) => {
       document.strokeHistory.startStroke(tool, toolConfig, color, point);
-      document.markAsChanged();
     },
     [document],
   );
