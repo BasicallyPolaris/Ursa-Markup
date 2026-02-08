@@ -1,49 +1,78 @@
+<div align="center">
+
 # OmniMark
 
-A cross-platform image annotation tool inspired by the Windows Snipping Tool. Built with Tauri, React, and TypeScript.
+**A cross-platform image annotation tool inspired by the Windows Snipping Tool.**
+Built with Tauri, React, and TypeScript.
+
+[![Build Status](https://img.shields.io/github/actions/workflow/status/BasicallyPolaris/omnimark/release.yml?style=flat-square)](https://github.com/BasicallyPolaris/omnimark/actions)
+[![License](https://img.shields.io/github/license/BasicallyPolaris/omnimark?style=flat-square)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/BasicallyPolaris/omnimark?style=flat-square)](https://github.com/BasicallyPolaris/omnimark/releases)
+
+<img src=".github/assets/screenshot-main.png" alt="OmniMark Interface" width="100%" />
+
+[**Download Latest Release**](https://github.com/BasicallyPolaris/omnimark/releases)
+
+</div>
+
+---
 
 ## Features
 
-### Drawing Tools
+### 🎨 Drawing Tools
 
-- **Pen Tool**: Freehand drawing with smooth anti-aliased strokes
-- **Highlighter Tool**: Highlighting with flat ends
-- **Area Tool**: Rectangle/rounded rectangle highlighting
-- **Eraser Tool**: Stroke/Object based erasing
+- **Pen Tool**: Freehand drawing with smooth anti-aliased strokes.
+- **Highlighter Tool**: Highlighting with flat ends and transparency.
+- **Area Tool**: Rectangle/rounded rectangle highlighting.
+- **Eraser Tool**: Stroke/Object-based erasing (not just pixel erasing).
 
-### Tool Settings
+### 🛠 Tool Settings
 
-- Adjustable size and opacity per tool
-- Border radius for area tool
-- Blend modes (Normal / Multiply)
+- Adjustable size and opacity per tool.
+- Configurable border radius for area tools.
+- Blend modes (Normal / Multiply).
 
-### Canvas Features
+### 🖼 Canvas Features
 
-- **Zoom**: Ctrl+Scroll, Ctrl+=, Ctrl+-
-- **Pan**: Ctrl+Click and drag
-- **Fit/Stretch/Center**: Multiple view modes
+- **Zoom & Pan**: Smooth navigation with `Ctrl+Scroll` and drag gestures.
+- **Fit/Center**: Quick hotkeys to frame your work.
+- **Ruler Overlay**: Toggle (`Ctrl+R`) and rotate with scroll wheel for precision.
 
-### Ruler Overlay
+### 🚀 Productivity
 
-- Toggle with Ctrl+R
-- Rotate with scroll wheel
+- **Multi-Tab Support**: Work on multiple images simultaneously.
+- **Auto-Copy**: Automatically copies the annotated image to clipboard after every stroke (configurable).
+- **Undo/Redo**: Full history support per document.
+- **Theming**: Fully customizable colors via `theme.json`.
 
-### Multi-Tab Support
+## Configuration & Settings
 
-- Work on multiple images simultaneously with isolated ruler state
-- Configurable close behavior (prompt, auto-save, discard)
+OmniMark is highly customizable. You can tweak tool behaviors, themes, and shortcuts to match your workflow.
 
-### Other Features
+|                                    General Settings                                    |                                   Color Themes                                   |
+| :------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------: |
+|  <img src=".github/assets/settings-general.png" alt="General Settings" width="100%">   | <img src=".github/assets/settings-colors.png" alt="Color Settings" width="100%"> |
+|                                   **Tool Defaults**                                    |                                  **Shortcuts**                                   |
+| <img src=".github/assets/settings-tool-defaults.png" alt="Tool Defaults" width="100%"> |  <img src=".github/assets/settings-shortcuts.png" alt="Shortcuts" width="100%">  |
 
-- **Undo/Redo**: Full history support per document
-- **Auto-Copy**: Automatically copies annotated image to clipboard after each stroke
-- **Save**: Export as PNG, JPEG, or WebP
-- **Customizable Hotkeys**: Rebind all keyboard shortcuts
-- **Theming**: Fully customizable colors via theme.json
+## Installation
+
+### Windows, macOS, Linux
+
+Go to the [**Releases Page**](https://github.com/BasicallyPolaris/omnimark/releases) and download the installer for your operating system:
+
+- **Windows**: `.exe` or `.msi`
+- **macOS**: `.dmg` or `.app`
+- **Linux**: `.deb` or `.AppImage`
+
+> **Note**: As this is an open-source project, the binaries are currently unsigned. You may need to bypass standard security warnings (e.g., "Run Anyway" on Windows or Right Click > Open on macOS) to install.
 
 ## Keyboard Shortcuts
 
-All shortcuts can be customized in Settings → Shortcuts.
+OmniMark is designed to be keyboard-driven. All shortcuts can be customized in **Settings → Shortcuts**.
+
+<details>
+<summary><strong>Click to view default Keybindings</strong></summary>
 
 | Shortcut            | Action              |
 | ------------------- | ------------------- |
@@ -68,67 +97,7 @@ All shortcuts can be customized in Settings → Shortcuts.
 | `Ctrl+F`            | Stretch to fill     |
 | `Ctrl+Alt+C`        | Center image        |
 
-## Tech Stack
-
-- **Framework**: Tauri 2.x (Rust backend + Web frontend)
-- **Frontend**: React 19 + TypeScript
-- **Styling**: TailwindCSS 4 + ShadCN + BaseUI
-- **Build Tool**: Vite
-- **Canvas**: HTML5 Canvas API with Web Workers for clipboard encoding
-
-## Development
-
-### Prerequisites
-
-- [Bun](https://bun.sh/) (package manager)
-- [Rust](https://rustup.rs/) (for Tauri)
-- Linux dependencies for Tauri (see [Tauri prerequisites](https://tauri.app/start/prerequisites/))
-
-### Setup
-
-```bash
-# Install dependencies
-bun install
-
-# Run development server
-bun run tauri dev
-
-# Build for production
-bun run tauri build
-```
-
-### Project Structure
-
-```
-omnimark/
-├── src-tauri/                    # Rust backend
-│   ├── src/
-│   │   └── lib.rs                # Tauri commands & setup
-│   ├── capabilities/             # Tauri permission configs
-│   ├── Cargo.toml
-│   └── tauri.conf.json
-├── src/                          # React frontend
-│   ├── components/
-│   │   ├── canvas/               # Drawing canvas components
-│   │   ├── toolbar/              # Toolbar UI
-│   │   ├── tabs/                 # Tab bar and dialogs
-│   │   ├── settings/             # Settings window
-│   │   └── ui/                   # Base UI components
-│   ├── contexts/                 # React contexts (settings, theme, tabs, etc.)
-│   ├── core/                     # Domain logic (Document, BrushEngine, Ruler, etc.)
-│   ├── services/                 # Singleton services (IO, Settings, Theme, Window)
-│   │   ├── ...
-│   │   └── settings/config.ts    # Stores app wide configurations for Tools, App, ...
-│   ├── hooks/                    # Custom React hooks
-│   ├── workers/                  # Web workers (clipboard encoding)
-│   ├── lib/                      # Utilities
-│   ├── types/                    # TypeScript types
-│   ├── App.tsx
-│   └── main.tsx
-├── public/
-│   └── (static assets)
-└── package.json
-```
+</details>
 
 ## Customization
 
@@ -139,23 +108,49 @@ OmniMark supports full UI theming. See [THEMING.md](THEMING.md) for details.
 The theme file is located at:
 
 - **User theme**: `~/.config/omnimark/theme.json` (created on first run)
-- **Bundled default (developer)**: `src/lib/theme.json` (canonical defaults in source)
+- **Bundled default**: `src/lib/theme.json`
 
-### Color Palettes
+## Development
 
-Edit the `palettes` section in your user `~/.config/omnimark/theme.json` to customize palettes. For application defaults (developer), edit `src/lib/theme.json`.
+### Prerequisites
 
-```json
-{
-  "palettes": [
-    {
-      "name": "custom",
-      "colors": ["#FF0000", "#00FF00", "#0000FF"]
-    }
-  ]
-}
+- [Bun](https://bun.sh/) (Preferred package manager)
+- [Rust](https://rustup.rs/) (Required for Tauri backend)
+- [Tauri Prerequisites](https://tauri.app/start/prerequisites/) (System dependencies for Linux/macOS)
+
+### Setup
+
+```bash
+# 1. Clone the repo
+git clone [https://github.com/BasicallyPolaris/omnimark.git](https://github.com/BasicallyPolaris/omnimark.git)
+cd omnimark
+
+# 2. Install dependencies
+bun install
+
+# 3. Run development server (Frontend + Rust backend)
+bun run tauri dev
 ```
+
+### Build for Production
+
+To create the installers locally:
+
+```bash
+bun run tauri build
+```
+
+### Tech Stack
+
+- **Core**: Tauri 2.x (Rust)
+- **Frontend**: React 19 + TypeScript
+- **Styling**: TailwindCSS 4 + ShadCN + BaseUI
+- **State/Logic**: Custom HTML5 Canvas engine with Web Workers
+
+## Contributing
+
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
 
 ## License
 
-GPLv3 License
+Distributed under the GPLv3 License. See `LICENSE` for more information.
