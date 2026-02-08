@@ -27,8 +27,8 @@ export function ToolsSettings({
   ];
 
   const eraserModeOptions = [
+    { value: EraseModes.PIXEL, label: "Pixel" },
     { value: EraseModes.FULL_STROKE, label: "Full Stroke" },
-    { value: EraseModes.CONTAINED, label: "Contained" },
   ];
 
   return (

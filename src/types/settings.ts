@@ -2,8 +2,8 @@
 // SETTINGS
 // ============================================================================
 
-import { ToolConfigs } from "./tools";
 import { Theme } from "./theme";
+import { ToolConfigs } from "./tools";
 
 /**
  * BEHAVIOR ENUMS & TYPES
@@ -40,33 +40,47 @@ export type AutoCopyFormat =
 /**
  * HOTKEY DEFINITIONS
  */
-export type HotkeyAction =
-  | "color.1"
-  | "color.2"
-  | "color.3"
-  | "color.4"
-  | "color.5"
-  | "color.6"
-  | "color.7"
-  | "edit.redo"
-  | "edit.undo"
-  | "file.copy"
-  | "file.open"
-  | "file.save"
-  | "nav.centerImage"
-  | "nav.fitToWindow"
-  | "nav.ruler"
-  | "nav.stretchToFill"
-  | "nav.zoomIn"
-  | "nav.zoomOut"
-  | "tab.close"
-  | "tab.new"
-  | "tab.next"
-  | "tab.previous"
-  | "tool.area"
-  | "tool.eraser"
-  | "tool.highlighter"
-  | "tool.pen";
+export const HotkeyActions = {
+  // Color Actions
+  COLOR_1: "color.1",
+  COLOR_2: "color.2",
+  COLOR_3: "color.3",
+  COLOR_4: "color.4",
+  COLOR_5: "color.5",
+  COLOR_6: "color.6",
+  COLOR_7: "color.7",
+
+  // Edit Actions
+  EDIT_REDO: "edit.redo",
+  EDIT_UNDO: "edit.undo",
+
+  // File Actions
+  FILE_COPY: "file.copy",
+  FILE_OPEN: "file.open",
+  FILE_SAVE: "file.save",
+
+  // Navigation Actions
+  NAV_CENTER_IMAGE: "nav.centerImage",
+  NAV_FIT_TO_WINDOW: "nav.fitToWindow",
+  NAV_RULER: "nav.ruler",
+  NAV_STRETCH_TO_FILL: "nav.stretchToFill",
+  NAV_ZOOM_IN: "nav.zoomIn",
+  NAV_ZOOM_OUT: "nav.zoomOut",
+
+  // Tab Actions
+  TAB_CLOSE: "tab.close",
+  TAB_NEW: "tab.new",
+  TAB_NEXT: "tab.next",
+  TAB_PREVIOUS: "tab.previous",
+
+  // Tool Actions
+  TOOL_AREA: "tool.area",
+  TOOL_ERASER: "tool.eraser",
+  TOOL_HIGHLIGHTER: "tool.highlighter",
+  TOOL_PEN: "tool.pen",
+} as const;
+
+export type HotkeyAction = (typeof HotkeyActions)[keyof typeof HotkeyActions];
 
 export type HotkeyBinding = {
   key: string;
