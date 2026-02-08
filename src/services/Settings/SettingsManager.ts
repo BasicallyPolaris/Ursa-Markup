@@ -1,7 +1,7 @@
 import { appConfigDir } from "@tauri-apps/api/path";
 import { mkdir } from "@tauri-apps/plugin-fs";
 import { Store } from "@tauri-apps/plugin-store";
-import { themeManager } from "~/services";
+import { themeManager } from "~/services/Theme/ThemeManager";
 import { DeepPartial } from "~/types";
 import type { AppSettings, ServiceEvents } from "~/types/settings";
 import { deepMerge } from "~/utils/settings";
