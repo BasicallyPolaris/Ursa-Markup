@@ -44,7 +44,7 @@ const DEFAULT_AREA_CONFIG: AreaToolConfig = {
 
 const DEFAULT_ERASER_CONFIG: EraserToolConfig = {
   tool: Tools.ERASER,
-  size: 1,
+  size: 20,
   eraserMode: EraseModes.FULL_STROKE,
 };
 
@@ -83,7 +83,7 @@ export const TOOL_SETTINGS_CONSTANTS = {
     opacityStep: 10,
   },
   [Tools.ERASER]: {
-    minSize: 1,
+    minSize: 10,
     maxSize: 40,
     sizeStep: 1,
   },

@@ -16,6 +16,7 @@ import {
   Settings,
   Square,
   Undo2,
+  type LucideIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
@@ -46,8 +47,19 @@ import {
   APP_SETTINGS_CONSTANTS,
   TOOL_SETTINGS_CONSTANTS,
 } from "~/services/Settings/config";
+import { HotkeyActions } from "~/types/settings";
 import { BlendModes, Tools, type BlendMode, type Tool } from "~/types/tools";
 import { formatHotkey } from "~/utils/hotkeys";
+
+// Define options outside component for stability and clean DX
+const blendModeOptions: {
+  value: BlendMode;
+  label: string;
+  icon: LucideIcon;
+}[] = [
+  { value: BlendModes.NORMAL, label: "Normal", icon: Layers },
+  { value: BlendModes.MULTIPLY, label: "Multiply", icon: Blend },
+];
 
 export function Toolbar() {
   const { settings, openSettings } = useSettings();
@@ -75,6 +87,11 @@ export function Toolbar() {
     Math.round(zoom * 100).toString() + "%",
   );
   const [isEditingZoom, setIsEditingZoom] = useState(false);
+
+  const activeBlendModeOption =
+    "blendMode" in toolConfig
+      ? blendModeOptions.find((opt) => opt.value === toolConfig.blendMode)
+      : blendModeOptions[0];
 
   useEffect(() => {
     if (!isEditingZoom) {
@@ -152,7 +169,7 @@ export function Toolbar() {
     (blendMode: BlendMode) => {
       updateToolConfig(tool, { blendMode });
     },
-    [updateToolConfig],
+    [updateToolConfig, tool],
   );
 
   const handleUndo = useCallback(() => {
@@ -185,7 +202,7 @@ export function Toolbar() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {formatHotkey(hotkeys["file.open"])}
+                {formatHotkey(hotkeys[HotkeyActions.FILE_OPEN])}
               </TooltipContent>
             </Tooltip>
 
@@ -203,7 +220,7 @@ export function Toolbar() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {formatHotkey(hotkeys["file.copy"])}
+                {formatHotkey(hotkeys[HotkeyActions.FILE_COPY])}
               </TooltipContent>
             </Tooltip>
 
@@ -221,7 +238,7 @@ export function Toolbar() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                {formatHotkey(hotkeys["file.save"])}
+                {formatHotkey(hotkeys[HotkeyActions.FILE_SAVE])}
               </TooltipContent>
             </Tooltip>
           </div>
@@ -236,7 +253,7 @@ export function Toolbar() {
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Undo ({formatHotkey(hotkeys["edit.undo"])})
+                Undo ({formatHotkey(hotkeys[HotkeyActions.EDIT_UNDO])})
               </TooltipContent>
             </Tooltip>
 
@@ -249,7 +266,7 @@ export function Toolbar() {
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Redo ({formatHotkey(hotkeys["edit.redo"])})
+                Redo ({formatHotkey(hotkeys[HotkeyActions.EDIT_REDO])})
               </TooltipContent>
             </Tooltip>
 
@@ -272,13 +289,13 @@ export function Toolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <ToolButton
-                  active={tool === "pen"}
+                  active={tool === Tools.PEN}
                   icon={<Pencil className="size-4" />}
-                  onClick={() => handleToolChange("pen")}
+                  onClick={() => handleToolChange(Tools.PEN)}
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Pen ({formatHotkey(hotkeys["tool.pen"])})
+                Pen ({formatHotkey(hotkeys[HotkeyActions.TOOL_PEN])})
               </TooltipContent>
             </Tooltip>
 
@@ -291,7 +308,8 @@ export function Toolbar() {
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Highlighter ({formatHotkey(hotkeys["tool.highlighter"])})
+                Highlighter (
+                {formatHotkey(hotkeys[HotkeyActions.TOOL_HIGHLIGHTER])})
               </TooltipContent>
             </Tooltip>
 
@@ -304,19 +322,19 @@ export function Toolbar() {
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Area ({formatHotkey(hotkeys["tool.area"])})
+                Area ({formatHotkey(hotkeys[HotkeyActions.TOOL_AREA])})
               </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <ToolButton
-                  active={tool === "eraser"}
+                  active={tool === Tools.ERASER}
                   icon={<Eraser className="size-4" />}
-                  onClick={() => handleToolChange("eraser")}
+                  onClick={() => handleToolChange(Tools.ERASER)}
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Eraser ({formatHotkey(hotkeys["tool.eraser"])})
+                Eraser ({formatHotkey(hotkeys[HotkeyActions.TOOL_ERASER])})
               </TooltipContent>
             </Tooltip>
           </div>
@@ -455,43 +473,30 @@ export function Toolbar() {
 
           <div className="w-px h-8 bg-surface-bg" />
 
-          {(tool === Tools.PEN ||
-            tool === Tools.HIGHLIGHTER ||
-            tool === Tools.AREA) && (
+          {"blendMode" in toolConfig && activeBlendModeOption && (
             <Select
-              value={toolConfig}
-              onValueChange={() => handleBlendModeChange(toolConfig.blendMode)}
+              value={toolConfig.blendMode}
+              onValueChange={(value) =>
+                handleBlendModeChange(value as BlendMode)
+              }
             >
               <SelectTrigger className="w-27.5">
                 <SelectValue>
                   <span className="flex items-center gap-1.5">
-                    {toolConfig.blendMode === BlendModes.NORMAL ? (
-                      <>
-                        <Layers className="size-3" />
-                        Normal
-                      </>
-                    ) : (
-                      <>
-                        <Blend className="size-3" />
-                        Multiply
-                      </>
-                    )}
+                    <activeBlendModeOption.icon className="size-3" />
+                    {activeBlendModeOption.label}
                   </span>
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="normal">
-                  <span className="flex items-center gap-1.5">
-                    <Layers className="size-3" />
-                    Normal
-                  </span>
-                </SelectItem>
-                <SelectItem value="multiply">
-                  <span className="flex items-center gap-1.5">
-                    <Blend className="size-3" />
-                    Multiply
-                  </span>
-                </SelectItem>
+                {blendModeOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <span className="flex items-center gap-1.5">
+                      <option.icon className="size-3" />
+                      {option.label}
+                    </span>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           )}
@@ -502,12 +507,13 @@ export function Toolbar() {
             <TooltipTrigger asChild>
               <ToolButton
                 active={ruler.visible}
+                className="shrink-0"
                 icon={<Ruler className="size-4" />}
                 onClick={handleToggleRuler}
               />
             </TooltipTrigger>
             <TooltipContent>
-              Ruler ({formatHotkey(hotkeys["nav.ruler"])})
+              Ruler ({formatHotkey(hotkeys[HotkeyActions.NAV_RULER])})
               {ruler.visible && ` • ${Math.round(ruler.angle % 360)}°`}
             </TooltipContent>
           </Tooltip>
@@ -526,7 +532,7 @@ export function Toolbar() {
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Zoom Out ({formatHotkey(hotkeys["nav.zoomOut"])})
+                Zoom Out ({formatHotkey(hotkeys[HotkeyActions.NAV_ZOOM_OUT])})
               </TooltipContent>
             </Tooltip>
 
@@ -554,7 +560,7 @@ export function Toolbar() {
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Zoom In ({formatHotkey(hotkeys["nav.zoomIn"])})
+                Zoom In ({formatHotkey(hotkeys[HotkeyActions.NAV_ZOOM_IN])})
               </TooltipContent>
             </Tooltip>
 
@@ -569,7 +575,8 @@ export function Toolbar() {
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Fit to Canvas ({formatHotkey(hotkeys["nav.stretchToFill"])})
+                Fit to Canvas (
+                {formatHotkey(hotkeys[HotkeyActions.NAV_STRETCH_TO_FILL])})
               </TooltipContent>
             </Tooltip>
 
@@ -582,7 +589,8 @@ export function Toolbar() {
                 />
               </TooltipTrigger>
               <TooltipContent>
-                Center Canvas ({formatHotkey(hotkeys["nav.centerImage"])})
+                Center Image (
+                {formatHotkey(hotkeys[HotkeyActions.NAV_CENTER_IMAGE])})
               </TooltipContent>
             </Tooltip>
           </div>
