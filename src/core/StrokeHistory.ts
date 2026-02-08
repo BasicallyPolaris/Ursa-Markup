@@ -73,16 +73,16 @@ export class StrokeHistory {
 
     // Create the stroke with strict typing
     // We cast to AnyStroke because the implementation is generic but the storage is a union
-    const stroke: any = {
+    const stroke = {
       id: this.generateId(),
       tool,
       color,
       toolConfig: config,
       points: [point],
       timestamp: Date.now(),
-    };
+    } as AnyStroke;
 
-    this.currentStroke = stroke as AnyStroke;
+    this.currentStroke = stroke;
     this.currentGroup.strokes.push(this.currentStroke);
   }
 

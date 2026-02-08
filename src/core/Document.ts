@@ -314,7 +314,7 @@ export class Document {
   private notifyChange(): void {
     // Debug: notify about change for easier tracing during runtime
     // console.debug can be enabled in runtime devtools
-    // eslint-disable-next-line no-console
+     
     // console.debug("Document.notifyChange", { id: this.id, version: this.version });
 
     for (const cb of Array.from(this.onChangeCallbacks)) {

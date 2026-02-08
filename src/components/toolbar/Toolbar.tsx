@@ -93,7 +93,7 @@ export function Toolbar() {
       ? blendModeOptions.find((opt) => opt.value === toolConfig.blendMode)
       : blendModeOptions[0];
 
-  useEffect(() => {
+  useEffect(() => {  
     if (!isEditingZoom) {
       setZoomInputValue(Math.round(zoom * 100).toString() + "%");
     }

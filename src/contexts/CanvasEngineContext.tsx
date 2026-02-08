@@ -71,7 +71,7 @@ export function CanvasEngineProvider({
   }, [document]);
 
   // Initialize engine when container is available
-  useEffect(() => {
+  useEffect(() => {  
     const container = containerRef.current;
     if (!container) {
       console.log("[CANVAS ENGINE CONTEXT] No container, returning");
@@ -91,7 +91,7 @@ export function CanvasEngineProvider({
         engine.destroy();
       }
     };
-  }, [engine, containerRef.current]);
+  }, [engine]);
 
   // Allow imperative initialization from consumers (e.g. CanvasContainer)
   const setCanvasRef = useCallback(

@@ -60,14 +60,14 @@ export function DrawingProvider({
 
   // Sync settings ONLY when they transition from unloaded to loaded.
   // We use a ref to prevent overwriting user changes if settings re-emit later.
-  useEffect(() => {
+  useEffect(() => {  
     if (isLoaded && !isInitialized.current) {
       setToolConfigs(settings.toolConfigs);
       // Also sync the active color from settings
       setActiveColor(defaultColor);
       isInitialized.current = true;
     }
-  }, [isLoaded, settings]);
+  }, [isLoaded, settings, defaultColor]);
 
   const updateToolConfig = useCallback(
     <T extends Tool>(toolToUpdate: T, changes: Partial<ToolConfigs[T]>) => {
