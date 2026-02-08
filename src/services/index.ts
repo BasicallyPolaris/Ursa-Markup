@@ -3,21 +3,21 @@
  * Application-wide state management and I/O operations
  */
 // Import and re-export classes
-export { SettingsManager } from "./Settings/SettingsManager";
-export { ThemeManager } from "./Theme/ThemeManager";
 export { IOService } from "./IOService";
+export { SettingsManager } from "./Settings/SettingsManager";
 export { TabManager } from "./TabManager";
+export { ThemeManager } from "./Theme/ThemeManager";
 export { WindowManager } from "./WindowManager";
 
 // Import singleton instances
-import { settingsManager } from "./Settings/SettingsManager";
-import { themeManager } from "./Theme/ThemeManager";
 import { ioService } from "./IOService";
+import { settingsManager } from "./Settings/SettingsManager";
 import { tabManager } from "./TabManager";
+import { themeManager } from "./Theme/ThemeManager";
 import { windowManager } from "./WindowManager";
 
 // Re-export singleton instances
-export { settingsManager, themeManager, ioService, tabManager, windowManager };
+export { ioService, settingsManager, tabManager, themeManager, windowManager };
 
 // Convenience object for accessing all services
 export const services = {
