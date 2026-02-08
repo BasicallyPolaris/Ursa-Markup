@@ -2,11 +2,55 @@ use base64::Engine;
 use std::path::Path;
 use std::process::Command;
 use std::sync::Mutex;
-use tauri::menu::{Menu, MenuItem};
-use tauri::tray::{TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter, Manager, State, Wry,
+};
 
-/// Resolve path to absolute so frontend readFile works regardless of CWD.
+struct TrayMenuState {
+    toggle_item: Mutex<Option<MenuItem<Wry>>>,
+}
+
+fn set_tray_text(app: &AppHandle, text: &str) {
+    let state = app.state::<TrayMenuState>();
+    let guard = state.toggle_item.lock().unwrap();
+    if let Some(item) = guard.as_ref() {
+        let _ = item.set_text(text);
+    }
+}
+
+#[tauri::command]
+fn minimize_to_tray(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.hide();
+        set_tray_text(&app, "Open OmniMark");
+    }
+}
+
+#[tauri::command]
+fn restore_from_tray(app: AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.set_focus();
+        set_tray_text(&app, "Hide OmniMark");
+    }
+}
+
+// Logic to toggle window visibility (used by the MENU item only)
+fn toggle_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        if window.is_visible().unwrap_or(true) {
+            let _ = window.hide();
+            set_tray_text(app, "Open OmniMark");
+        } else {
+            let _ = window.show();
+            let _ = window.set_focus();
+            set_tray_text(app, "Hide OmniMark");
+        }
+    }
+}
+
 fn resolve_file_path(path: &str) -> String {
     let p = Path::new(path);
     if p.is_absolute() {
@@ -28,7 +72,6 @@ struct OpenFilesPayload {
     file_paths: Vec<String>,
 }
 
-/// Payload for clipboard copy result event
 #[derive(Clone, serde::Serialize)]
 struct ClipboardCopyResult {
     success: bool,
@@ -36,28 +79,21 @@ struct ClipboardCopyResult {
     version: u32,
 }
 
-// Store pending CLI files to open
 struct PendingFiles {
     paths: Mutex<Vec<String>>,
 }
 
-/// Queue a clipboard copy operation from base64 PNG data
-/// This returns immediately and processes the copy in the background
-/// Emits "clipboard-copy-result" event when complete
 #[tauri::command]
 async fn queue_clipboard_copy_base64(
     app: AppHandle,
     image_base64: String,
     version: u32,
 ) -> Result<(), String> {
-    // Spawn a background task - returns immediately to frontend
     tokio::spawn(async move {
         let result = tokio::task::spawn_blocking(move || copy_png_to_clipboard(&image_base64))
             .await
             .map_err(|e| format!("Task join error: {}", e))
             .and_then(|r| r);
-
-        // Emit result back to frontend for toast notification
         let _ = app.emit(
             "clipboard-copy-result",
             ClipboardCopyResult {
@@ -67,29 +103,22 @@ async fn queue_clipboard_copy_base64(
             },
         );
     });
-
     Ok(())
 }
 
-/// Copy PNG data (base64 encoded) to clipboard
 fn copy_png_to_clipboard(image_base64: &str) -> Result<(), String> {
     use arboard::{Clipboard, ImageData};
     use image::GenericImageView;
     use std::borrow::Cow;
 
-    // Decode base64 to PNG bytes
     let png_data = base64::engine::general_purpose::STANDARD
         .decode(image_base64)
         .map_err(|e| format!("Failed to decode base64: {}", e))?;
-
-    // Decode PNG to get RGBA data for arboard
     let img =
         image::load_from_memory(&png_data).map_err(|e| format!("Failed to decode PNG: {}", e))?;
-
     let (width, height) = img.dimensions();
     let rgba_data = img.to_rgba8().into_raw();
 
-    // Try arboard first (cross-platform clipboard library)
     match Clipboard::new() {
         Ok(mut clipboard) => {
             let img_data = ImageData {
@@ -97,51 +126,35 @@ fn copy_png_to_clipboard(image_base64: &str) -> Result<(), String> {
                 height: height as usize,
                 bytes: Cow::Owned(rgba_data),
             };
-
-            match clipboard.set_image(img_data) {
-                Ok(()) => return Ok(()),
-                Err(e) => {
-                    eprintln!("arboard clipboard failed: {}, trying wl-copy fallback", e);
-                }
+            if clipboard.set_image(img_data).is_ok() {
+                return Ok(());
             }
         }
-        Err(e) => {
-            eprintln!("Failed to create clipboard: {}, trying wl-copy fallback", e);
-        }
+        Err(_) => {}
     }
 
-    // Fallback: Use wl-copy for Wayland (pass PNG directly - no re-encoding needed!)
     let mut child = Command::new("wl-copy")
         .arg("--type")
         .arg("image/png")
         .stdin(std::process::Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Failed to spawn wl-copy: {}", e))?;
-
+        .map_err(|e| format!("{}", e))?;
     if let Some(stdin) = child.stdin.as_mut() {
         use std::io::Write;
-        stdin
-            .write_all(&png_data)
-            .map_err(|e| format!("Failed to write to wl-copy: {}", e))?;
+        stdin.write_all(&png_data).map_err(|e| format!("{}", e))?;
     }
-
-    let output = child
-        .wait_with_output()
-        .map_err(|e| format!("Failed to wait for wl-copy: {}", e))?;
-
-    if !output.status.success() {
-        return Err(format!(
-            "wl-copy failed: {}",
-            String::from_utf8_lossy(&output.stderr)
-        ));
-    }
-
+    child.wait().map_err(|e| format!("{}", e))?;
     Ok(())
 }
 
 #[tauri::command]
 fn get_pending_files(state: State<PendingFiles>) -> Vec<String> {
     state.paths.lock().unwrap().drain(..).collect()
+}
+
+#[tauri::command]
+fn exit_app() {
+    std::process::exit(0);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -154,45 +167,81 @@ pub fn run() {
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
-            println!("Single instance triggered with args: {:?}", argv);
-            // Collect file paths from arguments (skip flags)
             let file_paths: Vec<String> = argv
                 .iter()
-                .skip(1) // Skip the first argument (usually the executable)
+                .skip(1)
                 .filter(|arg| !arg.starts_with('-'))
                 .map(|arg| resolve_file_path(arg))
                 .collect();
-
             if !file_paths.is_empty() {
                 let _ = app.emit("open-files", OpenFilesPayload { file_paths });
             }
         }))
         .invoke_handler(tauri::generate_handler![
+            minimize_to_tray,
+            restore_from_tray,
             queue_clipboard_copy_base64,
-            get_pending_files
+            get_pending_files,
+            exit_app
         ])
         .setup(|app| {
-            // Create PendingFiles with CLI paths so state is available when frontend calls get_pending_files
+            // Initial state: App is open, so menu says "Hide"
+            let toggle_i = MenuItem::with_id(app, "toggle", "Hide OmniMark", true, None::<&str>)?;
+            let open_file_i = MenuItem::with_id(app, "open_file", "Open File", true, None::<&str>)?;
+            let sep = PredefinedMenuItem::separator(app)?;
+            let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+
+            let menu = Menu::with_items(app, &[&toggle_i, &open_file_i, &sep, &quit_i])?;
+
+            let _tray = TrayIconBuilder::with_id("omnimark-tray")
+                .icon(app.default_window_icon().unwrap().clone())
+                .menu(&menu)
+                .title("OmniMark")
+                .tooltip("OmniMark")
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "quit" => std::process::exit(0),
+                    "toggle" => toggle_window(app),
+                    "open_file" => {
+                        let _ = app.emit("tray-open-file", ());
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                            set_tray_text(app, "Hide OmniMark");
+                        }
+                    }
+                })
+                .build(app)?;
+
+            // Store the MenuItem in state so we can update its text later
+            app.manage(TrayMenuState {
+                toggle_item: Mutex::new(Some(toggle_i)),
+            });
+
             let initial_paths: Vec<String> = if cfg!(not(mobile)) {
                 use tauri_plugin_cli::CliExt;
                 let mut paths = Vec::new();
                 if let Ok(matches) = app.cli().matches() {
                     if let Some(args) = matches.args.get("file") {
                         match &args.value {
-                            serde_json::Value::String(s) => {
-                                paths.push(resolve_file_path(s));
-                            }
+                            serde_json::Value::String(s) => paths.push(resolve_file_path(s)),
                             serde_json::Value::Array(arr) => {
-                                for value in arr {
-                                    if let Some(s) = value.as_str() {
+                                for v in arr {
+                                    if let Some(s) = v.as_str() {
                                         paths.push(resolve_file_path(s));
                                     }
                                 }
                             }
                             _ => {}
-                        };
-                        if !paths.is_empty() {
-                            println!("CLI file paths (resolved) for frontend: {:?}", paths);
                         }
                     }
                 }
@@ -204,67 +253,19 @@ pub fn run() {
             app.manage(PendingFiles {
                 paths: Mutex::new(initial_paths),
             });
-
-            // Setup tray icon
-            let open_app = MenuItem::with_id(app, "open_app", "Open OmniMark", true, None::<&str>)?;
-            let open_file = MenuItem::with_id(app, "open_file", "Open File", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
-            let menu = Menu::with_items(app, &[&open_app, &open_file, &quit])?;
-
-            let _tray = TrayIconBuilder::new()
-                .tooltip("OmniMark")
-                .menu(&menu)
-                .on_menu_event(|app, event| match event.id.as_ref() {
-                    "quit" => {
-                        app.exit(0);
-                    }
-                    "open_app" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.unminimize();
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                    "open_file" => {
-                        let _ = app.emit("tray-open-file", ());
-                    }
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| match event {
-                    TrayIconEvent::Click { .. } => {
-                        // Left click: show/restore window
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.unminimize();
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        }
-                    }
-                    _ => {}
-                })
-                .build(app)?;
-
             Ok(())
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         .run(|app, event| {
-            match event {
-                // When window is focused, ensure webview has keyboard focus
-                // This fixes hotkeys not working after alt-tab or window switching
-                tauri::RunEvent::WindowEvent {
-                    label,
-                    event: tauri::WindowEvent::Focused(true),
-                    ..
-                } => {
-                    if label == "main" {
-                        if let Some(window) = app.get_webview_window("main") {
-                            // Focus the webview to ensure keyboard events are captured
-                            let _ = window.set_focus();
-                        }
-                    }
+            if let tauri::RunEvent::WindowEvent {
+                event: tauri::WindowEvent::Focused(true),
+                ..
+            } = event
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.set_focus();
                 }
-                _ => {}
             }
         });
 }

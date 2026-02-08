@@ -1,3 +1,4 @@
+import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { RefObject, useEffect, useRef, useState } from "react";
@@ -26,10 +27,6 @@ type AppContentProps = {
   canvasContainerRef: RefObject<HTMLDivElement | null>;
 };
 
-/**
- * DocumentContent - Component that has access to document and canvas contexts
- * Only renders when a document is active
- */
 function DocumentContentInner({
   canvasContainerRef,
 }: {
@@ -60,9 +57,6 @@ function DocumentContent({
   );
 }
 
-/**
- * GlobalKeyboardShortcuts - Keyboard shortcuts that work even without a document
- */
 function GlobalKeyboardShortcuts() {
   const { addTab, activeDocumentId, documents, closeTab } = useTabManager();
 
@@ -105,10 +99,6 @@ function GlobalKeyboardShortcuts() {
   return null;
 }
 
-/**
- * EmptyStateContent - Component shown when no document is open
- * Only uses contexts that are always available
- */
 function EmptyStateContentInner({
   canvasContainerRef,
 }: {
@@ -139,12 +129,7 @@ function EmptyStateContent({
   );
 }
 
-/**
- * AppContent - Inner component that wraps content based on active document
- * This component is INSIDE TabManagerProvider so it can use useTabManager()
- */
 function AppContent({ containerRef, canvasContainerRef }: AppContentProps) {
-  // Use the hook to get reactive document state
   const { activeDocument } = useTabManager();
 
   return (
@@ -214,7 +199,6 @@ function App() {
 
   // Handle CLI file opening (initial launch + single-instance)
   useEffect(() => {
-    // Helper to open files from CLI
     const openFilesFromCLI = async (filePaths: string[]) => {
       for (const filePath of filePaths) {
         try {
@@ -229,14 +213,12 @@ function App() {
       }
     };
 
-    // Listen for single-instance file open events
     const setupListener = async () => {
       return await services.ioService.listenForFiles((filePaths) => {
         openFilesFromCLI(filePaths);
       });
     };
 
-    // Check for pending files from initial launch
     const checkPendingFiles = async () => {
       const pendingFiles = await services.ioService.getPendingFiles();
       if (pendingFiles.length > 0) {
@@ -259,11 +241,7 @@ function App() {
         "settings-applied",
         (event) => {
           const savedSettings = event.payload;
-
-          // Apply theme through ThemeManager
           services.themeManager.setTheme(savedSettings.activeTheme);
-
-          // Reload settings from disk to ensure consistency
           services.settingsManager.load().then(() => {
             setSettings({ ...services.settingsManager.settings });
           });
@@ -280,21 +258,23 @@ function App() {
 
   // Handle window close behavior
   useEffect(() => {
-    const unlisten = getCurrentWindow().onCloseRequested((event) => {
-      if (
-        settings.miscSettings.closeWindowBehavior ===
-        CloseWindowBehaviors.MINIMIZE_TO_TRAY
-      ) {
-        event.preventDefault();
-        getCurrentWindow().hide();
-        console.log("Window minimized to tray");
-      } else {
-        console.log("Window closing, exiting app");
-      }
-    });
+    const unlistenPromise = getCurrentWindow().onCloseRequested(
+      async (event) => {
+        if (
+          settings.miscSettings.closeWindowBehavior ===
+          CloseWindowBehaviors.MINIMIZE_TO_TRAY
+        ) {
+          event.preventDefault();
+          await invoke("minimize_to_tray");
+          console.log("Window minimized to tray");
+        } else {
+          console.log("Window closing, exiting app");
+        }
+      },
+    );
 
     return () => {
-      unlisten.then((fn) => fn());
+      unlistenPromise.then((fn) => fn());
     };
   }, [settings.miscSettings.closeWindowBehavior]);
 
@@ -302,8 +282,9 @@ function App() {
   useEffect(() => {
     const setupListener = async () => {
       const unlisten = await listen("tray-open-file", () => {
-        services.ioService.openFile().then((result) => {
+        services.ioService.openFile().then(async (result) => {
           if (result) {
+            await invoke("restore_from_tray");
             const blob = new Blob([result.fileData]);
             const url = URL.createObjectURL(blob);
             services.tabManager.createDocument(result.filePath, undefined, url);
@@ -321,7 +302,6 @@ function App() {
 
   // Apply theme when theme changes
   useEffect(() => {
-    // Apply theme through ThemeManager (applies CSS variables and class)
     services.themeManager.setTheme(settings.activeTheme);
   }, [settings.activeTheme]);
 
