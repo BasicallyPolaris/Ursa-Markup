@@ -35,7 +35,8 @@
           "name": "file",
           "index": 1,
           "takesValue": true,
-          "description": "Image file path to open"
+          "multiple": true,
+          "description": "Image file paths to open"
         }
       ]
     }

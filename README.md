@@ -9,6 +9,7 @@ A cross-platform image annotation tool inspired by the Windows Snipping Tool. Bu
 - **Pen Tool**: Freehand drawing with smooth anti-aliased strokes
 - **Highlighter Tool**: Highlighting with flat ends
 - **Area Tool**: Rectangle/rounded rectangle highlighting
+- **Eraser Tool**: Stroke/Object based erasing
 
 ### Tool Settings
 
@@ -55,6 +56,7 @@ All shortcuts can be customized in Settings → Shortcuts.
 | `1`                 | Pen tool            |
 | `2`                 | Highlighter tool    |
 | `3`                 | Area tool           |
+| `E`                 | Eraser tool         |
 | `Ctrl+1` - `Ctrl+7` | Quick color presets |
 | `Ctrl+T`            | New tab             |
 | `Ctrl+W`            | Close tab           |
@@ -136,7 +138,7 @@ OmniMark supports full UI theming. See [THEMING.md](THEMING.md) for details.
 
 The theme file is located at:
 
-- **User config**: `~/.config/omnimark/theme.json` (created on first run)
+- **User theme**: `~/.config/omnimark/theme.json` (created on first run)
 - **Bundled default (developer)**: `src/lib/theme.json` (canonical defaults in source)
 
 ### Color Palettes

@@ -22,8 +22,8 @@ fn resolve_file_path(path: &str) -> String {
 }
 
 #[derive(Clone, serde::Serialize)]
-struct OpenFilePayload {
-    file_path: String,
+struct OpenFilesPayload {
+    file_paths: Vec<String>,
 }
 
 /// Payload for clipboard copy result event
@@ -34,9 +34,9 @@ struct ClipboardCopyResult {
     version: u32,
 }
 
-// Store pending CLI file to open
-struct PendingFile {
-    path: Mutex<Option<String>>,
+// Store pending CLI files to open
+struct PendingFiles {
+    paths: Mutex<Vec<String>>,
 }
 
 /// Queue a clipboard copy operation from base64 PNG data
@@ -138,8 +138,8 @@ fn copy_png_to_clipboard(image_base64: &str) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn get_pending_file(state: State<PendingFile>) -> Option<String> {
-    state.path.lock().unwrap().take()
+fn get_pending_files(state: State<PendingFiles>) -> Vec<String> {
+    state.paths.lock().unwrap().drain(..).collect()
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -153,52 +153,54 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             println!("Single instance triggered with args: {:?}", argv);
-            // Check if a file path was passed as argument
-            if argv.len() > 1 {
-                let file_path = &argv[1];
-                // Validate it's not a flag (doesn't start with -)
-                if !file_path.starts_with('-') {
-                    let resolved = resolve_file_path(file_path);
-                    let _ = app.emit(
-                        "open-file",
-                        OpenFilePayload {
-                            file_path: resolved,
-                        },
-                    );
-                }
+            // Collect file paths from arguments (skip flags)
+            let file_paths: Vec<String> = argv
+                .iter()
+                .skip(1) // Skip the first argument (usually the executable)
+                .filter(|arg| !arg.starts_with('-'))
+                .map(|arg| resolve_file_path(arg))
+                .collect();
+
+            if !file_paths.is_empty() {
+                let _ = app.emit("open-files", OpenFilesPayload { file_paths });
             }
         }))
         .invoke_handler(tauri::generate_handler![
             queue_clipboard_copy_base64,
-            get_pending_file
+            get_pending_files
         ])
         .setup(|app| {
-            // Create PendingFile with CLI path so state is available when frontend calls get_pending_file
-            let initial_path: Option<String> = if cfg!(not(mobile)) {
+            // Create PendingFiles with CLI paths so state is available when frontend calls get_pending_files
+            let initial_paths: Vec<String> = if cfg!(not(mobile)) {
                 use tauri_plugin_cli::CliExt;
-                let mut path = None;
+                let mut paths = Vec::new();
                 if let Ok(matches) = app.cli().matches() {
                     if let Some(args) = matches.args.get("file") {
-                        path = match &args.value {
-                            serde_json::Value::String(s) => Some(resolve_file_path(s)),
-                            serde_json::Value::Array(arr) => arr
-                                .first()
-                                .and_then(|v| v.as_str())
-                                .map(|s| resolve_file_path(s)),
-                            _ => None,
+                        match &args.value {
+                            serde_json::Value::String(s) => {
+                                paths.push(resolve_file_path(s));
+                            }
+                            serde_json::Value::Array(arr) => {
+                                for value in arr {
+                                    if let Some(s) = value.as_str() {
+                                        paths.push(resolve_file_path(s));
+                                    }
+                                }
+                            }
+                            _ => {}
                         };
-                        if let Some(ref p) = path {
-                            println!("CLI file path (resolved) for frontend: {}", p);
+                        if !paths.is_empty() {
+                            println!("CLI file paths (resolved) for frontend: {:?}", paths);
                         }
                     }
                 }
-                path
+                paths
             } else {
-                None
+                Vec::new()
             };
 
-            app.manage(PendingFile {
-                path: Mutex::new(initial_path),
+            app.manage(PendingFiles {
+                paths: Mutex::new(initial_paths),
             });
             Ok(())
         })
