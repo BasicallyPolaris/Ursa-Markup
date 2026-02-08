@@ -61,6 +61,7 @@ export class BrushEngine {
     }
 
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   /**
@@ -105,6 +106,7 @@ export class BrushEngine {
     }
 
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   /**
@@ -137,6 +139,7 @@ export class BrushEngine {
       ctx.rect(x, y, width, height);
     }
     ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   /**
