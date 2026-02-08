@@ -83,11 +83,12 @@ export function CanvasContainer({
   const hotkeys = useHotkeys();
 
   // --- Local Interaction State ---
-  const [, setIsDrawing] = useState(false);
+  // We keep state for things that change the UI Cursor (CSS)
   const [isPanning, setIsPanning] = useState(false);
-  const [currentPoint, setCurrentPoint] = useState<Point | null>(null);
   const [isRulerHover, setIsRulerHover] = useState(false);
   const [isRulerDragging, setIsRulerDragging] = useState(false);
+
+  // Tracks updates to ruler position to force re-renders if the UI needs it
   const [, setRulerHash] = useState(0);
 
   // --- Event State Refs ---
@@ -101,13 +102,16 @@ export function CanvasContainer({
   const previewPointsRef = useRef<Point[]>([]);
   const startPointSnappedRef = useRef(false);
 
-  // Loop Sync Refs (To avoid closure staleness in the loop)
+  // Loop Sync Refs (To avoid stale closures in the loop)
   const engineRef = useRef(engine);
   const rulerRef = useRef(ruler);
   const viewStateRef = useRef<ViewState>({ zoom, viewOffset, canvasSize });
   const toolRef = useRef(tool);
   const toolConfigRef = useRef(toolConfig);
   const activeColorRef = useRef(activeColor);
+
+  // Used to distinguish render modes depending on user actions
+  const needsRender = useRef(true);
 
   const autoCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -119,7 +123,7 @@ export function CanvasContainer({
     toolRef.current = tool;
     toolConfigRef.current = toolConfig;
     activeColorRef.current = activeColor;
-    currentPointRef.current = currentPoint;
+    needsRender.current = true;
   }, [
     zoom,
     viewOffset,
@@ -129,30 +133,22 @@ export function CanvasContainer({
     tool,
     toolConfig,
     activeColor,
-    currentPoint,
   ]);
 
   // --- Measurements & Initialization ---
 
-  /**
-   * IMPORTANT: This callback measures the container immediately when mounted.
-   * This fixes the "Nothing Rendered" bug by ensuring the loop has size data on Frame 1.
-   */
   const setContainerRefCallback = useCallback(
     (node: HTMLDivElement | null) => {
-      // 1. Update React Refs
       if (externalRef) {
         (externalRef as React.RefObject<HTMLDivElement | null>).current = node;
       } else {
         localRef.current = node;
       }
 
-      // 2. Measure DOM Immediately (Fixes blank screen)
       if (node) {
         containerRectRef.current = node.getBoundingClientRect();
       }
 
-      // 3. Notify Engine Provider
       if (typeof setCanvasRef === "function") {
         setCanvasRef(node);
       }
@@ -160,19 +156,16 @@ export function CanvasContainer({
     [externalRef, setCanvasRef],
   );
 
-  // Resize Observer: Keeps cached rect in sync if window resizes
-  // This is efficient because it only fires when dimensions actually change
+  // Resize Observer
   useEffect(() => {
-    // Determine which ref currently holds the node
     const node = externalRef?.current || localRef.current;
     if (!node) return;
 
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) {
-        // We use getBoundingClientRect() to get absolute screen coordinates
-        // which are needed for correct mouse mapping
         containerRectRef.current = entry.target.getBoundingClientRect();
+        needsRender.current = true;
       }
     });
 
@@ -280,10 +273,13 @@ export function CanvasContainer({
       groups: strokeHistory.groups,
       currentIndex: strokeHistory.currentIndex,
     });
+
+    needsRender.current = true;
   }, [strokeHistory.currentIndex, strokeHistory.groups, engine]);
 
   // --- Animation Loop ---
 
+  // --- Animation Loop ---
   useEffect(() => {
     let animationFrameId: number;
 
@@ -291,8 +287,14 @@ export function CanvasContainer({
       const engine = engineRef.current;
       const rect = containerRectRef.current;
 
-      // Critical Check: Only render if we have valid dimensions
-      if (engine && rect && rect.width > 0 && rect.height > 0) {
+      // OPTIMIZATION: Only render if input happened (needsRender)
+      if (
+        needsRender.current &&
+        engine &&
+        rect &&
+        rect.width > 0 &&
+        rect.height > 0
+      ) {
         const isDrawing = isDrawingRef.current;
         const startPoint = startPointRef.current;
         const currentPoint = currentPointRef.current;
@@ -310,13 +312,15 @@ export function CanvasContainer({
               } as AnyPreviewState)
             : undefined;
 
-        // Pass the Cached Rect Size to Engine to avoid DOM reads in the loop
         engine.render(
           viewStateRef.current,
           rulerRef.current,
           { width: rect.width, height: rect.height },
           previewState,
         );
+
+        // Go back to sleep until next input
+        needsRender.current = false;
       }
 
       animationFrameId = requestAnimationFrame(renderLoop);
@@ -328,9 +332,13 @@ export function CanvasContainer({
 
   // --- Input Handlers ---
 
-  const handleMouseDown = useCallback(
+  const handlePointerDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
+
+      // Grab focus from other elements to ensure keyboard shortcuts work as expected
+      (e.currentTarget as HTMLElement).focus();
+
       const canvasPoint = getScreenToCanvas(e.clientX, e.clientY);
       const screenPoint = getRelativePoint(e.clientX, e.clientY);
 
@@ -343,7 +351,6 @@ export function CanvasContainer({
         return;
       }
 
-      // Optimization: use cached rect instead of DOM node measurement
       const rect = containerRectRef.current;
 
       if (
@@ -376,88 +383,21 @@ export function CanvasContainer({
         }
       }
 
+      // Sync Refs directly
       isDrawingRef.current = true;
       startPointRef.current = startDrawPoint;
       lastPointRef.current = startDrawPoint;
       currentPointRef.current = startDrawPoint;
       previewPointsRef.current = [startDrawPoint];
 
-      setIsDrawing(true);
-      setCurrentPoint(startDrawPoint);
+      // No useState calls here!
       startStrokeGroup();
       startStroke(tool, toolConfig, activeColor, startDrawPoint);
     },
     [tool, toolConfig, activeColor, ruler, getScreenToCanvas, getRelativePoint],
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      const canvasPoint = getScreenToCanvas(e.clientX, e.clientY);
-      const screenPoint = getRelativePoint(e.clientX, e.clientY);
-      if (!canvasPoint || !screenPoint) return;
-
-      // Optimization: use cached rect instead of DOM node measurement
-      const rect = containerRectRef.current;
-
-      if (!isDrawingRef.current && !isPanningRef.current && !ruler.isDragging) {
-        if (rect) {
-          const onRuler =
-            ruler.visible &&
-            ruler.isPointOnRuler(screenPoint, {
-              width: rect.width,
-              height: rect.height,
-            });
-          if (onRuler !== isRulerHover) setIsRulerHover(onRuler);
-        }
-        return;
-      }
-
-      if (isPanningRef.current && panStartRef.current) {
-        const deltaX = panStartRef.current.x - canvasPoint.x;
-        const deltaY = panStartRef.current.y - canvasPoint.y;
-        setViewOffset({
-          x: viewOffset.x + deltaX,
-          y: viewOffset.y + deltaY,
-        });
-        return;
-      }
-
-      if (ruler.isDragging || isRulerDragging) {
-        dragRuler(screenPoint);
-        setRulerHash((h) => h + 1);
-        return;
-      }
-
-      if (isDrawingRef.current && startPointRef.current) {
-        let drawPoint = canvasPoint;
-        if (ruler.visible) {
-          const snapInfo = ruler.getSnapInfo(canvasPoint, viewStateRef.current);
-          if (snapInfo.inStickyZone) {
-            const shouldSnap =
-              tool !== Tools.AREA || !startPointSnappedRef.current;
-            if (shouldSnap) {
-              drawPoint = calculateSnappedPoint(
-                canvasPoint,
-                snapInfo,
-                viewStateRef.current,
-                tool,
-                toolConfig,
-              );
-            }
-          }
-        }
-
-        currentPointRef.current = drawPoint;
-        previewPointsRef.current.push(drawPoint);
-        lastPointRef.current = drawPoint;
-        setCurrentPoint(drawPoint);
-        addPointToStroke(drawPoint);
-      }
-    },
-    [viewOffset, ruler, isRulerHover, isRulerDragging, tool, toolConfig],
-  );
-
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     if (isPanningRef.current) {
       isPanningRef.current = false;
       panStartRef.current = null;
@@ -476,8 +416,9 @@ export function CanvasContainer({
       currentPointRef.current = null;
       startPointSnappedRef.current = false;
       previewPointsRef.current = [];
-      setIsDrawing(false);
-      setCurrentPoint(null);
+
+      // Removed setIsDrawing(false) and setCurrentPoint(null)
+
       endStrokeGroup();
       document.markAsChanged();
 
@@ -500,7 +441,116 @@ export function CanvasContainer({
     }
   }, [ruler, isRulerDragging, document, settings, engine]);
 
-  // Wheel Event Handler (Non-Passive for preventDefault)
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
+      switch (true) {
+        // --- CASE 1: DRAWING (High Precision) ---
+        case isDrawingRef.current && !!startPointRef.current: {
+          needsRender.current = true; // Wake up renderer
+
+          const events =
+            "getCoalescedEvents" in e.nativeEvent
+              ? (e.nativeEvent as PointerEvent).getCoalescedEvents()
+              : [e];
+
+          events.forEach((evt) => {
+            const canvasPoint = getScreenToCanvas(evt.clientX, evt.clientY);
+            if (!canvasPoint) return;
+
+            let drawPoint = canvasPoint;
+
+            // Apply Snapping (Per sub-pixel point for accuracy)
+            if (ruler.visible) {
+              const snapInfo = ruler.getSnapInfo(
+                canvasPoint,
+                viewStateRef.current,
+              );
+              if (snapInfo.inStickyZone) {
+                const shouldSnap =
+                  tool !== Tools.AREA || !startPointSnappedRef.current;
+                if (shouldSnap) {
+                  drawPoint = calculateSnappedPoint(
+                    canvasPoint,
+                    snapInfo,
+                    viewStateRef.current,
+                    tool,
+                    toolConfig,
+                  );
+                }
+              }
+            }
+
+            // Update Refs
+            currentPointRef.current = drawPoint;
+            previewPointsRef.current.push(drawPoint);
+            lastPointRef.current = drawPoint;
+            addPointToStroke(drawPoint);
+          });
+          break;
+        }
+
+        // --- CASE 2: PANNING (Standard Precision) ---
+        case isPanningRef.current && !!panStartRef.current: {
+          needsRender.current = true; // Wake up renderer
+
+          const canvasPoint = getScreenToCanvas(e.clientX, e.clientY);
+          if (canvasPoint) {
+            const deltaX = panStartRef.current.x - canvasPoint.x;
+            const deltaY = panStartRef.current.y - canvasPoint.y;
+            setViewOffset({
+              x: viewOffset.x + deltaX,
+              y: viewOffset.y + deltaY,
+            });
+          }
+          break;
+        }
+
+        // --- CASE 3: RULER DRAGGING (Standard Precision) ---
+        case ruler.isDragging || isRulerDragging: {
+          needsRender.current = true; // Wake up renderer
+
+          const screenPoint = getRelativePoint(e.clientX, e.clientY);
+          if (screenPoint) {
+            dragRuler(screenPoint);
+            setRulerHash((h) => h + 1);
+          }
+          break;
+        }
+
+        // --- DEFAULT: PASSIVE HOVER (Idle) ---
+        default: {
+          const screenPoint = getRelativePoint(e.clientX, e.clientY);
+          const rect = containerRectRef.current;
+
+          if (rect && screenPoint && ruler.visible) {
+            const onRuler = ruler.isPointOnRuler(screenPoint, {
+              width: rect.width,
+              height: rect.height,
+            });
+
+            if (onRuler !== isRulerHover) setIsRulerHover(onRuler);
+          }
+          break;
+        }
+      }
+    },
+    [
+      viewOffset,
+      ruler,
+      isRulerHover,
+      isRulerDragging,
+      tool,
+      toolConfig,
+      getScreenToCanvas,
+      getRelativePoint,
+      calculateSnappedPoint,
+      addPointToStroke,
+      dragRuler,
+      setViewOffset,
+    ],
+  );
+
+  // Wheel Event Handler
   useEffect(() => {
     const node = externalRef?.current || localRef.current;
     if (!node) return;
@@ -508,11 +558,12 @@ export function CanvasContainer({
     const handleWheel = (e: WheelEvent) => {
       if (!containerRectRef.current) return;
 
+      needsRender.current = true;
+
       const { zoom: currentZoom, viewOffset: currentOffset } =
         viewStateRef.current;
       const scrollSpeed = 0.4;
 
-      // 1. Zoom (Ctrl + Wheel)
       if (e.ctrlKey) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -523,9 +574,7 @@ export function CanvasContainer({
           e.clientY,
           containerRectRef.current!,
         );
-      }
-      // 2. Pan (Shift + Wheel)
-      else if (e.shiftKey) {
+      } else if (e.shiftKey) {
         e.preventDefault();
         const scrollDelta =
           Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
@@ -533,9 +582,7 @@ export function CanvasContainer({
           x: currentOffset.x + (scrollDelta * scrollSpeed) / currentZoom,
           y: currentOffset.y,
         });
-      }
-      // 3. Ruler Rotation or Standard Pan
-      else if (ruler.visible) {
+      } else if (ruler.visible) {
         const screenPoint = {
           x: e.clientX - containerRectRef.current.left,
           y: e.clientY - containerRectRef.current.top,
@@ -581,8 +628,9 @@ export function CanvasContainer({
   return (
     <div
       ref={setContainerRefCallback}
+      tabIndex={-1}
       className={cn(
-        "relative overflow-hidden bg-canvas-bg flex-1 min-h-0",
+        "relative overflow-hidden bg-canvas-bg flex-1 min-h-0 focus:outline-none",
         className,
       )}
       style={{
@@ -600,10 +648,10 @@ export function CanvasContainer({
         backgroundSize: "20px 20px",
         backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px",
       }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
     >
       {settings.miscSettings.showDebugInfo && (
         <DebugOverlay zoom={zoom} viewOffset={viewOffset} ruler={ruler} />

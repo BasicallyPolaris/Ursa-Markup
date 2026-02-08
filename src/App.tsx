@@ -97,8 +97,8 @@ function GlobalKeyboardShortcuts() {
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [addTab, activeDocumentId, documents.length, closeTab]);
 
   return null;
