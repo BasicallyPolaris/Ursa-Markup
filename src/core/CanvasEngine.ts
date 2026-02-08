@@ -71,8 +71,9 @@ export class CanvasEngine {
 
     // Display canvas - This matches Screen resolution (DPR scaled)
     this.displayCanvas = document.createElement("canvas");
-    this.displayCanvas.style.width = "100%";
-    this.displayCanvas.style.height = "100%";
+    this.displayCanvas.style.position = "absolute";
+    this.displayCanvas.style.top = "0";
+    this.displayCanvas.style.left = "0";
     this.displayCanvas.style.display = "block";
     this.displayCanvas.style.touchAction = "none";
 
@@ -362,6 +363,10 @@ export class CanvasEngine {
     ) {
       this.displayCanvas.width = targetWidth;
       this.displayCanvas.height = targetHeight;
+
+      this.displayCanvas.style.width = `${containerSize.width}px`;
+      this.displayCanvas.style.height = `${containerSize.height}px`;
+
       this.setupContext(this.displayCanvas, this.displayCtx);
     }
 

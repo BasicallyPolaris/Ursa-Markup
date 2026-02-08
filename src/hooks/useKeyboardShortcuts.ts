@@ -1,11 +1,16 @@
 /**
  * @file Keyboard Shortcuts & File Actions
- * @description Manages global keyboard shortcuts, hotkey display logic, and core
- * file operations (Open, Save, Copy). Acts as the central registry for binding
- * user inputs to application state changes.
+ * @description Manages global keyboard shortcuts with high-performance Ref-based
+ * dispatching to prevent listener churn during canvas operations.
  */
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { useCanvasEngine } from "~/contexts/CanvasEngineContext";
 import { useDocument } from "~/contexts/DocumentContext";
 import { useDrawing } from "~/contexts/DrawingContext";
@@ -14,7 +19,7 @@ import { useTabManager } from "~/contexts/TabManagerContext";
 import { services } from "~/services";
 import { DEFAULT_HOTKEYS } from "~/services/Settings/config";
 import type { HotkeyAction, HotkeySettings } from "~/types/settings";
-import { Tool, Tools } from "~/types/tools";
+import { Tools } from "~/types/tools";
 import { formatHotkey, matchesHotkey } from "~/utils/hotkeys";
 import { registerPendingCopy } from "./useClipboardEvents";
 
@@ -22,22 +27,12 @@ import { registerPendingCopy } from "./useClipboardEvents";
 // Hotkey Display Hooks
 // -----------------------------------------------------------------------------
 
-/**
- * Retrieves the formatted display string for a specific hotkey action.
- * Useful for UI tooltips and menu items (e.g., "Ctrl+S").
- *
- * @param action - The identifier of the action to look up.
- * @returns The formatted hotkey string.
- */
 export function useHotkeyDisplay(action: HotkeyAction): string {
   const { settings } = useSettings();
   const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
   return useMemo(() => formatHotkey(hotkeys[action]), [hotkeys, action]);
 }
 
-/**
- * Retrieves the full map of current hotkey bindings.
- */
 export function useHotkeys(): HotkeySettings {
   const { settings } = useSettings();
   return settings.hotkeys || DEFAULT_HOTKEYS;
@@ -47,18 +42,14 @@ export function useHotkeys(): HotkeySettings {
 // File Actions Hook
 // -----------------------------------------------------------------------------
 
-/**
- * Provides handlers for core file operations: Open, Save, and Copy.
- * These handlers abstract the logic for interacting with the CanvasEngine
- * and IOService, making them reusable for both keyboard shortcuts and UI buttons.
- */
 export function useFileActions() {
   const { engine } = useCanvasEngine();
-
-  // Use a ref to access the latest engine instance within callbacks
-  // without forcing re-creation of the handlers on every render.
   const engineRef = useRef(engine);
-  engineRef.current = engine;
+
+  // Keep engine ref fresh
+  useEffect(() => {
+    engineRef.current = engine;
+  }, [engine]);
 
   const handleOpen = useCallback(async () => {
     const result = await services.ioService.openFile();
@@ -95,15 +86,11 @@ export function useFileActions() {
     const canvas = currentEngine.getFreshCombinedCanvas();
     if (canvas) {
       const version = activeDoc.version;
-
-      // Register intent to copy (handled by useClipboardEvents)
       registerPendingCopy(version, false);
-
-      // Retrieve latest copy preferences directly to ensure freshness
       const { copySettings } = services.settingsManager.settings;
 
       await services.ioService.copyToClipboard(canvas, version, {
-        force: true, // Manual copy always forces an update
+        force: true,
         isAutoCopy: false,
         format: copySettings.manualCopyFormat,
         jpegQuality: copySettings.manualCopyJpegQuality,
@@ -111,80 +98,55 @@ export function useFileActions() {
     }
   }, []);
 
-  return { handleOpen, handleSave, handleCopy };
+  return useMemo(
+    () => ({ handleOpen, handleSave, handleCopy }),
+    [handleOpen, handleSave, handleCopy],
+  );
 }
 
 // -----------------------------------------------------------------------------
 // Global Keyboard Manager
 // -----------------------------------------------------------------------------
 
-/**
- * centralized registry for all application keyboard shortcuts.
- * * Maps hotkey definitions (from settings) to specific handler functions.
- * Listens for global `keydown` events and executes the matching action.
- */
 export function useKeyboardShortcuts(): void {
   const { settings } = useSettings();
 
-  // Context Consumers
+  // 1. Grab all contexts
   const tabManager = useTabManager();
   const documentContext = useDocument();
   const drawingContext = useDrawing();
   const canvasContext = useCanvasEngine();
   const fileActions = useFileActions();
 
-  // Action Handlers
-  // Wrapped in useCallbacks to maintain stable references for the effect dependency array
+  // 2. Create a "Latest State" Ref
+  // We store all current handlers/values in a ref.
+  // This allows the Event Listener to be STABLE (created once)
+  // while still accessing the freshest state (Zoom, Undo, etc.)
+  const stateRef = useRef({
+    settings,
+    tabManager,
+    documentContext,
+    drawingContext,
+    canvasContext,
+    fileActions,
+  });
 
-  const handleUndo = useCallback(
-    () => documentContext.undo(),
-    [documentContext],
-  );
-  const handleRedo = useCallback(
-    () => documentContext.redo(),
-    [documentContext],
-  );
-  const handleToggleRuler = useCallback(
-    () => documentContext.toggleRuler(),
-    [documentContext],
-  );
+  // 3. Keep the Ref synchronized with every render
+  useLayoutEffect(() => {
+    stateRef.current = {
+      settings,
+      tabManager,
+      documentContext,
+      drawingContext,
+      canvasContext,
+      fileActions,
+    };
+  });
 
-  const handleToolChange = useCallback(
-    (tool: Tool) => {
-      drawingContext.switchTool(tool);
-    },
-    [drawingContext],
-  );
-
-  const handleColorChange = useCallback(
-    (index: number) => {
-      const color = settings.activePaletteColors[index];
-      if (color) {
-        drawingContext.setActiveColor(color);
-      }
-    },
-    [settings.activePaletteColors, drawingContext],
-  );
-
-  const handleZoomIn = useCallback(() => {
-    canvasContext.setZoom(Math.min(5, canvasContext.zoom * 1.2));
-  }, [canvasContext]);
-
-  const handleZoomOut = useCallback(() => {
-    canvasContext.setZoom(Math.max(0.1, canvasContext.zoom / 1.2));
-  }, [canvasContext]);
-
-  const handleCloseTab = useCallback(() => {
-    const { documents, activeDocumentId, closeTab } = tabManager;
-    if (documents.length > 1 && activeDocumentId) {
-      closeTab(activeDocumentId);
-    }
-  }, [tabManager]);
-
-  // Event Listener Setup
+  // 4. Stable Event Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore input fields to prevent blocking typing
+      // Ignore input fields
       const target = e.target as HTMLElement;
       if (
         target.tagName === "INPUT" ||
@@ -194,88 +156,107 @@ export function useKeyboardShortcuts(): void {
         return;
       }
 
-      // Action Registry
-      // Maps configuration keys to executable functions
-      const actionMap: Record<HotkeyAction, (() => void) | null> = {
-        // File Operations
-        "file.open": fileActions.handleOpen,
-        "file.save": fileActions.handleSave,
-        "file.copy": fileActions.handleCopy,
-
-        // Edit Operations
-        "edit.undo": handleUndo,
-        "edit.redo": handleRedo,
-
-        // Tools
-        "tool.pen": () => handleToolChange(Tools.PEN),
-        "tool.highlighter": () => handleToolChange(Tools.HIGHLIGHTER),
-        "tool.area": () => handleToolChange(Tools.AREA),
-        "tool.eraser": () => handleToolChange(Tools.ERASER),
-
-        // Colors
-        "color.1": () => handleColorChange(0),
-        "color.2": () => handleColorChange(1),
-        "color.3": () => handleColorChange(2),
-        "color.4": () => handleColorChange(3),
-        "color.5": () => handleColorChange(4),
-        "color.6": () => handleColorChange(5),
-        "color.7": () => handleColorChange(6),
-
-        // Navigation & View
-        "nav.ruler": handleToggleRuler,
-        "nav.zoomIn": handleZoomIn,
-        "nav.zoomOut": handleZoomOut,
-        "nav.fitToWindow": canvasContext.fitToWindow,
-        "nav.stretchToFill": canvasContext.stretchToFill,
-        "nav.centerImage": canvasContext.centerImage,
-
-        // Tab Management
-        "tab.new": tabManager.addTab,
-        "tab.close": tabManager.documents.length > 1 ? handleCloseTab : null,
-        "tab.next": tabManager.switchToNextTab,
-        "tab.previous": tabManager.switchToPreviousTab,
-      };
+      // Access latest state from Ref
+      const current = stateRef.current;
+      const {
+        settings,
+        documentContext,
+        drawingContext,
+        canvasContext,
+        tabManager,
+        fileActions,
+      } = current;
 
       const hotkeys = settings.hotkeys || DEFAULT_HOTKEYS;
 
-      // Iterate through defined hotkeys and execute match
-      for (const [actionKey, binding] of Object.entries(hotkeys)) {
-        const action = actionKey as HotkeyAction;
+      // Define Actions implementation
+      // We define this INSIDE the handler so it always uses the variables from `current`
+      const executeAction = (action: HotkeyAction) => {
+        switch (action) {
+          // File
+          case "file.open":
+            return fileActions.handleOpen();
+          case "file.save":
+            return fileActions.handleSave();
+          case "file.copy":
+            return fileActions.handleCopy();
 
-        // Skip unbound or invalid keys
-        if (!binding.key) continue;
+          // Edit
+          case "edit.undo":
+            return documentContext.undo();
+          case "edit.redo":
+            return documentContext.redo();
 
-        if (matchesHotkey(e, binding)) {
-          const handler = actionMap[action];
-          if (handler) {
-            e.preventDefault();
-            handler();
-            return; // Execute only the first matching action
+          // Tools
+          case "tool.pen":
+            return drawingContext.switchTool(Tools.PEN);
+          case "tool.highlighter":
+            return drawingContext.switchTool(Tools.HIGHLIGHTER);
+          case "tool.area":
+            return drawingContext.switchTool(Tools.AREA);
+          case "tool.eraser":
+            return drawingContext.switchTool(Tools.ERASER);
+
+          // Colors
+          case "color.1":
+          case "color.2":
+          case "color.3":
+          case "color.4":
+          case "color.5":
+          case "color.6":
+          case "color.7": {
+            // Extract index from "color.N" (1-based to 0-based)
+            const idx = parseInt(action.split(".")[1]) - 1;
+            const color = settings.activePaletteColors[idx];
+            if (color) drawingContext.setActiveColor(color);
+            return;
           }
+
+          // View
+          case "nav.ruler":
+            return documentContext.toggleRuler();
+          case "nav.zoomIn":
+            return canvasContext.setZoom(Math.min(5, canvasContext.zoom * 1.2));
+          case "nav.zoomOut":
+            return canvasContext.setZoom(
+              Math.max(0.1, canvasContext.zoom / 1.2),
+            );
+          case "nav.fitToWindow":
+            return canvasContext.fitToWindow();
+          case "nav.stretchToFill":
+            return canvasContext.stretchToFill();
+          case "nav.centerImage":
+            return canvasContext.centerImage();
+
+          // Tabs
+          case "tab.new":
+            return tabManager.addTab();
+          case "tab.close":
+            if (tabManager.documents.length > 1) {
+              if (tabManager.activeDocumentId)
+                tabManager.closeTab(tabManager.activeDocumentId);
+            }
+            return;
+          case "tab.next":
+            return tabManager.switchToNextTab();
+          case "tab.previous":
+            return tabManager.switchToPreviousTab();
+        }
+      };
+
+      // Match and Execute
+      for (const [actionKey, binding] of Object.entries(hotkeys)) {
+        if (!binding.key) continue;
+        if (matchesHotkey(e, binding)) {
+          e.preventDefault();
+          executeAction(actionKey as HotkeyAction);
+          return;
         }
       }
     };
 
+    // Attach ONCE
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    // Dependencies are extensive to ensure closure freshness
-    settings.hotkeys,
-    fileActions,
-    handleUndo,
-    handleRedo,
-    handleToggleRuler,
-    handleToolChange,
-    handleColorChange,
-    handleZoomIn,
-    handleZoomOut,
-    handleCloseTab,
-    canvasContext.fitToWindow,
-    canvasContext.stretchToFill,
-    canvasContext.centerImage,
-    tabManager.addTab,
-    tabManager.switchToNextTab,
-    tabManager.switchToPreviousTab,
-    tabManager.documents.length, // Required for tab closing logic
-  ]);
+  }, []);
 }
