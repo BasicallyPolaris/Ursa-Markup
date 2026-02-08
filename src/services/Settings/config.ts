@@ -84,7 +84,7 @@ export const TOOL_SETTINGS_CONSTANTS = {
   },
   [Tools.ERASER]: {
     minSize: 10,
-    maxSize: 40,
+    maxSize: 100,
     sizeStep: 1,
   },
 } as const;

@@ -3,7 +3,7 @@ import { Slider } from "~/components/ui/slider";
 import { TOOL_SETTINGS_CONSTANTS } from "~/services/Settings/config";
 import { DeepPartial } from "~/types";
 import type { AppSettings } from "~/types/settings";
-import { BlendModes, EraseModes, ToolConfigs, Tools } from "~/types/tools";
+import { BlendModes, ToolConfigs, Tools } from "~/types/tools";
 import {
   SettingsGroup,
   SettingsRow,
@@ -24,11 +24,6 @@ export function ToolsSettings({
   const blendModeOptions = [
     { value: BlendModes.NORMAL, label: "Normal" },
     { value: BlendModes.MULTIPLY, label: "Multiply" },
-  ];
-
-  const eraserModeOptions = [
-    { value: EraseModes.PIXEL, label: "Pixel" },
-    { value: EraseModes.FULL_STROKE, label: "Full Stroke" },
   ];
 
   return (
@@ -253,28 +248,6 @@ export function ToolsSettings({
             />
           </SettingsSliderRow>
         </SettingsGroup>
-
-        <div className="border-t border-toolbar-border/50 pt-4">
-          <SettingsGroup title="Behavior">
-            <SettingsRow
-              label="Eraser mode"
-              description="How eraser selects strokes to remove"
-            >
-              <ToggleButtonGroup
-                options={eraserModeOptions}
-                value={toolConfigs[Tools.ERASER].eraserMode}
-                onChange={(value) =>
-                  updateDraft({
-                    toolConfigs: {
-                      [Tools.ERASER]: { eraserMode: value },
-                    },
-                  })
-                }
-                className="w-40"
-              />
-            </SettingsRow>
-          </SettingsGroup>
-        </div>
       </SettingsSection>
     </div>
   );

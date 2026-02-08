@@ -102,7 +102,7 @@ export type ViewState = {
   canvasSize: Size;
 };
 
-export interface PreviewState<T extends Tool> {
+export interface PreviewState<T extends Exclude<Tool, "eraser">> {
   tool: T;
   color: string;
   toolConfig: ToolConfigs[T];
@@ -112,5 +112,5 @@ export interface PreviewState<T extends Tool> {
 }
 
 export type AnyPreviewState = {
-  [K in Tool]: PreviewState<K>;
-}[Tool];
+  [K in Exclude<Tool, "eraser">]: PreviewState<K>;
+}[Exclude<Tool, "eraser">];
