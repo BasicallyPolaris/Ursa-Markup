@@ -12,6 +12,7 @@ import { useDrawing } from "~/contexts/DrawingContext";
 import { useSettings } from "~/contexts/SettingsContext";
 import { registerPendingCopy } from "~/hooks/useClipboardEvents";
 import { useHotkeys } from "~/hooks/useKeyboardShortcuts";
+import { useToolCursor } from "~/hooks/useToolCursor";
 import { cn } from "~/lib/utils";
 import { services } from "~/services";
 import {
@@ -104,6 +105,13 @@ export function CanvasContainer({
 
   const needsRender = useRef(true);
   const autoCopyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const interactionState = {
+    isPanning,
+    isRulerHover,
+    isRulerDragging,
+  };
+  const cursorStyle = useToolCursor(tool, toolConfig, zoom, interactionState);
 
   // --- Synchronization Effects ---
   useLayoutEffect(() => {
@@ -282,19 +290,32 @@ export function CanvasContainer({
         const startPoint = startPointRef.current;
         const currentPoint = currentPointRef.current;
         const activeTool = toolRef.current;
-        const previewState =
-          isDrawing && startPoint && activeTool !== Tools.ERASER
-            ? ({
-                tool: activeTool,
-                color: activeColorRef.current,
-                startPoint: startPoint,
-                currentPoint: currentPoint || startPoint,
-                points: previewPointsRef.current,
-                toolConfig: toolConfigRef.current,
-              } as AnyPreviewState)
-            : undefined;
+        const toolConfig = toolConfigRef.current;
 
-        // The Engine handles resizing internal canvas if rect dimensions changed
+        let previewState: AnyPreviewState | undefined;
+
+        if (isDrawing && startPoint && activeTool !== Tools.ERASER) {
+          // Drawing logic (Pen, Highlighter, Area)
+          previewState = {
+            tool: activeTool,
+            color: activeColorRef.current,
+            startPoint: startPoint,
+            currentPoint: currentPoint || startPoint,
+            points: previewPointsRef.current,
+            toolConfig: toolConfig,
+          } as AnyPreviewState;
+        } else if (activeTool === Tools.ERASER && currentPoint) {
+          // Eraser Cursor Logic (Works on Hover OR Drag)
+          previewState = {
+            tool: Tools.ERASER,
+            color: "#000000",
+            startPoint: currentPoint,
+            currentPoint: currentPoint,
+            points: [currentPoint],
+            toolConfig: toolConfig,
+          } as AnyPreviewState;
+        }
+
         engine.render(
           viewStateRef.current,
           rulerRef.current,
@@ -486,6 +507,7 @@ export function CanvasContainer({
                   currentIndex: strokeHistory.currentIndex,
                 });
               }
+              needsRender.current = true;
             }
 
             currentPointRef.current = drawPoint;
@@ -522,13 +544,19 @@ export function CanvasContainer({
 
         default: {
           const screenPoint = getRelativePoint(e.clientX, e.clientY);
+          const canvasPoint = getScreenToCanvas(e.clientX, e.clientY);
           const rect = containerRectRef.current;
+
           if (rect && screenPoint && ruler.visible) {
             const onRuler = ruler.isPointOnRuler(screenPoint, {
               width: rect.width,
               height: rect.height,
             });
             if (onRuler !== isRulerHover) setIsRulerHover(onRuler);
+          }
+          if (tool === Tools.ERASER && canvasPoint) {
+            currentPointRef.current = canvasPoint;
+            needsRender.current = true;
           }
           break;
         }
@@ -637,12 +665,7 @@ export function CanvasContainer({
         className,
       )}
       style={{
-        cursor:
-          isPanning || isRulerDragging
-            ? "grabbing"
-            : isRulerHover
-              ? "grab"
-              : "crosshair",
+        cursor: cursorStyle,
         backgroundImage: `
           linear-gradient(45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%),
           linear-gradient(-45deg, hsl(var(--canvas-pattern)) 25%, transparent 25%),

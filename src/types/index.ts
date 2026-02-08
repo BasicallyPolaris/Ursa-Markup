@@ -18,14 +18,6 @@ export interface Size {
   height: number;
 }
 
-export interface RulerState {
-  visible: boolean;
-  x: number;
-  y: number;
-  angle: number;
-  isDragging: boolean;
-}
-
 export interface Stroke<T extends Tool> {
   id: string;
   tool: T;
@@ -37,20 +29,20 @@ export interface Stroke<T extends Tool> {
 
 export type AnyStroke = { [K in Tool]: Stroke<K> }[Tool];
 
-export interface StrokeGroup<T extends Tool> {
+export type StrokeGroup<T extends Tool> = {
   id: string;
   strokes: Stroke<T>[];
   timestamp: number;
-}
+};
 
 export type AnyStrokeGroup = { [K in Tool]: StrokeGroup<K> }[Tool];
 
-export interface StrokeHistoryState {
+export type StrokeHistoryState = {
   groups: AnyStrokeGroup[];
   currentIndex: number;
-}
+};
 
-export interface Tab {
+export type Tab = {
   id: string;
   filePath: string | null;
   fileName: string | null;
@@ -63,33 +55,33 @@ export interface Tab {
   recentDir: string | null;
   strokeHistory: AnyStrokeGroup[];
   strokeHistoryIndex: number;
-}
+};
 
-export interface CanvasState {
+export type CanvasState = {
   tool: Tool;
   toolConfigs: ToolConfigs;
   ruler: RulerState;
   canUndo: boolean;
   canRedo: boolean;
   hasImage: boolean;
-}
+};
 
-export interface RulerState {
+export type RulerState = {
   visible: boolean;
   x: number;
   y: number;
   angle: number;
   isDragging: boolean;
-}
+};
 
-export interface RulerSnapInfo {
+export type RulerSnapInfo = {
   distance: number;
   snapToFarSide: boolean;
   inStickyZone: boolean;
   onRuler: boolean;
-}
+};
 
-export interface DocumentState {
+export type DocumentState = {
   id: string;
   filePath: string | null;
   fileName: string | null;
@@ -102,17 +94,13 @@ export interface DocumentState {
   recentDir: string | null;
   strokeHistory: AnyStrokeGroup[];
   strokeHistoryIndex: number;
-}
+};
 
-export interface ViewState {
+export type ViewState = {
   zoom: number;
   viewOffset: Point;
   canvasSize: Size;
-}
-
-export type AnyPreviewState = {
-  [K in Tool]: PreviewState<K>;
-}[Tool];
+};
 
 export interface PreviewState<T extends Tool> {
   tool: T;
@@ -122,3 +110,7 @@ export interface PreviewState<T extends Tool> {
   currentPoint: Point;
   points?: Point[];
 }
+
+export type AnyPreviewState = {
+  [K in Tool]: PreviewState<K>;
+}[Tool];
