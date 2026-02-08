@@ -3,10 +3,10 @@ import { Document } from "../core/Document";
 
 type EventCallback<T> = (payload: T) => void;
 
-interface PendingClose {
+type PendingClose = {
   id: string;
   document: Document;
-}
+};
 
 /**
  * TabManager manages a collection of Document instances (tabs)

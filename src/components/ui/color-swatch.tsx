@@ -2,7 +2,7 @@
 
 import { cn } from "../../lib/utils";
 
-interface ColorSwatchProps {
+type ColorSwatchProps = {
   /** The color to display */
   color: string;
   /** Size of the swatch in pixels */
@@ -15,7 +15,7 @@ interface ColorSwatchProps {
   className?: string;
   /** Optional title/tooltip */
   title?: string;
-}
+};
 
 const sizeClasses = {
   sm: "size-4",

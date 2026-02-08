@@ -18,10 +18,10 @@ import {
 } from "../components/SettingsSection";
 import { ToggleButtonGroup } from "../components/ToggleButtonGroup";
 
-interface GeneralSettingsProps {
+type GeneralSettingsProps = {
   settings: AppSettings;
   updateDraft: (updates: DeepPartial<AppSettings>) => void;
-}
+};
 
 export function GeneralSettings({
   settings,

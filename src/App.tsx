@@ -1,29 +1,29 @@
-import { useRef, useEffect, useState, RefObject } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { RefObject, useEffect, useRef, useState } from "react";
+import { CanvasContainer } from "./components/canvas/CanvasContainer";
+import { CloseTabDialog } from "./components/tabs/CloseTabDialog";
+import { TabBar } from "./components/tabs/TabBar";
+import { Toolbar } from "./components/toolbar/Toolbar";
+import { Toaster } from "./components/ui/sonner";
 import {
-  SettingsProvider,
-  ThemeProvider,
-  TabManagerProvider,
-  DocumentProvider,
   CanvasEngineProvider,
+  DocumentProvider,
   DrawingProvider,
+  SettingsProvider,
+  TabManagerProvider,
+  ThemeProvider,
   useTabManager,
 } from "./contexts";
 import { useKeyboardShortcuts, useWindowTitle } from "./hooks";
 import { useClipboardEvents } from "./hooks/useClipboardEvents";
 import { services } from "./services";
-import { Toolbar } from "./components/toolbar/Toolbar";
-import { TabBar } from "./components/tabs/TabBar";
-import { CloseTabDialog } from "./components/tabs/CloseTabDialog";
-import { CanvasContainer } from "./components/canvas/CanvasContainer";
-import { Toaster } from "./components/ui/sonner";
 import type { AppSettings } from "./types/settings";
 
-interface AppContentProps {
+type AppContentProps = {
   containerRef: RefObject<HTMLDivElement | null>;
   canvasContainerRef: RefObject<HTMLDivElement | null>;
-}
+};
 
 /**
  * DocumentContent - Component that has access to document and canvas contexts

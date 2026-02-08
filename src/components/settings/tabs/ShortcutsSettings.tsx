@@ -21,11 +21,11 @@ import type {
 } from "~/types/settings";
 import { formatHotkey } from "~/utils/hotkeys";
 
-interface ShortcutGroup {
+type ShortcutGroup = {
   title: string;
   icon: React.ReactNode;
   shortcuts: { action: HotkeyAction; description: string }[];
-}
+};
 
 const shortcutGroups: ShortcutGroup[] = [
   {
@@ -89,10 +89,10 @@ const shortcutGroups: ShortcutGroup[] = [
   },
 ];
 
-interface ShortcutsSettingsProps {
+type ShortcutsSettingsProps = {
   settings: AppSettings;
   updateDraft: (updates: Partial<AppSettings>) => void;
-}
+};
 
 export function ShortcutsSettings({
   settings,

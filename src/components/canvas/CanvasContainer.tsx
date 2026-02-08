@@ -26,10 +26,10 @@ import { Tools, type Tool, type ToolConfig } from "~/types/tools";
 import { DebugOverlay } from "./DebugOverlay";
 import { EmptyState } from "./EmptyState";
 
-interface CanvasContainerProps {
+type CanvasContainerProps = {
   className?: string;
   containerRef?: RefObject<HTMLDivElement | null>;
-}
+};
 
 export function CanvasContainer({
   className,

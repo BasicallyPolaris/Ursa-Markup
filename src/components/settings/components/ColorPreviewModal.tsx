@@ -2,12 +2,12 @@ import { Check, Copy, X } from "lucide-react";
 import { useState } from "react";
 import type { ColorPalette, Theme } from "~/types/theme";
 
-interface ColorPreviewModalProps {
+type ColorPreviewModalProps = {
   isOpen: boolean;
   onClose: () => void;
   theme: Theme | null;
   palette: ColorPalette | null;
-}
+};
 
 export function ColorPreviewModal({
   isOpen,

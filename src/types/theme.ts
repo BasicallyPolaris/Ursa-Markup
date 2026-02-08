@@ -4,12 +4,12 @@
 
 export type ColorFormat = "hex" | "rgb" | "hsl";
 
-export interface ColorPalette {
+export type ColorPalette = {
   name: string;
   colors: string[];
-}
+};
 
-export interface ThemeColors {
+export type ThemeColors = {
   // Application backgrounds
   app: {
     background: string;
@@ -87,10 +87,10 @@ export interface ThemeColors {
   accentHover: {
     primary: string;
   };
-}
+};
 
 /** A single theme definition */
-export interface Theme {
+export type Theme = {
   /** Unique identifier for the theme */
   name: string;
   /** Display label for the theme */
@@ -99,12 +99,12 @@ export interface Theme {
   description?: string;
   /** Color definitions for the UI */
   colors: ThemeColors;
-}
+};
 
 /** Complete theme configuration containing both themes and palettes */
-export interface ThemeConfig {
+export type ThemeConfig = {
   /** Available themes */
   themes: Theme[];
   /** Color palettes for drawing tools (independent of themes) */
   palettes: ColorPalette[];
-}
+};
