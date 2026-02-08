@@ -77,7 +77,7 @@ export function CanvasContainer({
     setCanvasRef,
   } = useCanvasEngine();
 
-  const { tool, toolConfig, activeColor } = useDrawing();
+  const { tool, toolConfig, activeColor, setIsDrawing } = useDrawing();
   const { settings } = useSettings();
   const hotkeys = useHotkeys();
 
@@ -137,6 +137,11 @@ export function CanvasContainer({
     toolConfig,
     activeColor,
   ]);
+
+  // --- Ruler Visibility Change ---
+  useEffect(() => {
+    needsRender.current = true;
+  }, [ruler.visible]);
 
   // --- Ref Callback ---
   const setContainerRefCallback = useCallback(
@@ -324,7 +329,6 @@ export function CanvasContainer({
   const handlePointerDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
-      (e.currentTarget as HTMLElement).focus();
       const canvasPoint = getScreenToCanvas(e.clientX, e.clientY);
       const screenPoint = getRelativePoint(e.clientX, e.clientY);
       if (!canvasPoint || !screenPoint) return;
@@ -374,6 +378,7 @@ export function CanvasContainer({
 
       startStrokeGroup();
       startStroke(tool, toolConfig, activeColor, startDrawPoint);
+      setIsDrawing(true);
     },
     [tool, toolConfig, activeColor, ruler, getScreenToCanvas, getRelativePoint],
   );
@@ -401,6 +406,8 @@ export function CanvasContainer({
       currentPointRef.current = null;
       startPointSnappedRef.current = false;
       previewPointsRef.current = [];
+
+      setIsDrawing(false);
 
       let shouldCommit = true;
 

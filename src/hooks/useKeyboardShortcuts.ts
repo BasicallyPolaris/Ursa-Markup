@@ -146,12 +146,13 @@ export function useKeyboardShortcuts(): void {
   // 4. Stable Event Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore input fields
+      // Ignore input fields (except slider inputs)
       const target = e.target as HTMLElement;
       if (
-        target.tagName === "INPUT" ||
-        target.tagName === "TEXTAREA" ||
-        target.isContentEditable
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable) &&
+        !target.closest('[data-slot="slider"]')
       ) {
         return;
       }
@@ -187,30 +188,35 @@ export function useKeyboardShortcuts(): void {
           case "edit.redo":
             return documentContext.redo();
 
-          // Tools
-          case "tool.pen":
-            return drawingContext.switchTool(Tools.PEN);
-          case "tool.highlighter":
-            return drawingContext.switchTool(Tools.HIGHLIGHTER);
-          case "tool.area":
-            return drawingContext.switchTool(Tools.AREA);
-          case "tool.eraser":
-            return drawingContext.switchTool(Tools.ERASER);
+           // Tools
+           case "tool.pen":
+             if (drawingContext.isDrawing) return;
+             return drawingContext.switchTool(Tools.PEN);
+           case "tool.highlighter":
+             if (drawingContext.isDrawing) return;
+             return drawingContext.switchTool(Tools.HIGHLIGHTER);
+           case "tool.area":
+             if (drawingContext.isDrawing) return;
+             return drawingContext.switchTool(Tools.AREA);
+           case "tool.eraser":
+             if (drawingContext.isDrawing) return;
+             return drawingContext.switchTool(Tools.ERASER);
 
-          // Colors
-          case "color.1":
-          case "color.2":
-          case "color.3":
-          case "color.4":
-          case "color.5":
-          case "color.6":
-          case "color.7": {
-            // Extract index from "color.N" (1-based to 0-based)
-            const idx = parseInt(action.split(".")[1]) - 1;
-            const color = settings.activePaletteColors[idx];
-            if (color) drawingContext.setActiveColor(color);
-            return;
-          }
+           // Colors
+           case "color.1":
+           case "color.2":
+           case "color.3":
+           case "color.4":
+           case "color.5":
+           case "color.6":
+           case "color.7": {
+             if (drawingContext.isDrawing) return;
+             // Extract index from "color.N" (1-based to 0-based)
+             const idx = parseInt(action.split(".")[1]) - 1;
+             const color = settings.activePaletteColors[idx];
+             if (color) drawingContext.setActiveColor(color);
+             return;
+           }
 
           // View
           case "nav.ruler":
@@ -250,13 +256,18 @@ export function useKeyboardShortcuts(): void {
         if (matchesHotkey(e, binding)) {
           e.preventDefault();
           executeAction(actionKey as HotkeyAction);
+          // Blur focused sliders to restore hotkey functionality
+          if (document.activeElement?.closest('[data-slot="slider"]')) {
+            (document.activeElement as HTMLElement).blur();
+          }
           return;
         }
       }
     };
 
     // Attach ONCE
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown, { capture: true });
+    return () =>
+      window.removeEventListener("keydown", handleKeyDown, { capture: true });
   }, []);
 }

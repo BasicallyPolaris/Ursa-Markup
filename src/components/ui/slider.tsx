@@ -77,6 +77,7 @@ function Slider({
           <BaseSlider.Thumb
             data-slot="slider-thumb"
             key={index}
+            onMouseLeave={(e) => (e.target as HTMLElement).blur()}
             className="block size-4 rounded-full border border-slider-thumb-border bg-surface-bg shadow-md hover:scale-110 hover:bg-surface-bg-hover hover:transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
           />
         ))}

@@ -18,6 +18,8 @@ type DrawingActions = {
   ) => void;
   activeColor: string;
   setActiveColor: (color: string) => void;
+  isDrawing: boolean;
+  setIsDrawing: (isDrawing: boolean) => void;
 };
 
 type DrawingContextValue = DrawingActions &
@@ -46,6 +48,8 @@ export function DrawingProvider({
   const [activeColor, setActiveColor] = useState<string>(() => defaultColor);
 
   const [tool, setTool] = useState<Tool>(initialTool);
+
+  const [isDrawing, setIsDrawing] = useState(false);
 
   // Lazy initialization for configs using the helper
   const [toolConfigs, setToolConfigs] = useState<ToolConfigs>(
@@ -87,10 +91,12 @@ export function DrawingProvider({
       updateToolConfig,
       activeColor,
       setActiveColor,
+      isDrawing,
+      setIsDrawing,
     };
 
     return contextValue as DrawingContextValue;
-  }, [tool, toolConfigs, switchTool, updateToolConfig, activeColor]);
+  }, [tool, toolConfigs, switchTool, updateToolConfig, activeColor, isDrawing]);
 
   return (
     <DrawingContext.Provider value={value}>{children}</DrawingContext.Provider>

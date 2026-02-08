@@ -461,7 +461,7 @@ export function Toolbar() {
                     className="bg-current"
                     style={{
                       height: Math.min(28, toolConfig.size),
-                      width: Math.min(20, toolConfig.size * 0.3),
+                      width: Math.min(28, toolConfig.size),
                       backgroundColor: activeColor,
                       opacity: toolConfig.opacity,
                     }}
