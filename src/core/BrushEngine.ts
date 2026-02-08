@@ -121,10 +121,13 @@ export class BrushEngine {
     const y = Math.min(start.y, end.y);
     const width = Math.abs(end.x - start.x);
     const height = Math.abs(end.y - start.y);
-    const radius = config.borderRadius || 0;
 
     ctx.fillStyle = color;
     ctx.globalAlpha = config.opacity / 100;
+
+    let radius = config.borderRadius || 0;
+    const maxRadius = Math.min(width, height) / 2;
+    if (radius > maxRadius) radius = maxRadius;
 
     ctx.beginPath();
     if (typeof ctx.roundRect === "function") {
