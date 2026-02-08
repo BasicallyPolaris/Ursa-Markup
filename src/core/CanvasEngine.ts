@@ -35,7 +35,10 @@ export class CanvasEngine {
   private lastRenderedIndex = -1;
   private lastRenderedGroupCount = 0;
 
-  // NEW: Tracks strokes that should be temporarily invisible during the current drag (Instant Eraser)
+  // Cache of strokes currently visible in the history (excluding previously erased ones)
+  private _visibleStrokes: AnyStroke[] = [];
+
+  // Tracks strokes temporarily hidden during an active eraser drag
   private previewHiddenStrokes: Set<AnyStroke> = new Set();
 
   // Dependencies
@@ -65,18 +68,17 @@ export class CanvasEngine {
       this.container.removeChild(this.container.firstChild);
     }
 
-    // 1. Internal Buffers (Match Image Resolution, 1x)
+    // 1. Internal Buffers (1x)
     this.baseCanvas = this.createCanvas("base-canvas", false);
     this.compositeCanvas = this.createCanvas("composite-canvas", false);
 
-    // 2. Display Canvas (Match Screen Resolution via CSS/DPI)
-    // We use absolute positioning to prevent flexbox stretching artifacts
+    // 2. Display Canvas (DPI Scaled)
     this.displayCanvas = document.createElement("canvas");
     this.displayCanvas.style.position = "absolute";
     this.displayCanvas.style.top = "0";
     this.displayCanvas.style.left = "0";
     this.displayCanvas.style.display = "block";
-    this.displayCanvas.style.touchAction = "none"; // Disable browser gestures
+    this.displayCanvas.style.touchAction = "none";
 
     // 3. Contexts
     this.baseCtx = this.setupContext(this.baseCanvas);
@@ -101,7 +103,6 @@ export class CanvasEngine {
       const img = new Image();
 
       img.onload = () => {
-        // Resize internal buffers to match the image exactly
         this.resizeCanvases(img.width, img.height);
         this._canvasSize = { width: img.width, height: img.height };
 
@@ -110,8 +111,7 @@ export class CanvasEngine {
         }
 
         this.isImageLoading = false;
-
-        // Initial composition (just the image)
+        this._visibleStrokes = [];
         this.refreshComposite([]);
         resolve();
       };
@@ -134,25 +134,20 @@ export class CanvasEngine {
 
     const { groups, currentIndex } = strokeHistory;
 
-    // 1. Detect Incremental Update (Appending 1 new group)
     const isStepForward = currentIndex === this.lastRenderedIndex + 1;
-    // Sanity check: ensure history hasn't been rewritten behind our backs
     const isHistoryConsistent = groups.length >= this.lastRenderedGroupCount;
-
-    // Note: If previewHiddenStrokes has items, we cannot use incremental rendering
-    // because we might need to hide something from the past.
+    // If we have hidden strokes, force full redraw to ensure state consistency
     const isInstantErasing = this.previewHiddenStrokes.size > 0;
 
     if (isStepForward && isHistoryConsistent && !isInstantErasing) {
       const newGroup = groups[currentIndex];
-      // CRITICAL: We can ONLY increment if the new tool is NOT an Eraser.
-      // Erasers modify the past, requiring a full redraw.
       const isEraser = newGroup?.strokes[0]?.tool === Tools.ERASER;
 
       if (newGroup && !isEraser) {
-        // --- FAST PATH: INCREMENTAL RENDER ---
+        // --- FAST PATH ---
         for (const stroke of newGroup.strokes) {
           this.drawStrokeToContext(this.compositeCtx, stroke as AnyStroke);
+          this._visibleStrokes.push(stroke as AnyStroke);
         }
 
         this.lastRenderedIndex = currentIndex;
@@ -162,8 +157,9 @@ export class CanvasEngine {
     }
 
     // --- SLOW PATH: FULL RENDER ---
-    // Eraser, Undo, Redo, File Load, or Instant Preview -> Redraw everything
     const visibleStrokes = this.computeVisibleStrokes(groups, currentIndex);
+    this._visibleStrokes = visibleStrokes; // Update cache
+
     this.refreshComposite(visibleStrokes);
 
     this.lastRenderedIndex = currentIndex;
@@ -172,40 +168,34 @@ export class CanvasEngine {
 
   /**
    * Clears the composite and redraws EVERYTHING from scratch.
-   * Guarantees correct blending order.
+   * Respects previewHiddenStrokes to visually remove items during erase drag.
    */
   private refreshComposite(strokes: AnyStroke[]): void {
     if (!this.compositeCtx || !this.compositeCanvas || !this.baseCanvas) return;
 
-    // 1. Clear
     this.clearCanvas(this.compositeCtx);
 
-    // 2. Draw Background Image
     this.compositeCtx.globalCompositeOperation = "source-over";
     this.compositeCtx.drawImage(this.baseCanvas, 0, 0);
 
-    // 3. Draw Strokes Sequentially
     for (const stroke of strokes) {
+      // VISUAL UPDATE FIX: Skip strokes that are currently "preview hidden"
+      if (this.previewHiddenStrokes.has(stroke)) continue;
+
       this.drawStrokeToContext(this.compositeCtx, stroke);
     }
   }
 
-  /**
-   * Helper to draw a single stroke with correct blending settings.
-   */
   private drawStrokeToContext(
     ctx: CanvasRenderingContext2D,
     stroke: AnyStroke,
   ): void {
-    // 1. Set Blend Mode
-    // Type guard to check if config has blendMode (Eraser does not)
     if ("blendMode" in stroke.toolConfig) {
       ctx.globalCompositeOperation = stroke.toolConfig.blendMode;
     } else {
       ctx.globalCompositeOperation = "source-over";
     }
 
-    // 2. Dispatch to Brush Engine
     switch (stroke.tool) {
       case Tools.PEN:
         this.brushEngine.drawPenStroke(
@@ -256,24 +246,17 @@ export class CanvasEngine {
     const targetWidth = Math.floor(containerSize.width * dpr);
     const targetHeight = Math.floor(containerSize.height * dpr);
 
-    // 1. Handle Resize
-    // We check against physical pixels to avoid blurry upscaling
     if (
       this.displayCanvas.width !== targetWidth ||
       this.displayCanvas.height !== targetHeight
     ) {
       this.displayCanvas.width = targetWidth;
       this.displayCanvas.height = targetHeight;
-
-      // Lock CSS size to logical pixels to prevent stretching
       this.displayCanvas.style.width = `${containerSize.width}px`;
       this.displayCanvas.style.height = `${containerSize.height}px`;
-
       this.setupContext(this.displayCanvas, this.displayCtx);
     }
 
-    // 2. Clear Screen
-    // Reset transform to identity before clearing to ensure full clear
     this.displayCtx.setTransform(1, 0, 0, 1, 0, 0);
     this.displayCtx.clearRect(
       0,
@@ -285,29 +268,23 @@ export class CanvasEngine {
     this.displayCtx.save();
     this.displayCtx.scale(dpr, dpr);
 
-    // 3. Viewport Transform (Pan/Zoom)
     this.displayCtx.translate(
       -viewState.viewOffset.x * viewState.zoom,
       -viewState.viewOffset.y * viewState.zoom,
     );
     this.displayCtx.scale(viewState.zoom, viewState.zoom);
 
-    // 4. Draw Composite (The "Truth")
     if (this.compositeCanvas) {
       this.displayCtx.globalCompositeOperation = "source-over";
-      // Browser handles interpolation from 1x image to Screen Resolution here
       this.displayCtx.drawImage(this.compositeCanvas, 0, 0);
     }
 
-    // 5. Draw Preview (Active Stroke)
     if (preview) {
       this.renderPreview(preview);
     }
 
     this.displayCtx.restore();
 
-    // 6. UI Overlays (Ruler)
-    // Drawn in Screen Space (but scaled for DPI)
     this.displayCtx.save();
     this.displayCtx.scale(dpr, dpr);
     ruler.render(this.displayCtx, {
@@ -319,11 +296,9 @@ export class CanvasEngine {
 
   private renderPreview(preview: AnyPreviewState): void {
     if (!this.displayCtx) return;
-    // Eraser has different preview rendering
     const ctx = this.displayCtx;
 
     ctx.save();
-
     ctx.globalCompositeOperation = preview.toolConfig.blendMode;
 
     if (preview.tool === Tools.AREA) {
@@ -376,11 +351,10 @@ export class CanvasEngine {
           this.applyObjectEraser(eraserStroke, activeStrokes);
         }
       } else {
-        // UPDATE: Check if this stroke is temporarily hidden by the live eraser
+        // For history replay, we consider all strokes valid.
+        // The render loop/refreshComposite handles temporary hiding.
         for (const stroke of group.strokes) {
-          if (!this.previewHiddenStrokes.has(stroke)) {
-            activeStrokes.push(stroke as AnyStroke);
-          }
+          activeStrokes.push(stroke as AnyStroke);
         }
       }
     }
@@ -396,7 +370,6 @@ export class CanvasEngine {
     const hitThreshold = eraserRadius + 2;
     const hitThresholdSq = hitThreshold * hitThreshold;
 
-    // --- CASE A: AREA TOOL ---
     if (target.tool === Tools.AREA && target.points.length >= 2) {
       const start = target.points[0];
       const end = target.points[target.points.length - 1];
@@ -419,9 +392,6 @@ export class CanvasEngine {
       return false;
     }
 
-    // --- CASE B: STANDARD STROKES ---
-
-    // 1. Fast Bounding Box Fail
     let tMinX = Infinity,
       tMaxX = -Infinity,
       tMinY = Infinity,
@@ -432,7 +402,7 @@ export class CanvasEngine {
       if (p.y < tMinY) tMinY = p.y;
       if (p.y > tMaxY) tMaxY = p.y;
     }
-    // ... calculate eraser bounds ...
+
     let eMinX = Infinity,
       eMaxX = -Infinity,
       eMinY = Infinity,
@@ -444,11 +414,11 @@ export class CanvasEngine {
       if (p.y > eMaxY) eMaxY = p.y;
     }
 
-    // Check overlapping bounds
     const padding =
       "size" in target.toolConfig
         ? target.toolConfig.size
         : 5 / 2 + eraserRadius;
+
     if (
       tMaxX + padding < eMinX ||
       tMinX - padding > eMaxX ||
@@ -458,11 +428,8 @@ export class CanvasEngine {
       return false;
     }
 
-    // 2. Segment-to-Point Check
-
     const strokePoints = target.points;
     if (strokePoints.length < 2) {
-      // Fallback for single dots
       const p = strokePoints[0];
       for (const ep of eraserPoints) {
         const dx = p.x - ep.x;
@@ -475,15 +442,12 @@ export class CanvasEngine {
     for (let i = 0; i < strokePoints.length - 1; i++) {
       const p1 = strokePoints[i];
       const p2 = strokePoints[i + 1];
-
       for (const ep of eraserPoints) {
-        // Check distance from eraser point (ep) to line segment (p1-p2)
         if (distanceToSegmentSquared(ep, p1, p2) <= hitThresholdSq) {
           return true;
         }
       }
     }
-
     return false;
   }
 
@@ -508,73 +472,41 @@ export class CanvasEngine {
   // INSTANT ERASER PREVIEW
   // ============================================================================
 
-  /**
-   * Called during PointerMove. Checks collisions against the current eraser position
-   * and hides strokes instantly. Returns TRUE if something new was hidden (requires redraw).
-   */
-  updateEraserPreview(
-    eraserPoint: Point,
-    eraserSize: number,
-    strokeHistory: StrokeHistoryState,
-  ): boolean {
-    const { groups, currentIndex } = strokeHistory;
+  updateEraserPreview(eraserPoint: Point, eraserSize: number): boolean {
     let didHideSomething = false;
-
-    // We pass a single point as an array to reuse the function
     const currentEraserPoints = [eraserPoint];
 
-    for (let i = 0; i <= currentIndex; i++) {
-      const group = groups[i];
-      if (!group) continue;
-      if (group.strokes[0]?.tool === Tools.ERASER) continue;
+    // Check against currently visible strokes
+    for (const stroke of this._visibleStrokes) {
+      if (this.previewHiddenStrokes.has(stroke)) continue;
 
-      for (const stroke of group.strokes) {
-        if (this.previewHiddenStrokes.has(stroke as AnyStroke)) continue;
-
-        if (
-          this.isStrokeHitByEraser(
-            stroke as AnyStroke,
-            currentEraserPoints,
-            eraserSize,
-          )
-        ) {
-          this.previewHiddenStrokes.add(stroke as AnyStroke);
-          didHideSomething = true;
-        }
+      if (this.isStrokeHitByEraser(stroke, currentEraserPoints, eraserSize)) {
+        this.previewHiddenStrokes.add(stroke);
+        didHideSomething = true;
       }
     }
+
+    // VISUAL UPDATE FIX: If we hid something, we MUST update the composite canvas
+    // immediately so the render loop draws the updated state.
+    if (didHideSomething) {
+      this.refreshComposite(this._visibleStrokes);
+    }
+
     return didHideSomething;
   }
 
   clearEraserPreview(): void {
+    const hadHiddenStrokes = this.previewHiddenStrokes.size > 0;
     this.previewHiddenStrokes.clear();
+
+    // If we aborted the eraser (moved mouse up without commit), restore visual state.
+    if (hadHiddenStrokes) {
+      this.refreshComposite(this._visibleStrokes);
+    }
   }
 
-  /**
-   * Checks if an eraser path hits any existing strokes.
-   * Optimized for "Early Exit" - returns true immediately on first hit.
-   * Used for validating if an eraser stroke should be committed to history.
-   */
-  checkEraserHit(
-    eraserPoints: Point[],
-    eraserSize: number,
-    strokeHistory: StrokeHistoryState,
-  ): boolean {
-    const { groups, currentIndex } = strokeHistory;
-
-    for (let i = currentIndex; i >= 0; i--) {
-      const group = groups[i];
-      if (!group) continue;
-      if (group.strokes[0]?.tool === Tools.ERASER) continue;
-
-      for (const target of group.strokes) {
-        // USE UNIFIED LOGIC
-        if (this.isStrokeHitByEraser(target, eraserPoints, eraserSize)) {
-          return true;
-        }
-      }
-    }
-    return false;
+  hasEraserChangedAnything(): boolean {
+    return this.previewHiddenStrokes.size > 0;
   }
 
   // ============================================================================
@@ -582,10 +514,7 @@ export class CanvasEngine {
   // ============================================================================
 
   getFreshCombinedCanvas(): HTMLCanvasElement | null {
-    // The composite canvas is always up to date.
-    // Return a copy to ensure consumers don't dirty the internal buffer.
     if (!this.compositeCanvas) return null;
-
     const temp = document.createElement("canvas");
     temp.width = this.compositeCanvas.width;
     temp.height = this.compositeCanvas.height;
@@ -622,7 +551,6 @@ export class CanvasEngine {
     existingCtx?: CanvasRenderingContext2D | null,
   ): CanvasRenderingContext2D | null {
     if (!canvas) return null;
-    // Low Latency Optimization: desynchronized + alpha
     const ctx =
       existingCtx ||
       canvas.getContext("2d", {
@@ -651,7 +579,6 @@ export class CanvasEngine {
   clear(): void {
     this.clearCanvas(this.baseCtx);
     this.clearCanvas(this.compositeCtx);
-    // Reset display with transform identity
     if (this.displayCtx) {
       this.displayCtx.setTransform(1, 0, 0, 1, 0, 0);
       this.clearCanvas(this.displayCtx);
@@ -659,6 +586,7 @@ export class CanvasEngine {
     this._canvasSize = { width: 0, height: 0 };
     this.resetIncrementalState();
     this.previewHiddenStrokes.clear();
+    this._visibleStrokes = [];
   }
 
   destroy(): void {

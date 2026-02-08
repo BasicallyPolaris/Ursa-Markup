@@ -22,7 +22,12 @@ import {
   type ViewState,
 } from "~/types";
 import { ImageOpenBehaviors } from "~/types/settings";
-import { Tools, type Tool, type ToolConfig } from "~/types/tools";
+import {
+  EraserToolConfig,
+  Tools,
+  type Tool,
+  type ToolConfig,
+} from "~/types/tools";
 import { DebugOverlay } from "./DebugOverlay";
 import { EmptyState } from "./EmptyState";
 
@@ -133,24 +138,17 @@ export function CanvasContainer({
     activeColor,
   ]);
 
-  // --- Ref Callback (The Fix for Initialization) ---
+  // --- Ref Callback ---
   const setContainerRefCallback = useCallback(
     (node: HTMLDivElement | null) => {
-      // 1. Handle external ref
       if (externalRef) {
         (externalRef as React.MutableRefObject<HTMLDivElement | null>).current =
           node;
       }
-
-      // 2. Initialize Engine Ref
       if (typeof setCanvasRef === "function") {
         setCanvasRef(node);
       }
-
-      // 3. Update local state to trigger ResizeObserver effect
       setContainerNode(node);
-
-      // 4. Initial measure (just in case)
       if (node) {
         containerRectRef.current = node.getBoundingClientRect();
       }
@@ -161,21 +159,15 @@ export function CanvasContainer({
   // --- Robust Resize Observer ---
   useEffect(() => {
     if (!containerNode) return;
-
-    // Trigger initial render
     needsRender.current = true;
-
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) {
         containerRectRef.current = entry.target.getBoundingClientRect();
-
         needsRender.current = true;
       }
     });
-
     observer.observe(containerNode);
-
     return () => observer.disconnect();
   }, [containerNode]);
 
@@ -262,14 +254,22 @@ export function CanvasContainer({
     };
   }, [document?.imageSrc, engine]);
 
-  // Sync history changes
+  // --- Sync History Changes (Fix 1 Implementation) ---
   useEffect(() => {
     if (!engine || !document) return;
     if (engine.canvasSize.width === 0) return;
+
+    // 1. Replay history (renders all strokes, including the new eraser stroke if any)
     engine.replayStrokes({
       groups: strokeHistory.groups,
       currentIndex: strokeHistory.currentIndex,
     });
+
+    // 2. NOW it is safe to clear the preview, because the persistent history layer
+    // has taken over the job of "erasing" the strokes.
+    // This prevents the "flash" where strokes momentarily reappear.
+    engine.clearEraserPreview();
+
     needsRender.current = true;
   }, [strokeHistory.currentIndex, strokeHistory.groups, engine]);
 
@@ -295,7 +295,6 @@ export function CanvasContainer({
         let previewState: AnyPreviewState | undefined;
 
         if (isDrawing && startPoint && activeTool !== Tools.ERASER) {
-          // Drawing logic (Pen, Highlighter, Area)
           previewState = {
             tool: activeTool,
             color: activeColorRef.current,
@@ -394,9 +393,7 @@ export function CanvasContainer({
 
     if (isDrawingRef.current) {
       const wasDrawing = isDrawingRef.current;
-      const currentPoints = previewPointsRef.current;
       const activeTool = toolRef.current;
-      const activeConfig = toolConfigRef.current;
 
       isDrawingRef.current = false;
       startPointRef.current = null;
@@ -407,15 +404,22 @@ export function CanvasContainer({
 
       let shouldCommit = true;
 
+      // --- Fix 2: "No-Op" Detection ---
       if (wasDrawing && activeTool === Tools.ERASER && engine) {
-        engine.clearEraserPreview();
-        const hitSomething = engine.checkEraserHit(
-          currentPoints,
-          (activeConfig as any).size || 10,
-          document.strokeHistory,
-        );
-        if (!hitSomething) shouldCommit = false;
-        else needsRender.current = true;
+        // Instead of computationally expensive recalculation, check if the engine
+        // actually hid anything during the drag.
+        const didEraseAnything = engine.hasEraserChangedAnything();
+
+        if (!didEraseAnything) {
+          shouldCommit = false;
+          // If we abort, we MUST clear the preview immediately because the history
+          // effect hook will not run (since history didn't change).
+          engine.clearEraserPreview();
+          needsRender.current = true;
+        } else {
+          // If committing, DO NOT clear preview here.
+          // It will be cleared in the strokeHistory useEffect to prevent ghosting.
+        }
       }
 
       if (shouldCommit) {
@@ -488,16 +492,16 @@ export function CanvasContainer({
             if (tool === Tools.ERASER && engine) {
               const didHide = engine.updateEraserPreview(
                 drawPoint,
-                (toolConfig as any).size || 10,
-                document.strokeHistory,
+                (toolConfig as EraserToolConfig).size,
               );
+              // If we hid something new, trigger render to show the disappearance
               if (didHide) {
-                engine.replayStrokes({
-                  groups: strokeHistory.groups,
-                  currentIndex: strokeHistory.currentIndex,
-                });
+                needsRender.current = true;
+                // We rely on the engine's internal `previewHiddenStrokes` set
+                // rather than calling replayStrokes here, because replayStrokes
+                // is for committed history.
+                // The render loop calls `computeVisibleStrokes` which checks the set.
               }
-              needsRender.current = true;
             }
 
             currentPointRef.current = drawPoint;
@@ -597,7 +601,6 @@ export function CanvasContainer({
           y: currentOffset.y,
         });
       } else if (ruler.visible) {
-        // ... Ruler Logic ...
         const screenPoint = {
           x: e.clientX - containerRectRef.current.left,
           y: e.clientY - containerRectRef.current.top,
