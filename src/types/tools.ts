@@ -10,8 +10,8 @@ export const BlendModes = {
 export type BlendMode = (typeof BlendModes)[keyof typeof BlendModes];
 
 export const EraseModes = {
+  PIXEL: "contained",
   FULL_STROKE: "full-stroke",
-  CONTAINED: "contained",
 } as const;
 
 export type EraseMode = (typeof EraseModes)[keyof typeof EraseModes];

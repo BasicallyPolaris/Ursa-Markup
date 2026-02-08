@@ -29,11 +29,18 @@ export class BrushEngine {
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
 
-    // 3. Draw Curves
+    // 3. Draw Curves or
     if (points.length < 3) {
-      // Simple line for dot or short stroke
-      for (let i = 1; i < points.length; i++) {
-        ctx.lineTo(points[i].x, points[i].y);
+      if (
+        points.length === 1 ||
+        (points.length === 2 && points[0] === points[1])
+      ) {
+        // Draw a dot
+        ctx.lineTo(points[0].x, points[0].y + 0.1);
+      } else {
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
       }
     } else {
       // Quadratic Bezier smoothing
