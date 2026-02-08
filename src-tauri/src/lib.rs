@@ -2,6 +2,8 @@ use base64::Engine;
 use std::path::Path;
 use std::process::Command;
 use std::sync::Mutex;
+use tauri::menu::{Menu, MenuItem};
+use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 /// Resolve path to absolute so frontend readFile works regardless of CWD.
@@ -202,24 +204,52 @@ pub fn run() {
             app.manage(PendingFiles {
                 paths: Mutex::new(initial_paths),
             });
+
+            // Setup tray icon
+            let open_app = MenuItem::with_id(app, "open_app", "Open OmniMark", true, None::<&str>)?;
+            let open_file = MenuItem::with_id(app, "open_file", "Open File", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&open_app, &open_file, &quit])?;
+
+            let _tray = TrayIconBuilder::new()
+                .tooltip("OmniMark")
+                .menu(&menu)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "quit" => {
+                        app.exit(0);
+                    }
+                    "open_app" => {
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.unminimize();
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    "open_file" => {
+                        let _ = app.emit("tray-open-file", ());
+                    }
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| match event {
+                    TrayIconEvent::Click { .. } => {
+                        // Left click: show/restore window
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.unminimize();
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                    }
+                    _ => {}
+                })
+                .build(app)?;
+
             Ok(())
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         .run(|app, event| {
             match event {
-                // Check if a window requested to close
-                tauri::RunEvent::WindowEvent {
-                    label,
-                    event: tauri::WindowEvent::CloseRequested { .. },
-                    ..
-                } => {
-                    // If the window is our "main" window...
-                    if label == "main" {
-                        // ...exit the entire app (closes all other windows like settings)
-                        app.exit(0);
-                    }
-                }
                 // When window is focused, ensure webview has keyboard focus
                 // This fixes hotkeys not working after alt-tab or window switching
                 tauri::RunEvent::WindowEvent {

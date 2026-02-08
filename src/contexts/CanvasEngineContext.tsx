@@ -59,14 +59,6 @@ export function CanvasEngineProvider({
   // This handles the case where an empty document is reused and loadImage() resets its state
   useEffect(() => {
     const handleDocumentChange = () => {
-      console.log(
-        "[DOC CHANGE] zoom:",
-        document.zoom,
-        "viewOffset:",
-        document.viewOffset,
-        "canvasSize:",
-        document.canvasSize,
-      );
       setZoomState(document.zoom);
       setViewOffsetState(document.viewOffset);
       setCanvasSize(document.canvasSize);
@@ -80,12 +72,6 @@ export function CanvasEngineProvider({
 
   // Initialize engine when container is available
   useEffect(() => {
-    console.log(
-      "[CANVAS ENGINE CONTEXT] Init effect running, engine:",
-      engine ? "exists" : "null",
-      "container:",
-      containerRef.current ? "exists" : "null",
-    );
     const container = containerRef.current;
     if (!container) {
       console.log("[CANVAS ENGINE CONTEXT] No container, returning");
