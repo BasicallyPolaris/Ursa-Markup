@@ -8,7 +8,7 @@ export interface ToolButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 }
 
 const ToolButton = React.forwardRef<HTMLButtonElement, ToolButtonProps>(
-  ({ className, active = false, icon, label, ...props }, ref) => {
+  ({ className, active = false, icon, label: _label, ...props }, ref) => {
     return (
       <button
         ref={ref}

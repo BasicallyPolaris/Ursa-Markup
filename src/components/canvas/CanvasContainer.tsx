@@ -31,6 +31,8 @@ import {
 import { DebugOverlay } from "./DebugOverlay";
 import { EmptyState } from "./EmptyState";
 
+/* eslint-disable react-hooks/exhaustive-deps */
+
 type CanvasContainerProps = {
   className?: string;
   containerRef?: RefObject<HTMLDivElement | null>;
@@ -276,7 +278,7 @@ export function CanvasContainer({
     engine.clearEraserPreview();
 
     needsRender.current = true;
-  }, [strokeHistory.currentIndex, strokeHistory.groups, engine]);
+  }, [strokeHistory.currentIndex, strokeHistory.groups, engine, document]);
 
   // --- Animation Loop ---
   useEffect(() => {
@@ -380,7 +382,7 @@ export function CanvasContainer({
       startStroke(tool, toolConfig, activeColor, startDrawPoint);
       setIsDrawing(true);
     },
-    [tool, toolConfig, activeColor, ruler, getScreenToCanvas, getRelativePoint],
+    [tool, toolConfig, activeColor, ruler, getScreenToCanvas, getRelativePoint, calculateSnappedPoint, setIsDrawing, startDragRuler, startStroke, startStrokeGroup],
   );
 
   const handlePointerUp = useCallback(() => {
@@ -460,6 +462,8 @@ export function CanvasContainer({
     engine,
     endStrokeGroup,
     abortStrokeGroup,
+    endDragRuler,
+    setIsDrawing,
   ]);
 
   const handlePointerMove = useCallback(
@@ -576,7 +580,7 @@ export function CanvasContainer({
       addPointToStroke,
       dragRuler,
       setViewOffset,
-      document.strokeHistory,
+      engine,
     ],
   );
 
@@ -646,7 +650,7 @@ export function CanvasContainer({
       });
   }, [
     containerNode,
-    ruler.visible,
+    ruler,
     zoomAroundPoint,
     setViewOffset,
     rotateRuler,

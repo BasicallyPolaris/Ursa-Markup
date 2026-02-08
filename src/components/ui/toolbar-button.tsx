@@ -34,7 +34,7 @@ export interface ToolbarButtonProps
 }
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild: _asChild = false, ...props }, ref) => {
     return (
       <button
         className={cn(toolbarButtonVariants({ variant, size, className }))}

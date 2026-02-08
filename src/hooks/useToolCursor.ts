@@ -25,7 +25,7 @@ const getCursorSVG = (
   const strokeWidth = 1; // Keep it thin
 
   // 3. Construct SVG
-  let svgShape = "";
+  let svgShape;
 
   if (shape === "circle") {
     // Double circle for contrast (White outer, Black inner)
@@ -82,24 +82,19 @@ export function useToolCursor(
     if (isRulerHover) return "grab";
 
     // 2. Tool Cursors
-    // Check if the tool has a size property
-    const size = "size" in toolConfig ? (toolConfig as any).size : 0;
+    const size = "size" in toolConfig ? toolConfig.size : 0;
 
     switch (tool) {
       case Tools.ERASER:
         return getCursorSVG(size, zoom, "circle", "black");
 
       case Tools.PEN:
-        // Pen is usually a circle.
-        // You could pass 'activeColor' here if you want the cursor to match ink!
         return getCursorSVG(size, zoom, "circle", "black");
 
       case Tools.HIGHLIGHTER:
-        // Highlighter is often square-ish (marker tip)
         return getCursorSVG(size, zoom, "square", "black");
 
       case Tools.AREA:
-        // Area tool doesn't have a brush size, standard crosshair is best
         return "crosshair";
 
       default:

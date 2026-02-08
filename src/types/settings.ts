@@ -92,8 +92,6 @@ export type HotkeyBinding = {
 
 export type HotkeySettings = Record<HotkeyAction, HotkeyBinding>;
 
-export type DrawingSettings = {};
-
 export type CopySettings = {
   autoCopyFormat: AutoCopyFormat;
   autoCopyJpegQuality: number;
