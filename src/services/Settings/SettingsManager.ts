@@ -62,7 +62,6 @@ export class SettingsManager {
       try {
         await mkdir(configDir, { recursive: true });
       } catch (mkdirError) {
-        // Directory may already exist or other error - log but continue
         console.log(
           "Config directory creation (may already exist):",
           mkdirError,

@@ -7,7 +7,7 @@ import {
   type HighlighterToolConfig,
   type PenToolConfig,
   type ToolConfigs,
-} from "../../types/tools";
+} from "~/types/tools";
 
 import {
   AutoCopyFormats,
@@ -16,7 +16,7 @@ import {
   ImageOpenBehaviors,
   type AppSettings,
   type HotkeySettings,
-} from "../../types/settings";
+} from "~/types/settings";
 
 /**
  * SUB-CONFIG: Tool Defaults

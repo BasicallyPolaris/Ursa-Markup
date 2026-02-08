@@ -1,12 +1,12 @@
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { RefObject, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { CanvasContainer } from "./components/canvas/CanvasContainer";
 import { CloseTabDialog } from "./components/tabs/CloseTabDialog";
 import { TabBar } from "./components/tabs/TabBar";
 import { Toolbar } from "./components/toolbar/Toolbar";
 import { Toaster } from "./components/ui/sonner";
-import { toast } from "sonner";
 import {
   CanvasEngineProvider,
   DocumentProvider,
@@ -19,7 +19,7 @@ import {
 import { useKeyboardShortcuts, useWindowTitle } from "./hooks";
 import { useClipboardEvents } from "./hooks/useClipboardEvents";
 import { services } from "./services";
-import type { AppSettings } from "./types/settings";
+import { CloseWindowBehaviors, type AppSettings } from "./types/settings";
 
 type AppContentProps = {
   containerRef: RefObject<HTMLDivElement | null>;
@@ -269,6 +269,47 @@ function App() {
           });
         },
       );
+      return unlisten;
+    };
+
+    const unlistenPromise = setupListener();
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten());
+    };
+  }, []);
+
+  // Handle window close behavior
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onCloseRequested((event) => {
+      if (
+        settings.miscSettings.closeWindowBehavior ===
+        CloseWindowBehaviors.MINIMIZE_TO_TRAY
+      ) {
+        event.preventDefault();
+        getCurrentWindow().hide();
+        console.log("Window minimized to tray");
+      } else {
+        console.log("Window closing, exiting app");
+      }
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [settings.miscSettings.closeWindowBehavior]);
+
+  // Listen for tray right-click to open file dialog
+  useEffect(() => {
+    const setupListener = async () => {
+      const unlisten = await listen("tray-open-file", () => {
+        services.ioService.openFile().then((result) => {
+          if (result) {
+            const blob = new Blob([result.fileData]);
+            const url = URL.createObjectURL(blob);
+            services.tabManager.createDocument(result.filePath, undefined, url);
+          }
+        });
+      });
       return unlisten;
     };
 

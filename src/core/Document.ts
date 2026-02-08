@@ -1,6 +1,6 @@
 import type { DocumentState, Point, Size } from "../types";
-import { StrokeHistory } from "./StrokeHistory";
 import { Ruler } from "./Ruler";
+import { StrokeHistory } from "./StrokeHistory";
 
 /**
  * Generate a unique document ID
@@ -65,7 +65,6 @@ export class Document {
    * Load an image into the document
    */
   loadImage(filePath: string, imageSrc: string, fileName?: string): void {
-    console.log("[DOCUMENT] loadImage called, resetting state");
     this.filePath = filePath;
     this.imageSrc = imageSrc;
     this.fileName = fileName || filePath.split("/").pop() || null;
@@ -82,7 +81,6 @@ export class Document {
     // Clear stroke history for new image
     this.strokeHistory.clear();
 
-    console.log("[DOCUMENT] loadImage - notifying change, zoom:", this.zoom, "viewOffset:", this.viewOffset);
     this.notifyChange();
   }
 
