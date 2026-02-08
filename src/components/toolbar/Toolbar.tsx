@@ -471,34 +471,35 @@ export function Toolbar() {
             )}
           </div>
 
-          <div className="w-px h-8 bg-surface-bg" />
-
           {"blendMode" in toolConfig && activeBlendModeOption && (
-            <Select
-              value={toolConfig.blendMode}
-              onValueChange={(value) =>
-                handleBlendModeChange(value as BlendMode)
-              }
-            >
-              <SelectTrigger className="w-27.5">
-                <SelectValue>
-                  <span className="flex items-center gap-1.5">
-                    <activeBlendModeOption.icon className="size-3" />
-                    {activeBlendModeOption.label}
-                  </span>
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {blendModeOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
+            <>
+              <div className="w-px h-8 bg-surface-bg" />
+              <Select
+                value={toolConfig.blendMode}
+                onValueChange={(value) =>
+                  handleBlendModeChange(value as BlendMode)
+                }
+              >
+                <SelectTrigger className="w-27.5">
+                  <SelectValue>
                     <span className="flex items-center gap-1.5">
-                      <option.icon className="size-3" />
-                      {option.label}
+                      <activeBlendModeOption.icon className="size-3" />
+                      {activeBlendModeOption.label}
                     </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {blendModeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <span className="flex items-center gap-1.5">
+                        <option.icon className="size-3" />
+                        {option.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
           )}
 
           <div className="flex-1" />
