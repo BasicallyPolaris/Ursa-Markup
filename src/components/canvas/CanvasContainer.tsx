@@ -304,16 +304,6 @@ export function CanvasContainer({
             points: previewPointsRef.current,
             toolConfig: toolConfig,
           } as AnyPreviewState;
-        } else if (activeTool === Tools.ERASER && currentPoint) {
-          // Eraser Cursor Logic (Works on Hover OR Drag)
-          previewState = {
-            tool: Tools.ERASER,
-            color: "#000000",
-            startPoint: currentPoint,
-            currentPoint: currentPoint,
-            points: [currentPoint],
-            toolConfig: toolConfig,
-          } as AnyPreviewState;
         }
 
         engine.render(

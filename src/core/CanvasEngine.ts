@@ -10,12 +10,7 @@ import {
   type ViewState,
 } from "~/types";
 
-import {
-  Tools,
-  type AreaToolConfig,
-  type HighlighterToolConfig,
-  type PenToolConfig,
-} from "~/types/tools";
+import { Tools } from "~/types/tools";
 
 import { distanceToSegmentSquared } from "~/utils/canvas";
 import { BrushEngine } from "./BrushEngine";
@@ -325,9 +320,6 @@ export class CanvasEngine {
   private renderPreview(preview: AnyPreviewState): void {
     if (!this.displayCtx) return;
     // Eraser has different preview rendering
-    if (preview.tool === Tools.ERASER) {
-      return;
-    }
     const ctx = this.displayCtx;
 
     ctx.save();
@@ -339,7 +331,7 @@ export class CanvasEngine {
         ctx,
         preview.startPoint,
         preview.currentPoint,
-        preview.toolConfig as AreaToolConfig,
+        preview.toolConfig,
         preview.color,
       );
     } else if (preview.points) {
@@ -347,14 +339,14 @@ export class CanvasEngine {
         this.brushEngine.drawHighlighterStroke(
           ctx,
           preview.points,
-          preview.toolConfig as HighlighterToolConfig,
+          preview.toolConfig,
           preview.color,
         );
       } else if (preview.tool === Tools.PEN) {
         this.brushEngine.drawPenStroke(
           ctx,
           preview.points,
-          preview.toolConfig as PenToolConfig,
+          preview.toolConfig,
           preview.color,
         );
       }
