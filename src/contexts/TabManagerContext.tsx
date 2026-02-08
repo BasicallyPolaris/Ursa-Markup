@@ -12,13 +12,13 @@ import React, {
 import type { Document } from "~/core";
 import { tabManager } from "~/services";
 
-interface PendingCloseDocument {
+type PendingCloseDocument = {
   id: string;
   fileName: string | null;
   hasChanges: boolean;
-}
+};
 
-interface TabManagerContextValue {
+type TabManagerContextValue = {
   documents: Document[];
   activeDocument: Document | null;
   activeDocumentId: string | null;
@@ -31,13 +31,13 @@ interface TabManagerContextValue {
   cancelClose: () => void;
   switchToNextTab: () => void;
   switchToPreviousTab: () => void;
-}
+};
 
 const TabManagerContext = createContext<TabManagerContextValue | null>(null);
 
-interface TabManagerProviderProps {
+type TabManagerProviderProps = {
   children: React.ReactNode;
-}
+};
 
 export function TabManagerProvider({ children }: TabManagerProviderProps) {
   const [documents, setDocuments] = useState<Document[]>(() => {

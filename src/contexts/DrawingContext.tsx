@@ -10,7 +10,7 @@ import React, {
 import { Tools, type Tool, type ToolConfigs } from "~/types/tools";
 import { useSettings } from "./SettingsContext";
 
-interface DrawingActions {
+type DrawingActions = {
   switchTool: (tool: Tool) => void;
   updateToolConfig: <T extends Tool>(
     tool: T,
@@ -18,7 +18,7 @@ interface DrawingActions {
   ) => void;
   activeColor: string;
   setActiveColor: (color: string) => void;
-}
+};
 
 type DrawingContextValue = DrawingActions &
   {
@@ -30,10 +30,10 @@ type DrawingContextValue = DrawingActions &
 
 const DrawingContext = createContext<DrawingContextValue | null>(null);
 
-interface DrawingProviderProps {
+type DrawingProviderProps = {
   children: React.ReactNode;
   initialTool?: Tool;
-}
+};
 
 export function DrawingProvider({
   children,

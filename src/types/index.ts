@@ -8,15 +8,15 @@ export type DeepPartial<T> = {
       : T[P]; // Primitives: Stop
 };
 
-export interface Point {
+export type Point = {
   x: number;
   y: number;
-}
+};
 
-export interface Size {
+export type Size = {
   width: number;
   height: number;
-}
+};
 
 export interface Stroke<T extends Tool> {
   id: string;

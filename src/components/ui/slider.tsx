@@ -4,7 +4,7 @@ import { Slider as BaseSlider } from "@base-ui-components/react/slider";
 import * as React from "react";
 import { cn } from "../../lib/utils";
 
-interface SliderProps {
+type SliderProps = {
   className?: string;
   defaultValue?: number[];
   value?: number[];
@@ -14,7 +14,7 @@ interface SliderProps {
   disabled?: boolean;
   onValueChange?: (value: number[]) => void;
   onValueCommit?: (value: number[]) => void;
-}
+};
 
 function Slider({
   className,

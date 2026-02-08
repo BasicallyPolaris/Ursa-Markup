@@ -1,8 +1,7 @@
-import { writeFile } from "@tauri-apps/plugin-fs";
-import { save, open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { readFile } from "@tauri-apps/plugin-fs";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 
 // Import the worker
 import CopyWorker from "~/workers/copyWorker?worker";
@@ -10,7 +9,7 @@ import CopyWorker from "~/workers/copyWorker?worker";
 /**
  * Options for clipboard copy operation
  */
-export interface CopyOptions {
+export type CopyOptions = {
   /** Force copy even if version matches last copied version */
   force?: boolean;
   /** Whether this is an auto-copy (affects toast behavior) */
@@ -19,17 +18,17 @@ export interface CopyOptions {
   format?: "png" | "jpeg";
   /** JPEG quality (0.0 - 1.0), only used when format is "jpeg" */
   jpegQuality?: number;
-}
+};
 
 /**
  * Result of clipboard copy operation
  */
-export interface CopyResult {
+export type CopyResult = {
   /** Whether the copy was skipped (already copied this version) */
   skipped: boolean;
   /** The version that was copied (or would have been) */
   version: number;
-}
+};
 
 /**
  * IOService handles all file and clipboard operations

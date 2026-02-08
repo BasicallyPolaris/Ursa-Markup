@@ -128,7 +128,7 @@ export type AppSettings = {
  */
 export type EventCallback<T = void> = (payload: T) => void;
 
-export interface ServiceEvents {
+export type ServiceEvents = {
   activeDocumentChanged: { id: string | null };
   documentAdded: { id: string };
   documentChanged: { id: string };
@@ -136,4 +136,4 @@ export interface ServiceEvents {
   settingsChanged: AppSettings;
   settingsSaved: AppSettings;
   themeLoaded: Theme;
-}
+};

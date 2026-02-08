@@ -13,7 +13,7 @@ import { Document, Ruler, StrokeHistory } from "~/core";
 import type { Point } from "~/types";
 import type { Tool, ToolConfigs } from "~/types/tools";
 
-interface DocumentContextValue {
+type DocumentContextValue = {
   document: Document;
   strokeHistory: {
     groups: StrokeHistory["groups"];
@@ -44,14 +44,14 @@ interface DocumentContextValue {
   endDragRuler: () => void;
   autoCenter: (width: number, height: number) => void;
   stretchToFill: (width: number, height: number) => void;
-}
+};
 
 const DocumentContext = createContext<DocumentContextValue | null>(null);
 
-interface DocumentProviderProps {
+type DocumentProviderProps = {
   document: Document;
   children: React.ReactNode;
-}
+};
 
 export function DocumentProvider({
   document,

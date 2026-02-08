@@ -16,10 +16,10 @@ import type { ColorPalette, Theme } from "~/types/theme";
 import { ColorPreviewModal } from "../components/ColorPreviewModal";
 import { SettingsSection } from "../components/SettingsSection";
 
-interface ColorsSettingsProps {
+type ColorsSettingsProps = {
   settings: AppSettings;
   updateDraft: (updates: Partial<AppSettings>) => void;
-}
+};
 
 export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
   const [availablePalettes, setAvailablePalettes] = useState<ColorPalette[]>(

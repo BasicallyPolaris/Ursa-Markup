@@ -14,7 +14,7 @@ import React, {
 import { settingsManager, windowManager } from "~/services";
 import type { AppSettings } from "~/types/settings";
 
-interface SettingsContextValue {
+type SettingsContextValue = {
   settings: AppSettings;
   hasChanges: boolean;
   isLoaded: boolean;
@@ -25,13 +25,13 @@ interface SettingsContextValue {
   save: () => Promise<boolean>;
   cancel: () => void;
   reset: () => void;
-}
+};
 
 const SettingsContext = createContext<SettingsContextValue | null>(null);
 
-interface SettingsProviderProps {
+type SettingsProviderProps = {
   children: React.ReactNode;
-}
+};
 
 export function SettingsProvider({ children }: SettingsProviderProps) {
   const [settings, setSettings] = useState<AppSettings>(

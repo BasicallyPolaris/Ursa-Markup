@@ -1,10 +1,10 @@
 "use client";
 
-import * as React from "react";
 import { Switch as BaseSwitch } from "@base-ui-components/react/switch";
+import * as React from "react";
 import { cn } from "../../lib/utils";
 
-interface SwitchProps {
+type SwitchProps = {
   className?: string;
   checked?: boolean;
   defaultChecked?: boolean;
@@ -14,7 +14,7 @@ interface SwitchProps {
   name?: string;
   value?: string;
   id?: string;
-}
+};
 
 const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
   (

@@ -38,29 +38,29 @@ export type ToolConfigs = {
   [Tools.ERASER]: EraserToolConfig;
 };
 
-export interface PenToolConfig {
+export type PenToolConfig = {
   tool: typeof Tools.PEN;
   size: number;
   opacity: number;
   blendMode: BlendMode;
-}
+};
 
-export interface HighlighterToolConfig {
+export type HighlighterToolConfig = {
   tool: typeof Tools.HIGHLIGHTER;
   size: number;
   opacity: number;
   blendMode: BlendMode;
-}
+};
 
-export interface AreaToolConfig {
+export type AreaToolConfig = {
   tool: typeof Tools.AREA;
   opacity: number;
   blendMode: BlendMode;
   borderRadius: number;
-}
+};
 
-export interface EraserToolConfig {
+export type EraserToolConfig = {
   tool: typeof Tools.ERASER;
   size: number;
   eraserMode: EraseMode;
-}
+};

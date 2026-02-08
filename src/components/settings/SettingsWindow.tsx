@@ -25,11 +25,11 @@ const TabIds = {
 } as const;
 type TabId = (typeof TabIds)[keyof typeof TabIds];
 
-interface Tab {
+type Tab = {
   id: TabId;
   label: string;
   icon: React.ReactNode;
-}
+};
 
 const tabs: Tab[] = [
   {
@@ -50,14 +50,14 @@ const tabs: Tab[] = [
   },
 ];
 
-interface SettingsWindowProps {
+type SettingsWindowProps = {
   settings: AppSettings;
   hasChanges: boolean;
   updateDraft: (updates: DeepPartial<AppSettings>) => void;
   onSave: () => Promise<void>;
   onCancel: () => void;
   onReset: () => void;
-}
+};
 
 export function SettingsWindow({
   settings,

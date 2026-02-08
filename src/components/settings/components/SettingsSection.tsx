@@ -1,12 +1,12 @@
 import { cn } from "~/lib/utils";
 
-interface SettingsSectionProps {
+type SettingsSectionProps = {
   title: string;
   description?: string;
   icon?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
-}
+};
 
 export function SettingsSection({
   title,
@@ -42,12 +42,12 @@ export function SettingsSection({
   );
 }
 
-interface SettingsRowProps {
+type SettingsRowProps = {
   label: string;
   description?: string;
   children: React.ReactNode;
   className?: string;
-}
+};
 
 export function SettingsRow({
   label,
@@ -66,13 +66,13 @@ export function SettingsRow({
   );
 }
 
-interface SettingsSliderRowProps {
+type SettingsSliderRowProps = {
   label: string;
   value: number;
   unit?: string;
   children: React.ReactNode;
   className?: string;
-}
+};
 
 export function SettingsSliderRow({
   label,
@@ -95,11 +95,11 @@ export function SettingsSliderRow({
   );
 }
 
-interface SettingsGroupProps {
+type SettingsGroupProps = {
   title?: string;
   children: React.ReactNode;
   className?: string;
-}
+};
 
 export function SettingsGroup({
   title,

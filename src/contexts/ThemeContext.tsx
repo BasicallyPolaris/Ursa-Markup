@@ -13,7 +13,7 @@ import React, {
 import { themeManager } from "~/services";
 import type { ColorPalette, Theme, ThemeConfig } from "~/types/theme";
 
-interface ThemeContextValue {
+type ThemeContextValue = {
   config: ThemeConfig;
   currentTheme: Theme;
   availableThemes: Theme[];
@@ -24,13 +24,13 @@ interface ThemeContextValue {
   getActivePalette: () => ColorPalette;
   getCanvasColor: (colorPath: string, alpha?: number) => string;
   reload: () => Promise<void>;
-}
+};
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-interface ThemeProviderProps {
+type ThemeProviderProps = {
   children: React.ReactNode;
-}
+};
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [config, setConfig] = useState<ThemeConfig>(themeManager.configData);

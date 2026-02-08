@@ -13,7 +13,7 @@ import type { CanvasEngine, Document } from "~/core";
 import { CanvasEngine as CanvasEngineClass } from "~/core";
 import type { Point, Size } from "~/types";
 
-interface CanvasEngineContextValue {
+type CanvasEngineContextValue = {
   engine: CanvasEngine | null;
   // Optional: allow components to notify the provider of the actual DOM node
   setCanvasRef?: (node: HTMLElement | null) => void;
@@ -32,17 +32,17 @@ interface CanvasEngineContextValue {
     screenY: number,
     containerRect: DOMRect,
   ) => void;
-}
+};
 
 const CanvasEngineContext = createContext<CanvasEngineContextValue | null>(
   null,
 );
 
-interface CanvasEngineProviderProps {
+type CanvasEngineProviderProps = {
   containerRef: React.RefObject<HTMLElement | null>;
   document: Document;
   children: React.ReactNode;
-}
+};
 
 export function CanvasEngineProvider({
   containerRef,
