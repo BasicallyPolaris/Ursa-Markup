@@ -1,5 +1,6 @@
 import {
   Point,
+  StrokeGroup,
   type AnyPreviewState,
   type AnyStroke,
   type AnyStrokeGroup,
@@ -10,13 +11,13 @@ import {
 } from "~/types";
 
 import {
-  BlendModes,
   Tools,
   type AreaToolConfig,
   type HighlighterToolConfig,
   type PenToolConfig,
 } from "~/types/tools";
 
+import { distanceToSegmentSquared } from "~/utils/canvas";
 import { BrushEngine } from "./BrushEngine";
 import { Ruler } from "./Ruler";
 
@@ -323,19 +324,15 @@ export class CanvasEngine {
 
   private renderPreview(preview: AnyPreviewState): void {
     if (!this.displayCtx) return;
+    // Eraser has different preview rendering
+    if (preview.tool === Tools.ERASER) {
+      return;
+    }
     const ctx = this.displayCtx;
 
     ctx.save();
 
-    // Ensure Preview uses same blending logic as main renderer
-    if (
-      "blendMode" in preview.toolConfig &&
-      preview.toolConfig.blendMode === BlendModes.MULTIPLY
-    ) {
-      ctx.globalCompositeOperation = BlendModes.MULTIPLY;
-    } else {
-      ctx.globalCompositeOperation = "source-over";
-    }
+    ctx.globalCompositeOperation = preview.toolConfig.blendMode;
 
     if (preview.tool === Tools.AREA) {
       this.brushEngine.drawArea(
@@ -382,14 +379,14 @@ export class CanvasEngine {
       if (!firstStroke) continue;
 
       if (firstStroke.tool === Tools.ERASER) {
-        const eraserGroup = group as unknown as { strokes: Stroke<"eraser">[] };
+        const eraserGroup = group as StrokeGroup<"eraser">;
         for (const eraserStroke of eraserGroup.strokes) {
           this.applyObjectEraser(eraserStroke, activeStrokes);
         }
       } else {
         // UPDATE: Check if this stroke is temporarily hidden by the live eraser
         for (const stroke of group.strokes) {
-          if (!this.previewHiddenStrokes.has(stroke as AnyStroke)) {
+          if (!this.previewHiddenStrokes.has(stroke)) {
             activeStrokes.push(stroke as AnyStroke);
           }
         }
@@ -404,25 +401,19 @@ export class CanvasEngine {
     eraserSize: number,
   ): boolean {
     const eraserRadius = eraserSize / 2;
-    // Add a tiny buffer (+1px) to make the eraser feel "forgiving"
-    const hitThreshold = eraserRadius + 1;
+    const hitThreshold = eraserRadius + 2;
     const hitThresholdSq = hitThreshold * hitThreshold;
 
-    // --- CASE A: AREA TOOL (Box Check) ---
+    // --- CASE A: AREA TOOL ---
     if (target.tool === Tools.AREA && target.points.length >= 2) {
       const start = target.points[0];
       const end = target.points[target.points.length - 1];
-
-      // Normalize bounds
       const left = Math.min(start.x, end.x);
       const right = Math.max(start.x, end.x);
       const top = Math.min(start.y, end.y);
       const bottom = Math.max(start.y, end.y);
-
-      // Expand box by eraser size so we hit it when touching the edge
       const p = eraserRadius;
 
-      // Check if ANY eraser point is inside the expanded box
       for (const ep of eraserPoints) {
         if (
           ep.x >= left - p &&
@@ -436,7 +427,7 @@ export class CanvasEngine {
       return false;
     }
 
-    // --- CASE B: STANDARD STROKES (Point Check) ---
+    // --- CASE B: STANDARD STROKES ---
 
     // 1. Fast Bounding Box Fail
     let tMinX = Infinity,
@@ -449,8 +440,7 @@ export class CanvasEngine {
       if (p.y < tMinY) tMinY = p.y;
       if (p.y > tMaxY) tMaxY = p.y;
     }
-
-    // Eraser Bounds
+    // ... calculate eraser bounds ...
     let eMinX = Infinity,
       eMaxX = -Infinity,
       eMinY = Infinity,
@@ -462,11 +452,11 @@ export class CanvasEngine {
       if (p.y > eMaxY) eMaxY = p.y;
     }
 
-    // Check overlap
+    // Check overlapping bounds
     const padding =
-      ("size" in target.toolConfig ? (target.toolConfig as any).size : 5) / 2 +
-      eraserRadius;
-
+      "size" in target.toolConfig
+        ? target.toolConfig.size
+        : 5 / 2 + eraserRadius;
     if (
       tMaxX + padding < eMinX ||
       tMinX - padding > eMaxX ||
@@ -476,13 +466,27 @@ export class CanvasEngine {
       return false;
     }
 
-    // 2. Detailed Point-to-Point Check
-    // We check stroke points against eraser points
-    for (const tp of target.points) {
+    // 2. Segment-to-Point Check
+
+    const strokePoints = target.points;
+    if (strokePoints.length < 2) {
+      // Fallback for single dots
+      const p = strokePoints[0];
       for (const ep of eraserPoints) {
-        const dx = tp.x - ep.x;
-        const dy = tp.y - ep.y;
-        if (dx * dx + dy * dy <= hitThresholdSq) {
+        const dx = p.x - ep.x;
+        const dy = p.y - ep.y;
+        if (dx * dx + dy * dy <= hitThresholdSq) return true;
+      }
+      return false;
+    }
+
+    for (let i = 0; i < strokePoints.length - 1; i++) {
+      const p1 = strokePoints[i];
+      const p2 = strokePoints[i + 1];
+
+      for (const ep of eraserPoints) {
+        // Check distance from eraser point (ep) to line segment (p1-p2)
+        if (distanceToSegmentSquared(ep, p1, p2) <= hitThresholdSq) {
           return true;
         }
       }

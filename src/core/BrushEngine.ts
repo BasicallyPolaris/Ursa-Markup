@@ -135,4 +135,27 @@ export class BrushEngine {
     }
     ctx.fill();
   }
+
+  /**
+   * Draw the Eraser cursor preview (Circle with contrast outline)
+   */
+  drawEraserPreview(
+    ctx: CanvasRenderingContext2D,
+    point: Point,
+    size: number,
+    resolutionScale: number = 1,
+  ): void {
+    // 1. Black Outline
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, size / 2, 0, Math.PI * 2);
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 1 / resolutionScale;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, size / 2 - 1, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+    ctx.lineWidth = 1 / resolutionScale;
+    ctx.stroke();
+  }
 }
