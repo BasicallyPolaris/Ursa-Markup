@@ -1,27 +1,20 @@
 /**
- * @file Keyboard Shortcuts & File Actions
+ * @file Keyboard Shortcuts Hook
  * @description Manages global keyboard shortcuts with high-performance Ref-based
  * dispatching to prevent listener churn during canvas operations.
  */
 
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useCanvasEngine } from "~/contexts/CanvasEngineContext";
 import { useDocument } from "~/contexts/DocumentContext";
 import { useDrawing } from "~/contexts/DrawingContext";
 import { useSettings } from "~/contexts/SettingsContext";
 import { useTabManager } from "~/contexts/TabManagerContext";
-import { services } from "~/services";
 import { DEFAULT_HOTKEYS } from "~/services/Settings/config";
 import type { HotkeyAction, HotkeySettings } from "~/types/settings";
 import { Tools } from "~/types/tools";
 import { formatHotkey, matchesHotkey } from "~/utils/hotkeys";
-import { registerPendingCopy } from "./useClipboardEvents";
+import { useFileActions } from "./useFileActions";
 
 // -----------------------------------------------------------------------------
 // Hotkey Display Hooks
@@ -36,72 +29,6 @@ export function useHotkeyDisplay(action: HotkeyAction): string {
 export function useHotkeys(): HotkeySettings {
   const { settings } = useSettings();
   return settings.hotkeys || DEFAULT_HOTKEYS;
-}
-
-// -----------------------------------------------------------------------------
-// File Actions Hook
-// -----------------------------------------------------------------------------
-
-export function useFileActions() {
-  const { engine } = useCanvasEngine();
-  const engineRef = useRef(engine);
-
-  // Keep engine ref fresh
-  useEffect(() => {
-    engineRef.current = engine;
-  }, [engine]);
-
-  const handleOpen = useCallback(async () => {
-    const result = await services.ioService.openFile();
-    if (result) {
-      const blob = new Blob([result.fileData]);
-      const url = URL.createObjectURL(blob);
-      services.tabManager.createDocument(result.filePath, undefined, url);
-    }
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    const activeDoc = services.tabManager.getActiveDocument();
-    const currentEngine = engineRef.current;
-
-    if (!activeDoc || !currentEngine) return;
-
-    const canvas = currentEngine.getFreshCombinedCanvas();
-    if (!canvas) return;
-
-    const defaultPath = activeDoc.filePath || "annotated-image.png";
-    const success = await services.ioService.saveImage(canvas, defaultPath);
-
-    if (success) {
-      activeDoc.markAsChanged(false);
-    }
-  }, []);
-
-  const handleCopy = useCallback(async () => {
-    const activeDoc = services.tabManager.getActiveDocument();
-    const currentEngine = engineRef.current;
-
-    if (!currentEngine || !activeDoc) return;
-
-    const canvas = currentEngine.getFreshCombinedCanvas();
-    if (canvas) {
-      const version = activeDoc.version;
-      registerPendingCopy(version, false);
-      const { copySettings } = services.settingsManager.settings;
-
-      await services.ioService.copyToClipboard(canvas, version, {
-        force: true,
-        isAutoCopy: false,
-        format: copySettings.manualCopyFormat,
-        jpegQuality: copySettings.manualCopyJpegQuality,
-      });
-    }
-  }, []);
-
-  return useMemo(
-    () => ({ handleOpen, handleSave, handleCopy }),
-    [handleOpen, handleSave, handleCopy],
-  );
 }
 
 // -----------------------------------------------------------------------------

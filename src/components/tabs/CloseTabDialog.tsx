@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { useTabManager } from "~/contexts/TabManagerContext";
+import { useFileActions } from "~/hooks/useFileActions";
 
 export function CloseTabDialog() {
   const {
@@ -16,14 +17,32 @@ export function CloseTabDialog() {
     confirmCloseWithSave,
     confirmCloseWithoutSave,
     cancelClose,
+    switchTab,
+    activeDocumentId,
   } = useTabManager();
+
+  const { handleSave: saveFile } = useFileActions();
 
   const isOpen = pendingCloseDocument !== null;
   const fileName = pendingCloseDocument?.fileName ?? null;
+  const targetTabId = pendingCloseDocument?.id ?? null;
 
-  const handleSave = useCallback(() => {
-    confirmCloseWithSave();
-  }, [confirmCloseWithSave]);
+  const handleSave = useCallback(async () => {
+    if (!targetTabId) return;
+
+    // Switch to target tab if not already active
+    if (targetTabId !== activeDocumentId) {
+      switchTab(targetTabId);
+    }
+
+    const success = await saveFile();
+
+    if (success) {
+      confirmCloseWithSave();
+    } else {
+      // Don't close - handleSave already showed error toast
+    }
+  }, [targetTabId, activeDocumentId, switchTab, saveFile, confirmCloseWithSave]);
 
   const handleDiscard = useCallback(() => {
     confirmCloseWithoutSave();

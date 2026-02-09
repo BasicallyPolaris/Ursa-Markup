@@ -41,7 +41,8 @@ import { useDocument } from "~/contexts/DocumentContext";
 import { useDrawing } from "~/contexts/DrawingContext";
 import { useSettings } from "~/contexts/SettingsContext";
 import { useTabManager } from "~/contexts/TabManagerContext";
-import { useFileActions, useHotkeys } from "~/hooks/useKeyboardShortcuts";
+import { useHotkeys } from "~/hooks/useKeyboardShortcuts";
+import { useFileActions } from "~/hooks/useFileActions";
 import { cn } from "~/lib/utils";
 import {
   APP_SETTINGS_CONSTANTS,
