@@ -1,7 +1,7 @@
 [package]
 name = "ursamarkup"
-version = "0.1.0"
-description = "An opinionated cross-platform tool for marking up and highlighting images"
+version = "1.0.0"
+description = "An opinionated cross-platform tool for marking up images"
 authors = ["BasicallyPolaris"]
 edition = "2021"
 
