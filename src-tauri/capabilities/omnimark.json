@@ -16,6 +16,8 @@
     "core:webview:default",
     "core:webview:allow-create-webview-window",
     "core:event:default",
+    "clipboard-manager:allow-read-image",
+    "clipboard-manager:allow-write-image",
     "cli:default",
     "dialog:allow-open",
     "dialog:allow-save",

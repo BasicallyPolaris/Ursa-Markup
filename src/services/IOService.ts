@@ -94,7 +94,7 @@ export class IOService {
   async saveImage(
     canvas: HTMLCanvasElement,
     defaultPath?: string,
-  ): Promise<boolean> {
+  ): Promise<string | null> {
     try {
       const filePath = await save({
         filters: [
@@ -105,7 +105,7 @@ export class IOService {
         defaultPath: defaultPath || "annotated-image.png",
       });
 
-      if (!filePath) return false;
+      if (!filePath) return null;
 
       const mimeType =
         filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")
@@ -120,17 +120,17 @@ export class IOService {
 
       if (!blob) {
         console.error("Failed to create blob from canvas");
-        return false;
+        return null;
       }
 
       const arrayBuffer = await blob.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
 
       await writeFile(filePath, uint8Array);
-      return true;
+      return filePath;
     } catch (error) {
       console.error("Failed to save image:", error);
-      return false;
+      return null;
     }
   }
 

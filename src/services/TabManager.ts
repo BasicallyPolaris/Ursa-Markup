@@ -110,9 +110,9 @@ export class TabManager {
     // Reuse empty active tab if no image is loaded and we're creating an empty doc
     // or if we're loading an image into an empty tab
     if (activeDoc && activeDoc.isEmpty() && !activeDoc.hasChanges) {
-      if (filePath && imageSrc) {
+      if (imageSrc) {
         // Load image into the empty document
-        activeDoc.loadImage(filePath, imageSrc, fileName);
+        activeDoc.loadImage(filePath || null, imageSrc, fileName);
         this.emit("documentChanged", { id: activeDoc.id });
         return activeDoc.id;
       } else if (!filePath && !imageSrc) {
@@ -127,8 +127,8 @@ export class TabManager {
     this.setupDocumentListeners(newDoc);
 
     // Load image if provided
-    if (filePath && imageSrc) {
-      newDoc.loadImage(filePath, imageSrc, fileName);
+    if (imageSrc) {
+      newDoc.loadImage(filePath || null, imageSrc, fileName);
     }
 
     this.emit("documentAdded", { id: newDoc.id });

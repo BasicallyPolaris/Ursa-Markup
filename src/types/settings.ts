@@ -2,6 +2,7 @@
 // SETTINGS
 // ============================================================================
 
+import { Image } from "@tauri-apps/api/image";
 import { Theme } from "./theme";
 import { ToolConfigs } from "./tools";
 
@@ -56,6 +57,7 @@ export const HotkeyActions = {
 
   // File Actions
   FILE_COPY: "file.copy",
+  FILE_PASTE: "file.paste",
   FILE_OPEN: "file.open",
   FILE_SAVE: "file.save",
 
@@ -90,6 +92,11 @@ export type HotkeyBinding = {
 };
 
 export type HotkeySettings = Record<HotkeyAction, HotkeyBinding>;
+
+export type ImageSource =
+  | { type: "url"; url: string }
+  | { type: "data"; data: Uint8Array; mimeType: string }
+  | { type: "clipboard"; image: Image };
 
 export type CopySettings = {
   autoCopyFormat: AutoCopyFormat;

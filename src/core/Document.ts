@@ -64,14 +64,18 @@ export class Document {
   /**
    * Load an image into the document
    */
-  loadImage(filePath: string, imageSrc: string, fileName?: string): void {
+  loadImage(filePath: string | null, imageSrc: string, fileName?: string): void {
     this.filePath = filePath;
     this.imageSrc = imageSrc;
-    this.fileName = fileName || filePath.split("/").pop() || null;
+    this.fileName = fileName || (filePath ? filePath.split("/").pop() || null : null);
 
     // Extract directory from file path
-    const lastSlash = filePath.lastIndexOf("/");
-    this.recentDir = lastSlash > 0 ? filePath.substring(0, lastSlash) : null;
+    if (filePath) {
+      const lastSlash = filePath.lastIndexOf("/");
+      this.recentDir = lastSlash > 0 ? filePath.substring(0, lastSlash) : null;
+    } else {
+      this.recentDir = null;
+    }
 
     // Reset viewport
     this.zoom = 1;
@@ -108,9 +112,18 @@ export class Document {
   }
 
   /**
-   * Mark the document as having changes
-   * Increments version for clipboard copy deduplication
+   * Update file information after saving
    */
+  setFileInfo(filePath: string, fileName?: string): void {
+    this.filePath = filePath;
+    this.fileName = fileName || null;
+
+    // Extract directory from file path for recent directory tracking
+    const lastSlash = filePath.lastIndexOf("/");
+    this.recentDir = lastSlash > 0 ? filePath.substring(0, lastSlash) : null;
+
+    this.notifyChange();
+  }
   markAsChanged(changed: boolean = true): void {
     if (changed) {
       this.version++;

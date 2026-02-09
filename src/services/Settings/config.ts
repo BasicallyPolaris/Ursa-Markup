@@ -112,6 +112,7 @@ export const DEFAULT_HOTKEYS: HotkeySettings = {
   "edit.undo": { key: "z", ctrl: true },
   "file.copy": { key: "c", ctrl: true },
   "file.open": { key: "o", ctrl: true },
+  "file.paste": { key: "v", ctrl: true },
   "file.save": { key: "s", ctrl: true },
   "nav.centerImage": { key: "c", ctrl: true, alt: true },
   "nav.fitToWindow": { key: "f", ctrl: true, alt: true },
