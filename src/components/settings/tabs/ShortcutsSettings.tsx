@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { SettingsSection } from "~/components/settings/components/SettingsSection";
 import { Button } from "~/components/ui/button";
 import { DEFAULT_HOTKEYS } from "~/services/Settings/config";
+import { DeepPartial } from "~/types";
 import type {
   AppSettings,
   HotkeyAction,
@@ -35,6 +36,7 @@ const shortcutGroups: ShortcutGroup[] = [
       { action: "file.open", description: "Open image" },
       { action: "file.save", description: "Save image" },
       { action: "file.copy", description: "Copy to clipboard" },
+      { action: "file.paste", description: "Paste image" },
     ],
   },
   {
@@ -90,7 +92,7 @@ const shortcutGroups: ShortcutGroup[] = [
 
 type ShortcutsSettingsProps = {
   settings: AppSettings;
-  updateDraft: (updates: Partial<AppSettings>) => void;
+  updateDraft: (updates: DeepPartial<AppSettings>) => void;
 };
 
 export function ShortcutsSettings({
@@ -118,11 +120,7 @@ export function ShortcutsSettings({
 
   const handleResetHotkey = useCallback(
     (action: HotkeyAction) => {
-      const newHotkeys: HotkeySettings = {
-        ...hotkeys,
-        [action]: DEFAULT_HOTKEYS[action],
-      };
-      updateDraft({ hotkeys: newHotkeys });
+      updateDraft({ hotkeys: { [action]: DEFAULT_HOTKEYS[action] } });
     },
     [hotkeys, updateDraft],
   );

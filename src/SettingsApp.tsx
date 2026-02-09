@@ -83,6 +83,7 @@ function SettingsApp() {
       // Emit event to main window that settings were saved with all changes
       await emit("settings-applied", settingsManager.saved);
       toast.success("Settings were saved.");
+      setHasChanges(false);
     } else {
       toast.error("Settings couldn't be saved.");
     }
