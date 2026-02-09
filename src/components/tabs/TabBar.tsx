@@ -1,13 +1,13 @@
 import clsx from "clsx";
 import { Plus, X } from "lucide-react";
 import { useCallback } from "react";
+import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { useTabManager } from "~/contexts/TabManagerContext";
-import { services } from "~/services";
-import { cn } from "~/lib/utils";
-import { APP_SETTINGS_CONSTANTS } from "~/services/Settings/config";
-import { toast } from "sonner";
 import type { Document } from "~/core/Document";
+import { cn } from "~/lib/utils";
+import { services } from "~/services";
+import { APP_SETTINGS_CONSTANTS } from "~/services/Settings/config";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function TabBar() {
@@ -65,8 +65,6 @@ export function TabBar() {
       toast.error("Failed to open file");
     }
   }, [documents, activeDocumentId, getDocument, switchTab, addTab]);
-
-  const shouldHideAddButton = documents.length === 1 && documents[0]?.isEmpty();
 
   return (
     <div
@@ -136,16 +134,14 @@ export function TabBar() {
         );
       })}
 
-      {!shouldHideAddButton && (
-        <button
-          onClick={handleAddTab}
-          className="p-1.5 rounded-md hover:bg-surface-bg-hover transition-colors text-text-secondary sticky right-0 bg-toolbar-bg shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.1)]"
-          title="Open File"
-          aria-label="Open file"
-        >
-          <Plus className="size-4" />
-        </button>
-      )}
+      <button
+        onClick={handleAddTab}
+        className="p-1.5 rounded-md hover:bg-surface-bg-hover transition-colors text-text-secondary sticky right-0 bg-toolbar-bg shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.1)]"
+        title="Open File"
+        aria-label="Open file"
+      >
+        <Plus className="size-4" />
+      </button>
     </div>
   );
 }
