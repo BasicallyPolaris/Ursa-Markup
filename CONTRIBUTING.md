@@ -46,18 +46,38 @@ Before diving in, please note the core technologies used:
 
 - `src-tauri/`: Contains the Rust backend code.
   - `src/lib.rs`: Main entry point for Tauri commands.
+  - `src/main.rs`: Binary entry point.
+  - `build.rs`: Build script for custom steps.
+  - `Cargo.toml`: Rust package manifest.
+  - `Cargo.lock`: Dependency lockfile.
   - `capabilities/`: Tauri permission configurations.
+  - `gen/`: Generated schemas (e.g., capabilities.json).
+  - `icons/`: Icon assets for different platforms.
+  - `.gitignore`: Version control ignores.
+  - `target/`: Build output directory (auto-generated).
 - `src/`: Contains the React frontend code.
   - `core/`: Pure logic (Brush engine, math, history).
-  - `components/`: React UI components.
+  - `services/`: Services that handle and interact with the core of the application (e.g., Settings/, Theme/ subdirectories).
+    - `Settings/`: Contains main setting configuration and defaults for the whole app
+    - `Theme/`: Contains main theme configuration and defaults for the whole app
+  - `contexts/`: Contexts used throughout the App to manage and distribute state.
   - `workers/`: Web Workers for heavy tasks (like image encoding).
+  - `utils/`: Utility functions that may be used in more than one service or component.
+  - `hooks/`: Hooks that centralize specific behaviors and interactions.
+  - `components/`: React UI components (with subdirectories like canvas/, settings/, tabs/, toolbar/, ui/).
+  - `types/`: TypeScript type definitions (e.g., index.ts, settings.ts, theme.ts, tools.ts).
+  - `App.tsx`: Main entry point of the application main window.
+  - `SettingsApp.tsx`: Main entry point of the application settings window.
+  - `App.css`: Stylesheet for the main application.
+  - `main.tsx`: React entry point (Vite-specific).
+  - `vite-env.d.ts`: TypeScript environment declarations.
 
 ## Making Changes
 
 ### Branching Strategy
 
 - **main**: This is the production branch.
-- **Feature Branches**: Create a new branch for your feature or fix (e.g., `feature/new-brush` or `fix/canvas-bug`).
+- **Feature Branches**: Create a new branch for your feature or fix (e.g., `feat/new-brush` or `fix/canvas-bug`).
 
 ### Code Style
 

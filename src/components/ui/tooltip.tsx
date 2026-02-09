@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Tooltip as BaseTooltip } from "@base-ui-components/react/tooltip"
-import { cn } from "../../lib/utils"
+import { Tooltip as BaseTooltip } from "@base-ui-components/react/tooltip";
+import * as React from "react";
+import { cn } from "../../utils";
 
-function TooltipProvider({ 
+function TooltipProvider({
   children,
-  delayDuration = 0
-}: { 
-  children: React.ReactNode 
-  delayDuration?: number
+  delayDuration = 0,
+}: {
+  children: React.ReactNode;
+  delayDuration?: number;
 }) {
   // Map Radix API to Base UI API
   return (
     <BaseTooltip.Provider delay={delayDuration} closeDelay={0}>
       {children}
     </BaseTooltip.Provider>
-  )
+  );
 }
 
 function Tooltip({
@@ -27,7 +27,7 @@ function Tooltip({
     <BaseTooltip.Provider delay={0} closeDelay={0}>
       <BaseTooltip.Root {...props}>{children}</BaseTooltip.Root>
     </BaseTooltip.Provider>
-  )
+  );
 }
 
 function TooltipTrigger({
@@ -44,7 +44,7 @@ function TooltipTrigger({
         render={children as React.ReactElement<Record<string, unknown>>}
         {...props}
       />
-    )
+    );
   }
 
   return (
@@ -55,7 +55,7 @@ function TooltipTrigger({
     >
       {children}
     </BaseTooltip.Trigger>
-  )
+  );
 }
 
 function TooltipContent({
@@ -64,10 +64,10 @@ function TooltipContent({
   side = "top",
   children,
   ...props
-}: Omit<React.ComponentProps<typeof BaseTooltip.Popup>, 'children'> & { 
-  sideOffset?: number 
-  side?: "top" | "bottom" | "left" | "right"
-  children?: React.ReactNode
+}: Omit<React.ComponentProps<typeof BaseTooltip.Popup>, "children"> & {
+  sideOffset?: number;
+  side?: "top" | "bottom" | "left" | "right";
+  children?: React.ReactNode;
 }) {
   return (
     <BaseTooltip.Portal>
@@ -79,7 +79,7 @@ function TooltipContent({
             "data-starting-style:opacity-0 data-starting-style:scale-95",
             "data-ending-style:opacity-0 data-ending-style:scale-95",
             "origin-(--transform-origin) transition-[opacity,transform] duration-150",
-            className
+            className,
           )}
           {...props}
         >
@@ -87,7 +87,7 @@ function TooltipContent({
         </BaseTooltip.Popup>
       </BaseTooltip.Positioner>
     </BaseTooltip.Portal>
-  )
+  );
 }
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider }
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };

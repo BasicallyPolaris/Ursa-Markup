@@ -11,7 +11,6 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { SettingsSection } from "~/components/settings/components/SettingsSection";
 import { Button } from "~/components/ui/button";
-import { cn } from "~/lib/utils";
 import { DEFAULT_HOTKEYS } from "~/services/Settings/config";
 import type {
   AppSettings,
@@ -19,6 +18,7 @@ import type {
   HotkeyBinding,
   HotkeySettings,
 } from "~/types/settings";
+import { cn } from "~/utils";
 import { formatHotkey } from "~/utils/hotkeys";
 
 type ShortcutGroup = {

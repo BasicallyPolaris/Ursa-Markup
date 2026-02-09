@@ -24,7 +24,7 @@ Built with Tauri, React, and TypeScript.
 - **Pen Tool**: Freehand drawing with smooth anti-aliased strokes.
 - **Highlighter Tool**: Highlighting with flat ends and transparency.
 - **Area Tool**: Rectangle/rounded rectangle highlighting.
-- **Eraser Tool**: Stroke/Object-based erasing (not just pixel erasing).
+- **Eraser Tool**: Stroke/Object-based erasing.
 
 ### 🛠 Tool Settings
 
@@ -74,27 +74,28 @@ OmniMark is designed to be keyboard-driven. All shortcuts can be customized in *
 <details>
 <summary><strong>Click to view default Keybindings</strong></summary>
 
-| Shortcut            | Action              |
-| ------------------- | ------------------- |
-| `Ctrl+O`            | Open image          |
-| `Ctrl+S`            | Save image          |
-| `Ctrl+C`            | Copy to clipboard   |
-| `Ctrl+Z`            | Undo                |
-| `Ctrl+Shift+Z`      | Redo                |
-| `Ctrl+R`            | Toggle ruler        |
-| `1`                 | Pen tool            |
-| `2`                 | Highlighter tool    |
-| `3`                 | Area tool           |
-| `E`                 | Eraser tool         |
-| `Ctrl+1` - `Ctrl+7` | Quick color presets |
-| `Ctrl+W`            | Close tab           |
-| `Ctrl+Tab`          | Next tab            |
-| `Ctrl+Shift+Tab`    | Previous tab        |
-| `Ctrl+=` / `Ctrl+-` | Zoom in/out         |
-| `Ctrl+0`            | Reset zoom to 100%  |
-| `Ctrl+Alt+F`        | Fit image to window |
-| `Ctrl+F`            | Stretch to fill     |
-| `Ctrl+Alt+C`        | Center image        |
+| Shortcut            | Action                    |
+| ------------------- | ------------------------- |
+| `Ctrl+O`            | Open image                |
+| `Ctrl+S`            | Save image                |
+| `Ctrl+C`            | Copy to clipboard         |
+| `Ctrl+V`            | Open image from clipboard |
+| `Ctrl+Z`            | Undo                      |
+| `Ctrl+Shift+Z`      | Redo                      |
+| `Ctrl+R`            | Toggle ruler              |
+| `1`                 | Pen tool                  |
+| `2`                 | Highlighter tool          |
+| `3`                 | Area tool                 |
+| `E`                 | Eraser tool               |
+| `Ctrl+1` - `Ctrl+7` | Quick color presets       |
+| `Ctrl+W`            | Close tab                 |
+| `Ctrl+Tab`          | Next tab                  |
+| `Ctrl+Shift+Tab`    | Previous tab              |
+| `Ctrl+=` / `Ctrl+-` | Zoom in/out               |
+| `Ctrl+0`            | Reset zoom to 100%        |
+| `Ctrl+Alt+F`        | Fit image to window       |
+| `Ctrl+F`            | Stretch to fill           |
+| `Ctrl+Alt+C`        | Center image              |
 
 </details>
 

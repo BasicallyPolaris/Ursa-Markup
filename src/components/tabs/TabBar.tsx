@@ -5,9 +5,9 @@ import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import { useTabManager } from "~/contexts/TabManagerContext";
 import type { Document } from "~/core/Document";
-import { cn } from "~/lib/utils";
 import { services } from "~/services";
 import { APP_SETTINGS_CONSTANTS } from "~/services/Settings/config";
+import { cn } from "~/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function TabBar() {

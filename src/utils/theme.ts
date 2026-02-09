@@ -2,7 +2,7 @@
 // THEME UTILITIES
 // ============================================================================
 
-import { DEFAULT_THEME } from "~/services/Theme/config";
+import { DEFAULT_THEME } from "~/services/Theme";
 import { Theme, ThemeConfig } from "~/types/theme";
 import { toHslString } from "./colors";
 

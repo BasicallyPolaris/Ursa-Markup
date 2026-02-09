@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Dialog as BaseDialog } from "@base-ui-components/react/dialog"
-import { cn } from "../../lib/utils"
+import { Dialog as BaseDialog } from "@base-ui-components/react/dialog";
+import * as React from "react";
+import { cn } from "../../utils";
 
 function Dialog({
   children,
   open,
   onOpenChange,
   ...props
-}: BaseDialog.Root.Props & { 
-  children?: React.ReactNode
-  open?: boolean
-  onOpenChange?: (open: boolean) => void
+}: BaseDialog.Root.Props & {
+  children?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   return (
-    <BaseDialog.Root 
-      open={open} 
+    <BaseDialog.Root
+      open={open}
       onOpenChange={(open) => onOpenChange?.(open)}
       {...props}
     >
       {children}
     </BaseDialog.Root>
-  )
+  );
 }
 
 function DialogTrigger({
@@ -34,22 +34,25 @@ function DialogTrigger({
   if (asChild && React.isValidElement(children)) {
     return (
       <BaseDialog.Trigger
-        render={(triggerProps) => 
-          React.cloneElement(children as React.ReactElement, triggerProps as React.Attributes)
+        render={(triggerProps) =>
+          React.cloneElement(
+            children as React.ReactElement,
+            triggerProps as React.Attributes,
+          )
         }
         {...props}
       />
-    )
+    );
   }
 
   return (
     <BaseDialog.Trigger className={className} {...props}>
       {children}
     </BaseDialog.Trigger>
-  )
+  );
 }
 
-const DialogPortal = BaseDialog.Portal
+const DialogPortal = BaseDialog.Portal;
 
 function DialogClose({
   className,
@@ -60,19 +63,22 @@ function DialogClose({
   if (asChild && React.isValidElement(children)) {
     return (
       <BaseDialog.Close
-        render={(closeProps) => 
-          React.cloneElement(children as React.ReactElement, closeProps as React.Attributes)
+        render={(closeProps) =>
+          React.cloneElement(
+            children as React.ReactElement,
+            closeProps as React.Attributes,
+          )
         }
         {...props}
       />
-    )
+    );
   }
 
   return (
     <BaseDialog.Close className={className} {...props}>
       {children}
     </BaseDialog.Close>
-  )
+  );
 }
 
 function DialogOverlay({
@@ -85,18 +91,20 @@ function DialogOverlay({
         "fixed inset-0 z-50 bg-overlay/60",
         "data-starting-style:opacity-0 data-ending-style:opacity-0",
         "transition-opacity duration-150",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function DialogContent({
   className,
   children,
   ...props
-}: Omit<React.ComponentProps<typeof BaseDialog.Popup>, 'children'> & { children?: React.ReactNode }) {
+}: Omit<React.ComponentProps<typeof BaseDialog.Popup>, "children"> & {
+  children?: React.ReactNode;
+}) {
   return (
     <BaseDialog.Portal>
       <DialogOverlay />
@@ -106,14 +114,14 @@ function DialogContent({
           "data-starting-style:opacity-0 data-starting-style:scale-95",
           "data-ending-style:opacity-0 data-ending-style:scale-95",
           "origin-center transition-[opacity,transform] duration-150",
-          className
+          className,
         )}
         {...props}
       >
         {children}
       </BaseDialog.Popup>
     </BaseDialog.Portal>
-  )
+  );
 }
 
 const DialogHeader = ({
@@ -123,12 +131,12 @@ const DialogHeader = ({
   <div
     className={cn(
       "flex flex-col space-y-1.5 text-center sm:text-left",
-      className
+      className,
     )}
     {...props}
   />
-)
-DialogHeader.displayName = "DialogHeader"
+);
+DialogHeader.displayName = "DialogHeader";
 
 const DialogFooter = ({
   className,
@@ -137,12 +145,12 @@ const DialogFooter = ({
   <div
     className={cn(
       "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
-      className
+      className,
     )}
     {...props}
   />
-)
-DialogFooter.displayName = "DialogFooter"
+);
+DialogFooter.displayName = "DialogFooter";
 
 function DialogTitle({
   className,
@@ -152,11 +160,11 @@ function DialogTitle({
     <BaseDialog.Title
       className={cn(
         "text-lg font-semibold leading-none tracking-tight",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function DialogDescription({
@@ -168,18 +176,18 @@ function DialogDescription({
       className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
-  )
+  );
 }
 
 export {
   Dialog,
-  DialogPortal,
-  DialogOverlay,
   DialogClose,
-  DialogTrigger,
   DialogContent,
-  DialogHeader,
-  DialogFooter,
-  DialogTitle,
   DialogDescription,
-}
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+};
