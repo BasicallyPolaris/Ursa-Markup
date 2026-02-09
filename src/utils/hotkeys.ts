@@ -2,7 +2,7 @@
 // HOTKEY UTILITIES
 // ============================================================================
 
-import { HotkeyBinding } from "../types/settings";
+import { HotkeyBinding } from "~/types/settings";
 
 /** Converts a HotkeyBinding into a human-readable string (e.g., "Ctrl+Shift+Z") */
 export function formatHotkey(binding: HotkeyBinding | undefined): string {

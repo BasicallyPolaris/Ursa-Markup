@@ -106,7 +106,7 @@ OmniMark supports full UI theming. See [THEMING.md](THEMING.md) for details.
 
 The theme file is located at:
 
-- **User theme**: `~/.config/omnimark/theme.json` (created on first run)
+- **User theme**: `~/.config/com.basicallypolaris.omnimark/theme.json` (created on first run)
 - **Bundled default**: `src/lib/theme.json`
 
 ## Development
