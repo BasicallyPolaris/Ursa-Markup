@@ -188,35 +188,35 @@ export function useKeyboardShortcuts(): void {
           case "edit.redo":
             return documentContext.redo();
 
-           // Tools
-           case "tool.pen":
-             if (drawingContext.isDrawing) return;
-             return drawingContext.switchTool(Tools.PEN);
-           case "tool.highlighter":
-             if (drawingContext.isDrawing) return;
-             return drawingContext.switchTool(Tools.HIGHLIGHTER);
-           case "tool.area":
-             if (drawingContext.isDrawing) return;
-             return drawingContext.switchTool(Tools.AREA);
-           case "tool.eraser":
-             if (drawingContext.isDrawing) return;
-             return drawingContext.switchTool(Tools.ERASER);
+          // Tools
+          case "tool.pen":
+            if (drawingContext.isDrawing) return;
+            return drawingContext.switchTool(Tools.PEN);
+          case "tool.highlighter":
+            if (drawingContext.isDrawing) return;
+            return drawingContext.switchTool(Tools.HIGHLIGHTER);
+          case "tool.area":
+            if (drawingContext.isDrawing) return;
+            return drawingContext.switchTool(Tools.AREA);
+          case "tool.eraser":
+            if (drawingContext.isDrawing) return;
+            return drawingContext.switchTool(Tools.ERASER);
 
-           // Colors
-           case "color.1":
-           case "color.2":
-           case "color.3":
-           case "color.4":
-           case "color.5":
-           case "color.6":
-           case "color.7": {
-             if (drawingContext.isDrawing) return;
-             // Extract index from "color.N" (1-based to 0-based)
-             const idx = parseInt(action.split(".")[1]) - 1;
-             const color = settings.activePaletteColors[idx];
-             if (color) drawingContext.setActiveColor(color);
-             return;
-           }
+          // Colors
+          case "color.1":
+          case "color.2":
+          case "color.3":
+          case "color.4":
+          case "color.5":
+          case "color.6":
+          case "color.7": {
+            if (drawingContext.isDrawing) return;
+            // Extract index from "color.N" (1-based to 0-based)
+            const idx = parseInt(action.split(".")[1]) - 1;
+            const color = settings.activePaletteColors[idx];
+            if (color) drawingContext.setActiveColor(color);
+            return;
+          }
 
           // View
           case "nav.ruler":
@@ -235,8 +235,6 @@ export function useKeyboardShortcuts(): void {
             return canvasContext.centerImage();
 
           // Tabs
-          case "tab.new":
-            return tabManager.addTab();
           case "tab.close":
             if (tabManager.documents.length > 1) {
               if (tabManager.activeDocumentId)

@@ -120,7 +120,6 @@ export const DEFAULT_HOTKEYS: HotkeySettings = {
   "nav.zoomIn": { key: "=", ctrl: true },
   "nav.zoomOut": { key: "-", ctrl: true },
   "tab.close": { key: "w", ctrl: true },
-  "tab.new": { key: "t", ctrl: true },
   "tab.next": { key: "tab", ctrl: true },
   "tab.previous": { key: "tab", ctrl: true, shift: true },
   "tool.area": { key: "3" },
