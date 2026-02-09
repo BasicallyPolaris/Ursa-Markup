@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { Select as BaseSelect } from "@base-ui-components/react/select";
-import { cn } from "../../lib/utils";
+import * as React from "react";
+import { cn } from "~/utils";
 
 function Select<Value>({ children, ...props }: BaseSelect.Root.Props<Value>) {
   return <BaseSelect.Root {...props}>{children}</BaseSelect.Root>;
@@ -124,4 +124,4 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
-export { Select, SelectTrigger, SelectValue, SelectContent, SelectItem };
+export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue };

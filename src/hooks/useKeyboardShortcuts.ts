@@ -108,6 +108,8 @@ export function useKeyboardShortcuts(): void {
             return fileActions.handleSave();
           case "file.copy":
             return fileActions.handleCopy();
+          case "file.paste":
+            return fileActions.handlePaste();
 
           // Edit
           case "edit.undo":

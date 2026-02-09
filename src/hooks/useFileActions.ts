@@ -4,11 +4,13 @@
  * user feedback and canvas integration for image annotation workflows.
  */
 
+import { readImage } from "@tauri-apps/plugin-clipboard-manager";
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { toast } from "sonner";
 import { useCanvasEngine } from "~/contexts/CanvasEngineContext";
 import { services } from "~/services";
 import { registerPendingCopy } from "./useClipboardEvents";
-import { toast } from "sonner";
+import { convertClipboardImageToDataUrl } from "~/utils/imageProcessing";
 
 export function useFileActions() {
   const { engine } = useCanvasEngine();
@@ -44,9 +46,19 @@ export function useFileActions() {
     }
 
     const defaultPath = activeDoc.filePath || "annotated-image.png";
-    const success = await services.ioService.saveImage(canvas, defaultPath);
+    const savedFilePath = await services.ioService.saveImage(canvas, defaultPath);
 
-    if (success) {
+    if (savedFilePath) {
+      // Update file info for unnamed documents (clipboard pastes)
+      if (activeDoc.fileName === "Pasted Image") {
+        // Extract filename without extension
+        const fileNameWithExt = savedFilePath.split("/").pop() || "";
+        const lastDot = fileNameWithExt.lastIndexOf(".");
+        const fileName = lastDot > 0 ? fileNameWithExt.substring(0, lastDot) : fileNameWithExt;
+        
+        activeDoc.setFileInfo(savedFilePath, fileName);
+      }
+      
       activeDoc.markAsChanged(false);
       toast.success("File saved successfully", { duration: 2000 });
       return true;
@@ -77,8 +89,24 @@ export function useFileActions() {
     }
   }, []);
 
+  const handlePaste = useCallback(async () => {
+    try {
+      const image = await readImage();
+      const rgbaBuffer = await image.rgba();
+      const { width, height } = await image.size();
+
+      const dataUrl = convertClipboardImageToDataUrl(rgbaBuffer, width, height);
+
+      // Create document with the data URL
+      services.tabManager.createDocument(undefined, "Pasted Image", dataUrl);
+    } catch (error) {
+      console.error("Failed to paste image from clipboard:", error);
+      toast.error("Failed to paste image from clipboard", { duration: 2000 });
+    }
+  }, []);
+
   return useMemo(
-    () => ({ handleOpen, handleSave, handleCopy }),
-    [handleOpen, handleSave, handleCopy],
+    () => ({ handleOpen, handleSave, handleCopy, handlePaste }),
+    [handleOpen, handleSave, handleCopy, handlePaste],
   );
 }

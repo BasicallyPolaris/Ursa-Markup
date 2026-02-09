@@ -1,14 +1,18 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Popover as BasePopover } from "@base-ui-components/react/popover"
-import { cn } from "../../lib/utils"
+import { Popover as BasePopover } from "@base-ui-components/react/popover";
+import * as React from "react";
+import { cn } from "~/utils";
 
 function Popover({
   children,
   ...props
 }: BasePopover.Root.Props & { children?: React.ReactNode }) {
-  return <BasePopover.Root data-slot="popover" {...props}>{children}</BasePopover.Root>
+  return (
+    <BasePopover.Root data-slot="popover" {...props}>
+      {children}
+    </BasePopover.Root>
+  );
 }
 
 function PopoverTrigger({
@@ -22,23 +26,26 @@ function PopoverTrigger({
     return (
       <BasePopover.Trigger
         data-slot="popover-trigger"
-        render={(triggerProps) => 
-          React.cloneElement(children as React.ReactElement, triggerProps as React.Attributes)
+        render={(triggerProps) =>
+          React.cloneElement(
+            children as React.ReactElement,
+            triggerProps as React.Attributes,
+          )
         }
         {...props}
       />
-    )
+    );
   }
 
   return (
-    <BasePopover.Trigger 
-      data-slot="popover-trigger" 
+    <BasePopover.Trigger
+      data-slot="popover-trigger"
       className={className}
       {...props}
     >
       {children}
     </BasePopover.Trigger>
-  )
+  );
 }
 
 function PopoverContent({
@@ -48,11 +55,11 @@ function PopoverContent({
   side = "bottom",
   children,
   ...props
-}: Omit<React.ComponentProps<typeof BasePopover.Popup>, 'children'> & { 
-  align?: "start" | "center" | "end"
-  sideOffset?: number
-  side?: "top" | "bottom" | "left" | "right"
-  children?: React.ReactNode
+}: Omit<React.ComponentProps<typeof BasePopover.Popup>, "children"> & {
+  align?: "start" | "center" | "end";
+  sideOffset?: number;
+  side?: "top" | "bottom" | "left" | "right";
+  children?: React.ReactNode;
 }) {
   return (
     <BasePopover.Portal>
@@ -64,7 +71,7 @@ function PopoverContent({
             "data-starting-style:opacity-0 data-starting-style:scale-95",
             "data-ending-style:opacity-0 data-ending-style:scale-95",
             "origin-(--transform-origin) transition-[opacity,transform] duration-150",
-            className
+            className,
           )}
           {...props}
         >
@@ -72,7 +79,7 @@ function PopoverContent({
         </BasePopover.Popup>
       </BasePopover.Positioner>
     </BasePopover.Portal>
-  )
+  );
 }
 
 // Note: Base UI doesn't have a direct Anchor equivalent
@@ -82,7 +89,11 @@ function PopoverAnchor({
   children,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div data-slot="popover-anchor" className={className} {...props}>{children}</div>
+  return (
+    <div data-slot="popover-anchor" className={className} {...props}>
+      {children}
+    </div>
+  );
 }
 
-export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }
+export { Popover, PopoverAnchor, PopoverContent, PopoverTrigger };

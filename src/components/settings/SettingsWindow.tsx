@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { Button } from "~/components/ui/button";
-import { cn } from "~/lib/utils";
 import { DeepPartial } from "~/types";
 import type { AppSettings } from "~/types/settings";
+import { cn } from "~/utils";
 import { ColorsSettings } from "./tabs/ColorsSettings";
 import { GeneralSettings } from "./tabs/GeneralSettings";
 import { ShortcutsSettings } from "./tabs/ShortcutsSettings";

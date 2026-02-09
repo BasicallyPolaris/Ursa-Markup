@@ -41,15 +41,15 @@ import { useDocument } from "~/contexts/DocumentContext";
 import { useDrawing } from "~/contexts/DrawingContext";
 import { useSettings } from "~/contexts/SettingsContext";
 import { useTabManager } from "~/contexts/TabManagerContext";
-import { useHotkeys } from "~/hooks/useKeyboardShortcuts";
 import { useFileActions } from "~/hooks/useFileActions";
-import { cn } from "~/lib/utils";
+import { useHotkeys } from "~/hooks/useKeyboardShortcuts";
 import {
   APP_SETTINGS_CONSTANTS,
   TOOL_SETTINGS_CONSTANTS,
 } from "~/services/Settings/config";
 import { HotkeyActions } from "~/types/settings";
 import { BlendModes, Tools, type BlendMode, type Tool } from "~/types/tools";
+import { cn } from "~/utils";
 import { formatHotkey } from "~/utils/hotkeys";
 
 // Define options outside component for stability and clean DX
@@ -94,7 +94,7 @@ export function Toolbar() {
       ? blendModeOptions.find((opt) => opt.value === toolConfig.blendMode)
       : blendModeOptions[0];
 
-  useEffect(() => {  
+  useEffect(() => {
     if (!isEditingZoom) {
       setZoomInputValue(Math.round(zoom * 100).toString() + "%");
     }

@@ -1,17 +1,17 @@
+import { isTauri } from "@tauri-apps/api/core";
+import { appConfigDir } from "@tauri-apps/api/path";
 import {
-  readTextFile,
-  writeTextFile,
   exists,
   mkdir,
+  readTextFile,
+  writeTextFile,
 } from "@tauri-apps/plugin-fs";
-import { appConfigDir } from "@tauri-apps/api/path";
 import { openPath } from "@tauri-apps/plugin-opener";
-import type { ThemeConfig, Theme, ColorPalette } from "~/types/theme";
 import type { ServiceEvents } from "~/types/settings";
-import { isTauri } from "@tauri-apps/api/core";
-import { DEFAULT_THEME, getDefaultTheme } from "./config";
-import { applyThemeToCss, validateTheme } from "~/utils/theme";
+import type { ColorPalette, Theme, ThemeConfig } from "~/types/theme";
 import { toRgbaString } from "~/utils/colors";
+import { applyThemeToCss, validateTheme } from "~/utils/theme";
+import { DEFAULT_THEME, getDefaultTheme } from ".";
 
 type EventCallback<T> = (payload: T) => void;
 

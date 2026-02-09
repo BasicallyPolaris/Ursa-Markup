@@ -13,7 +13,6 @@ import { useSettings } from "~/contexts/SettingsContext";
 import { registerPendingCopy } from "~/hooks/useClipboardEvents";
 import { useHotkeys } from "~/hooks/useKeyboardShortcuts";
 import { useToolCursor } from "~/hooks/useToolCursor";
-import { cn } from "~/lib/utils";
 import { services } from "~/services";
 import {
   AnyPreviewState,
@@ -28,6 +27,7 @@ import {
   type Tool,
   type ToolConfig,
 } from "~/types/tools";
+import { cn } from "~/utils";
 import { DebugOverlay } from "./DebugOverlay";
 import { EmptyState } from "./EmptyState";
 
