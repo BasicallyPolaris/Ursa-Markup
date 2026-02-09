@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "OmniMark",
+  "productName": "Ursa Markup",
   "version": "0.1.0",
-  "identifier": "com.basicallypolaris.omnimark",
+  "identifier": "com.basicallypolaris.ursamarkup",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "OmniMark",
+        "title": "Ursa Markup",
         "width": 1200,
         "height": 800,
         "minWidth": 400,
@@ -29,7 +29,7 @@
   },
   "plugins": {
     "cli": {
-      "description": "OmniMark - Image annotation tool",
+      "description": "Ursa Markup - Image annotation tool",
       "args": [
         {
           "name": "file",

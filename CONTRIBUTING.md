@@ -1,8 +1,8 @@
-# Contributing to OmniMark
+# Contributing to Ursa Markup
 
 First off, thanks for taking the time to contribute! 🎉
 
-The following is a set of guidelines for contributing to OmniMark. These are mostly guidelines, not rules. Use your best judgment and feel free to propose changes to this document in a pull request.
+The following is a set of guidelines for contributing to Ursa Markup. These are mostly guidelines, not rules. Use your best judgment and feel free to propose changes to this document in a pull request.
 
 ## Tech Stack
 
@@ -26,8 +26,8 @@ Before diving in, please note the core technologies used:
 1.  **Clone the repository**
 
     ```bash
-    git clone [https://github.com/BasicallyPolaris/omnimark.git](https://github.com/BasicallyPolaris/omnimark.git)
-    cd omnimark
+    git clone [https://github.com/BasicallyPolaris/Ursa-Markup.git](https://github.com/BasicallyPolaris/Ursa-Markup.git)
+    cd Ursa-Markup
     ```
 
 2.  **Install dependencies**

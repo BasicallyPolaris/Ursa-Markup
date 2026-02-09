@@ -90,7 +90,7 @@ export const TOOL_SETTINGS_CONSTANTS = {
 } as const;
 
 export const APP_SETTINGS_CONSTANTS = {
-  APP_NAME: "OmniMark",
+  APP_NAME: "Ursa Markup",
   UNSAVED_INDICATOR: "●",
   MIN_ZOOM: 0.1,
   MAX_ZOOM: 10,

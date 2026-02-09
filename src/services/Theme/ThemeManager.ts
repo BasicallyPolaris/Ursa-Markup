@@ -17,7 +17,7 @@ type EventCallback<T> = (payload: T) => void;
 
 /**
  * ThemeManager handles loading and applying themes
- * User config file (~/.config/omnimark/theme.json) is the source of truth
+ * User config file (~/.config/com.basicallypolaris.ursamarkup/theme.json) is the source of truth
  * Bundled defaults are only used as fallback on errors
  */
 export class ThemeManager {

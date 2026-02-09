@@ -1,5 +1,5 @@
 /**
- * Theme system for OmniMark
+ * Theme system for Ursa Markup
  *
  * Provides centralized color management with support for multiple color formats (HEX, RGB, HSL).
  * Colors are converted to HSL for CSS variable compatibility.

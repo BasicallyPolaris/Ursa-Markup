@@ -1,12 +1,12 @@
-# OmniMark Theme System
+# Ursa Markup Theme System
 
-The OmniMark theme system provides centralized color management that is fully customizable through a single configuration file.
+The Ursa Markup theme system provides centralized color management that is fully customizable through a single configuration file.
 
 ## Quick Start
 
 All theming is controlled through **`theme.json`**. The app looks for this file in two locations:
 
-1. **User config** (primary): `~/.config/com.basicallypolaris.omnimark/theme.json`
+1. **User config** (primary): `~/.config/com.basicallypolaris.ursamarkup/theme.json`
 2. **Bundled default (developer)**: `src/lib/theme.json` (canonical defaults in source)
 
 On first run, the bundled defaults are used to initialize the user config file.
@@ -163,7 +163,7 @@ accent: "#005a9e";
 ### How It Works
 
 1. **App Startup**: `ThemeManager` loads theme from user config (or bundled fallback)
-2. **Auto-Copy**: If user config doesn't exist, bundled theme is copied to `~/.config/omnimark/`
+2. **Auto-Copy**: If user config doesn't exist, bundled theme is copied to `~/.config/com.basicallypolaris.ursamarkup/`
 3. **Color Conversion**: All colors converted to HSL format
 4. **CSS Application**: Colors applied to CSS custom properties on `:root`
 5. **Component Rendering**: Components use Tailwind classes mapped to CSS variables
@@ -187,7 +187,7 @@ Component classes (e.g., bg-toolbar-bg)
 ### Theme Not Loading
 
 - Check browser console for JSON parse errors
-- Verify `~/.config/omnimark/theme.json` exists and is valid JSON
+- Verify `~/.config/com.basicallypolaris.ursamarkup/theme.json` exists and is valid JSON
 - Delete user config to reset to bundled defaults
 - Invalid themes automatically fall back to defaults
 

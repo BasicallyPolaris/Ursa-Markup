@@ -1,5 +1,6 @@
 import { HotkeyActions, type HotkeySettings } from "~/types/settings";
 import { formatHotkey } from "~/utils/hotkeys";
+import { APP_SETTINGS_CONSTANTS } from "~/services/Settings/config";
 
 type EmptyStateProps = {
   hotkeys: HotkeySettings;
@@ -22,7 +23,7 @@ export function EmptyState({ hotkeys }: EmptyStateProps) {
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="text-center">
           <p className="text-text-primary/90 text-lg mb-2 font-medium">
-            OmniMark
+            {APP_SETTINGS_CONSTANTS.APP_NAME}
           </p>
           <p className="text-text-primary/60 text-sm mb-1">
             Press {formatHotkey(hotkeys[HotkeyActions.FILE_OPEN])} to open an

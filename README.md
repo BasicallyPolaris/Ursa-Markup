@@ -1,17 +1,17 @@
 <div align="center">
 
-# OmniMark
+# Ursa Markup
 
 **A cross-platform image annotation tool inspired by the Windows Snipping Tool.**
 Built with Tauri, React, and TypeScript.
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/BasicallyPolaris/omnimark/release.yml?style=flat-square)](https://github.com/BasicallyPolaris/omnimark/actions)
-[![License](https://img.shields.io/github/license/BasicallyPolaris/omnimark?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/github/v/release/BasicallyPolaris/omnimark?style=flat-square)](https://github.com/BasicallyPolaris/omnimark/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/BasicallyPolaris/Ursa-Markup/release.yml?style=flat-square)](https://github.com/BasicallyPolaris/Ursa-Markup/actions)
+[![License](https://img.shields.io/github/license/BasicallyPolaris/Ursa-Markup?style=flat-square)](LICENSE)
+[![Version](https://img.shields.io/github/v/release/BasicallyPolaris/Ursa-Markup?style=flat-square)](https://github.com/BasicallyPolaris/Ursa-Markup/releases)
 
-<img src=".github/assets/screenshot-main.png" alt="OmniMark Interface" width="100%" />
+<img src=".github/assets/screenshot-main.png" alt="Ursa Markup Interface" width="100%" />
 
-[**Download Latest Release**](https://github.com/BasicallyPolaris/omnimark/releases)
+[**Download Latest Release**](https://github.com/BasicallyPolaris/Ursa-Markup/releases)
 
 </div>
 
@@ -47,7 +47,7 @@ Built with Tauri, React, and TypeScript.
 
 ## Configuration & Settings
 
-OmniMark is highly customizable. You can tweak tool behaviors, themes, and shortcuts to match your workflow.
+Ursa Markup is highly customizable. You can tweak tool behaviors, themes, and shortcuts to match your workflow.
 
 |                                    General Settings                                    |                                   Color Themes                                   |
 | :------------------------------------------------------------------------------------: | :------------------------------------------------------------------------------: |
@@ -59,7 +59,7 @@ OmniMark is highly customizable. You can tweak tool behaviors, themes, and short
 
 ### Windows, macOS, Linux
 
-Go to the [**Releases Page**](https://github.com/BasicallyPolaris/omnimark/releases) and download the installer for your operating system:
+Go to the [**Releases Page**](https://github.com/BasicallyPolaris/Ursa-Markup/releases) and download the installer for your operating system:
 
 - **Windows**: `.exe` or `.msi`
 - **macOS**: `.dmg` or `.app`
@@ -69,7 +69,7 @@ Go to the [**Releases Page**](https://github.com/BasicallyPolaris/omnimark/relea
 
 ## Keyboard Shortcuts
 
-OmniMark is designed to be keyboard-driven. All shortcuts can be customized in **Settings → Shortcuts**.
+Ursa Markup is designed to be keyboard-driven. All shortcuts can be customized in **Settings → Shortcuts**.
 
 <details>
 <summary><strong>Click to view default Keybindings</strong></summary>
@@ -107,7 +107,7 @@ To create the installers locally:
 bun run tauri build
 ```
 
-- **User theme**: `~/.config/com.basicallypolaris.omnimark/theme.json` (created on first run)
+- **User theme**: `~/.config/com.basicallypolaris.ursamarkup/theme.json` (created on first run)
 - **Bundled default**: `src/lib/theme.json`
 
 ## Development
@@ -122,8 +122,8 @@ bun run tauri build
 
 ```bash
 # 1. Clone the repo
-git clone [https://github.com/BasicallyPolaris/omnimark.git](https://github.com/BasicallyPolaris/omnimark.git)
-cd omnimark
+git clone [https://github.com/BasicallyPolaris/Ursa-Markup.git](https://github.com/BasicallyPolaris/Ursa-Markup.git)
+cd Ursa-Markup
 
 # 2. Install dependencies
 bun install

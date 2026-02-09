@@ -24,7 +24,7 @@ fn set_tray_text(app: &AppHandle, text: &str) {
 fn minimize_to_tray(app: AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.hide();
-        set_tray_text(&app, "Open OmniMark");
+        set_tray_text(&app, "Open Ursa Markup");
     }
 }
 
@@ -33,7 +33,7 @@ fn restore_from_tray(app: AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.show();
         let _ = window.set_focus();
-        set_tray_text(&app, "Hide OmniMark");
+        set_tray_text(&app, "Hide Ursa Markup");
     }
 }
 
@@ -42,11 +42,11 @@ fn toggle_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(true) {
             let _ = window.hide();
-            set_tray_text(app, "Open OmniMark");
+            set_tray_text(app, "Open Ursa Markup");
         } else {
             let _ = window.show();
             let _ = window.set_focus();
-            set_tray_text(app, "Hide OmniMark");
+                            set_tray_text(app, "Hide Ursa Markup");
         }
     }
 }
@@ -187,18 +187,18 @@ pub fn run() {
         ])
         .setup(|app| {
             // Initial state: App is open, so menu says "Hide"
-            let toggle_i = MenuItem::with_id(app, "toggle", "Hide OmniMark", true, None::<&str>)?;
+            let toggle_i = MenuItem::with_id(app, "toggle", "Hide Ursa Markup", true, None::<&str>)?;
             let open_file_i = MenuItem::with_id(app, "open_file", "Open File", true, None::<&str>)?;
             let sep = PredefinedMenuItem::separator(app)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
 
             let menu = Menu::with_items(app, &[&toggle_i, &open_file_i, &sep, &quit_i])?;
 
-            let _tray = TrayIconBuilder::with_id("omnimark-tray")
+            let _tray = TrayIconBuilder::with_id("ursamarkup-tray")
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .title("OmniMark")
-                .tooltip("OmniMark")
+                .title("Ursa Markup")
+                .tooltip("Ursa Markup")
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => std::process::exit(0),
                     "toggle" => toggle_window(app),
@@ -217,7 +217,7 @@ pub fn run() {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.set_focus();
-                            set_tray_text(app, "Hide OmniMark");
+            set_tray_text(app, "Hide Ursa Markup");
                         }
                     }
                 })
