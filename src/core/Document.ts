@@ -330,11 +330,6 @@ export class Document {
    * Notify listeners of a change
    */
   private notifyChange(): void {
-    // Debug: notify about change for easier tracing during runtime
-    // console.debug can be enabled in runtime devtools
-
-    // console.debug("Document.notifyChange", { id: this.id, version: this.version });
-
     for (const cb of Array.from(this.onChangeCallbacks)) {
       try {
         cb();

@@ -99,13 +99,13 @@ OmniMark is designed to be keyboard-driven. All shortcuts can be customized in *
 
 </details>
 
-## Customization
+### Build for Production
 
-### Theming
+To create the installers locally:
 
-OmniMark supports full UI theming. See [THEMING.md](THEMING.md) for details.
-
-The theme file is located at:
+```bash
+bun run tauri build
+```
 
 - **User theme**: `~/.config/com.basicallypolaris.omnimark/theme.json` (created on first run)
 - **Bundled default**: `src/lib/theme.json`
