@@ -145,6 +145,18 @@ export function CanvasContainer({
     needsRender.current = true;
   }, [ruler.visible]);
 
+  // --- Reset Ruler Interaction States ---
+  useEffect(() => {
+    if (!ruler.visible) {
+      setIsRulerHover(false);
+      setIsRulerDragging(false);
+      // Ensure drag state is synchronized
+      if (ruler.isDragging) {
+        ruler.endDrag();
+      }
+    }
+  }, [ruler.visible]);
+
   // --- Ref Callback ---
   const setContainerRefCallback = useCallback(
     (node: HTMLDivElement | null) => {
