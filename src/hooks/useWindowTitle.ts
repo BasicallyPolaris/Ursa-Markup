@@ -6,8 +6,8 @@
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect } from "react";
+import { useTabManager } from "~/contexts/TabManagerContext";
 import { APP_SETTINGS_CONSTANTS } from "~/services/Settings/config";
-import { useTabManager } from "../contexts/TabManagerContext";
 
 // -----------------------------------------------------------------------------
 // Hook

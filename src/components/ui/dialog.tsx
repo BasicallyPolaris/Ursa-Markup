@@ -2,7 +2,7 @@
 
 import { Dialog as BaseDialog } from "@base-ui-components/react/dialog";
 import * as React from "react";
-import { cn } from "../../utils";
+import { cn } from "~/utils";
 
 function Dialog({
   children,

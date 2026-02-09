@@ -8,7 +8,7 @@
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { settingsManager } from "../services";
+import { settingsManager } from "~/services";
 
 // -----------------------------------------------------------------------------
 // Types & Interfaces

@@ -1,5 +1,5 @@
+import { Document } from "~/core/Document";
 import type { CloseTabBehavior, ServiceEvents } from "~/types/settings";
-import { Document } from "../core/Document";
 
 type EventCallback<T> = (payload: T) => void;
 

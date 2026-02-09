@@ -2,7 +2,7 @@
 
 import { Switch as BaseSwitch } from "@base-ui-components/react/switch";
 import * as React from "react";
-import { cn } from "../../utils";
+import { cn } from "~/utils";
 
 type SwitchProps = {
   className?: string;

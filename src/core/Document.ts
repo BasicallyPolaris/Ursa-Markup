@@ -1,4 +1,4 @@
-import type { DocumentState, Point, Size } from "../types";
+import type { DocumentState, Point, Size } from "~/types";
 import { Ruler } from "./Ruler";
 import { StrokeHistory } from "./StrokeHistory";
 
@@ -64,10 +64,15 @@ export class Document {
   /**
    * Load an image into the document
    */
-  loadImage(filePath: string | null, imageSrc: string, fileName?: string): void {
+  loadImage(
+    filePath: string | null,
+    imageSrc: string,
+    fileName?: string,
+  ): void {
     this.filePath = filePath;
     this.imageSrc = imageSrc;
-    this.fileName = fileName || (filePath ? filePath.split("/").pop() || null : null);
+    this.fileName =
+      fileName || (filePath ? filePath.split("/").pop() || null : null);
 
     // Extract directory from file path
     if (filePath) {
@@ -327,7 +332,7 @@ export class Document {
   private notifyChange(): void {
     // Debug: notify about change for easier tracing during runtime
     // console.debug can be enabled in runtime devtools
-     
+
     // console.debug("Document.notifyChange", { id: this.id, version: this.version });
 
     for (const cb of Array.from(this.onChangeCallbacks)) {

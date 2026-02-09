@@ -2,7 +2,7 @@
 
 import { Popover as BasePopover } from "@base-ui-components/react/popover";
 import * as React from "react";
-import { cn } from "../../utils";
+import { cn } from "~/utils";
 
 function Popover({
   children,

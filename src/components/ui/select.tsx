@@ -2,7 +2,7 @@
 
 import { Select as BaseSelect } from "@base-ui-components/react/select";
 import * as React from "react";
-import { cn } from "../../utils";
+import { cn } from "~/utils";
 
 function Select<Value>({ children, ...props }: BaseSelect.Root.Props<Value>) {
   return <BaseSelect.Root {...props}>{children}</BaseSelect.Root>;

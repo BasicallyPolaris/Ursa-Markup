@@ -2,7 +2,7 @@
 
 import { Slider as BaseSlider } from "@base-ui-components/react/slider";
 import * as React from "react";
-import { cn } from "../../utils";
+import { cn } from "~/utils";
 
 type SliderProps = {
   className?: string;

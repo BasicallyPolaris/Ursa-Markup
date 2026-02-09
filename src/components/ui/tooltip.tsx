@@ -2,7 +2,7 @@
 
 import { Tooltip as BaseTooltip } from "@base-ui-components/react/tooltip";
 import * as React from "react";
-import { cn } from "../../utils";
+import { cn } from "~/utils";
 
 function TooltipProvider({
   children,

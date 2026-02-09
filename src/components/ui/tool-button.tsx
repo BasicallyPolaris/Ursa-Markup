@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "../../utils";
+import { cn } from "~/utils";
 
 export interface ToolButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
