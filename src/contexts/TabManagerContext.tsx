@@ -23,6 +23,7 @@ type TabManagerContextValue = {
   activeDocument: Document | null;
   activeDocumentId: string | null;
   pendingCloseDocument: PendingCloseDocument | null;
+  getDocument: (id: string) => Document | null;
   addTab: (filePath?: string, fileName?: string, imageSrc?: string) => string;
   closeTab: (id: string) => void;
   switchTab: (id: string) => void;
@@ -122,11 +123,16 @@ export function TabManagerProvider({ children }: TabManagerProviderProps) {
     tabManager.switchToPreviousDocument();
   }, []);
 
+  const getDocument = useCallback((id: string) => {
+    return tabManager.getDocument(id) || null;
+  }, []);
+
   const value: TabManagerContextValue = {
     documents,
     activeDocument,
     activeDocumentId,
     pendingCloseDocument,
+    getDocument,
     addTab,
     closeTab,
     switchTab,

@@ -81,7 +81,6 @@ const shortcutGroups: ShortcutGroup[] = [
     title: "Tabs",
     icon: <Keyboard className="size-4" />,
     shortcuts: [
-      { action: "tab.new", description: "New tab" },
       { action: "tab.close", description: "Close tab" },
       { action: "tab.next", description: "Next tab" },
       { action: "tab.previous", description: "Previous tab" },

@@ -3,13 +3,22 @@ import { Plus, X } from "lucide-react";
 import { useCallback } from "react";
 import { Button } from "~/components/ui/button";
 import { useTabManager } from "~/contexts/TabManagerContext";
+import { services } from "~/services";
 import { cn } from "~/lib/utils";
 import { APP_SETTINGS_CONSTANTS } from "~/services/Settings/config";
+import { toast } from "sonner";
+import type { Document } from "~/core/Document";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 export function TabBar() {
-  const { documents, activeDocumentId, switchTab, closeTab, addTab } =
-    useTabManager();
+  const {
+    documents,
+    activeDocumentId,
+    getDocument,
+    switchTab,
+    closeTab,
+    addTab,
+  } = useTabManager();
 
   const handleSwitchTab = useCallback(
     (tabId: string) => {
@@ -33,9 +42,29 @@ export function TabBar() {
     }
   };
 
-  const handleAddTab = useCallback(() => {
-    addTab();
-  }, [addTab]);
+  const handleAddTab = useCallback(async () => {
+    const existingEmpty = documents.find((doc) => doc.isEmpty());
+    let targetDoc: Document | null = existingEmpty || null;
+    if (existingEmpty) {
+      if (existingEmpty.id !== activeDocumentId) {
+        switchTab(existingEmpty.id);
+      }
+    } else {
+      const newId = addTab();
+      targetDoc = getDocument(newId);
+    }
+    // Now open dialog and load into targetDoc if available
+    try {
+      const result = await services.ioService.openFile();
+      if (result && targetDoc) {
+        const blob = new Blob([result.fileData]);
+        const url = URL.createObjectURL(blob);
+        targetDoc.loadImage(result.filePath, url);
+      }
+    } catch {
+      toast.error("Failed to open file");
+    }
+  }, [documents, activeDocumentId, getDocument, switchTab, addTab]);
 
   const shouldHideAddButton = documents.length === 1 && documents[0]?.isEmpty();
 
@@ -111,8 +140,8 @@ export function TabBar() {
         <button
           onClick={handleAddTab}
           className="p-1.5 rounded-md hover:bg-surface-bg-hover transition-colors text-text-secondary sticky right-0 bg-toolbar-bg shadow-[-10px_0_10px_-5px_rgba(0,0,0,0.1)]"
-          title="New Tab"
-          aria-label="Create new tab"
+          title="Open File"
+          aria-label="Open file"
         >
           <Plus className="size-4" />
         </button>

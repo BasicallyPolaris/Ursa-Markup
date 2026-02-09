@@ -78,10 +78,6 @@ function GlobalKeyboardShortcuts() {
               }
             });
             break;
-          case "t":
-            e.preventDefault();
-            addTab();
-            break;
           case "w":
             if (documents.length > 1 && activeDocumentId) {
               e.preventDefault();

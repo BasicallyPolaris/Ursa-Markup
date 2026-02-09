@@ -69,7 +69,6 @@ export const HotkeyActions = {
 
   // Tab Actions
   TAB_CLOSE: "tab.close",
-  TAB_NEW: "tab.new",
   TAB_NEXT: "tab.next",
   TAB_PREVIOUS: "tab.previous",
 

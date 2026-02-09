@@ -87,7 +87,6 @@ OmniMark is designed to be keyboard-driven. All shortcuts can be customized in *
 | `3`                 | Area tool           |
 | `E`                 | Eraser tool         |
 | `Ctrl+1` - `Ctrl+7` | Quick color presets |
-| `Ctrl+T`            | New tab             |
 | `Ctrl+W`            | Close tab           |
 | `Ctrl+Tab`          | Next tab            |
 | `Ctrl+Shift+Tab`    | Previous tab        |
