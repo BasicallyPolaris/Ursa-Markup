@@ -9,12 +9,14 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { Document, Ruler, StrokeHistory } from "~/core";
+import { CanvasEngine, Document, Ruler, StrokeHistory } from "~/core";
 import type { Point } from "~/types";
 import type { Tool, ToolConfigs } from "~/types/tools";
+import { useCanvasEngine } from "./CanvasEngineContext";
 
 type DocumentContextValue = {
   document: Document;
+  engine: CanvasEngine | null;
   strokeHistory: {
     groups: StrokeHistory["groups"];
     currentIndex: number;
@@ -58,6 +60,7 @@ export function DocumentProvider({
   children,
 }: DocumentProviderProps) {
   const [, forceUpdate] = useState({});
+  const { engine } = useCanvasEngine();
 
   // Subscribe to document changes
   useEffect(() => {
@@ -113,16 +116,22 @@ export function DocumentProvider({
   const undo = useCallback(() => {
     if (document.strokeHistory.canUndo()) {
       document.strokeHistory.undo();
-      document.markAsChanged(document.strokeHistory.currentIndex !== -1);
+      engine?.replayStrokes({
+        groups: document.strokeHistory.groups,
+        currentIndex: document.strokeHistory.currentIndex,
+      }, (changed) => document.markAsChanged(changed));
     }
-  }, [document]);
+  }, [document, engine]);
 
   const redo = useCallback(() => {
     if (document.strokeHistory.canRedo()) {
       document.strokeHistory.redo();
-      document.markAsChanged(document.strokeHistory.currentIndex !== -1);
+      engine?.replayStrokes({
+        groups: document.strokeHistory.groups,
+        currentIndex: document.strokeHistory.currentIndex,
+      }, (changed) => document.markAsChanged(changed));
     }
-  }, [document]);
+  }, [document, engine]);
 
   // Ruler actions
   const toggleRuler = useCallback(() => {
@@ -191,6 +200,7 @@ export function DocumentProvider({
 
   const value: DocumentContextValue = {
     document,
+    engine,
     strokeHistory: {
       groups: document.strokeHistory.groups,
       currentIndex: document.strokeHistory.currentIndex,

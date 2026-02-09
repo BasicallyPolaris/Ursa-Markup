@@ -261,22 +261,12 @@ export function CanvasContainer({
     };
   }, [document?.imageSrc, engine]);
 
-  // --- Sync History Changes (Fix 1 Implementation) ---
+  // --- Sync History Changes ---
   useEffect(() => {
     if (!engine || !document) return;
     if (engine.canvasSize.width === 0) return;
 
-    // 1. Replay history (renders all strokes, including the new eraser stroke if any)
-    engine.replayStrokes({
-      groups: strokeHistory.groups,
-      currentIndex: strokeHistory.currentIndex,
-    });
-
-    // 2. NOW it is safe to clear the preview, because the persistent history layer
-    // has taken over the job of "erasing" the strokes.
-    // This prevents the "flash" where strokes momentarily reappear.
     engine.clearEraserPreview();
-
     needsRender.current = true;
   }, [strokeHistory.currentIndex, strokeHistory.groups, engine, document]);
 
@@ -382,7 +372,19 @@ export function CanvasContainer({
       startStroke(tool, toolConfig, activeColor, startDrawPoint);
       setIsDrawing(true);
     },
-    [tool, toolConfig, activeColor, ruler, getScreenToCanvas, getRelativePoint, calculateSnappedPoint, setIsDrawing, startDragRuler, startStroke, startStrokeGroup],
+    [
+      tool,
+      toolConfig,
+      activeColor,
+      ruler,
+      getScreenToCanvas,
+      getRelativePoint,
+      calculateSnappedPoint,
+      setIsDrawing,
+      startDragRuler,
+      startStroke,
+      startStrokeGroup,
+    ],
   );
 
   const handlePointerUp = useCallback(() => {
@@ -433,7 +435,15 @@ export function CanvasContainer({
 
       if (shouldCommit) {
         endStrokeGroup();
-        document.markAsChanged();
+        if (engine) {
+          engine.replayStrokes(
+            {
+              groups: document.strokeHistory.groups,
+              currentIndex: document.strokeHistory.currentIndex,
+            },
+            (changed) => document.markAsChanged(changed),
+          );
+        }
         if (settings.copySettings.autoCopyOnChange) {
           if (autoCopyTimerRef.current) clearTimeout(autoCopyTimerRef.current);
           autoCopyTimerRef.current = setTimeout(() => {
@@ -648,13 +658,7 @@ export function CanvasContainer({
       containerNode.removeEventListener("wheel", handleWheel, {
         capture: true,
       });
-  }, [
-    containerNode,
-    ruler,
-    zoomAroundPoint,
-    setViewOffset,
-    rotateRuler,
-  ]);
+  }, [containerNode, ruler, zoomAroundPoint, setViewOffset, rotateRuler]);
 
   if (!document?.imageSrc) {
     return <EmptyState hotkeys={hotkeys} />;

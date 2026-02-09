@@ -138,14 +138,14 @@ function AppContent({ containerRef, canvasContainerRef }: AppContentProps) {
       className="flex flex-col h-screen w-screen overflow-hidden bg-app-bg"
     >
       {activeDocument ? (
-        <DocumentProvider key={activeDocument.id} document={activeDocument}>
-          <CanvasEngineProvider
-            containerRef={canvasContainerRef}
-            document={activeDocument}
-          >
+        <CanvasEngineProvider
+          containerRef={canvasContainerRef}
+          document={activeDocument}
+        >
+          <DocumentProvider key={activeDocument.id} document={activeDocument}>
             <DocumentContent canvasContainerRef={canvasContainerRef} />
-          </CanvasEngineProvider>
-        </DocumentProvider>
+          </DocumentProvider>
+        </CanvasEngineProvider>
       ) : (
         <EmptyStateContent canvasContainerRef={canvasContainerRef} />
       )}

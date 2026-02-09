@@ -71,7 +71,7 @@ export function CanvasEngineProvider({
   }, [document]);
 
   // Initialize engine when container is available
-  useEffect(() => {  
+  useEffect(() => {
     const container = containerRef.current;
     if (!container) {
       console.log("[CANVAS ENGINE CONTEXT] No container, returning");
