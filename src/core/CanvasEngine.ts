@@ -38,6 +38,9 @@ export class CanvasEngine {
   // Cache of strokes currently visible in the history (excluding previously erased ones)
   private _visibleStrokes: AnyStroke[] = [];
 
+  // Tracks if the document has visual changes (strokes visible)
+  private _visuallyChanged: boolean = false;
+
   // Tracks strokes temporarily hidden during an active eraser drag
   private previewHiddenStrokes: Set<AnyStroke> = new Set();
 
@@ -51,6 +54,10 @@ export class CanvasEngine {
 
   get canvasSize(): Size {
     return this._canvasSize;
+  }
+
+  get hasVisualChanges(): boolean {
+    return this._visuallyChanged;
   }
 
   constructor(brushEngine?: BrushEngine) {
@@ -112,6 +119,7 @@ export class CanvasEngine {
 
         this.isImageLoading = false;
         this._visibleStrokes = [];
+        this._visuallyChanged = false;
         this.refreshComposite([]);
         resolve();
       };
@@ -129,7 +137,7 @@ export class CanvasEngine {
   // HISTORY REPLAY & RENDERING
   // ============================================================================
 
-  replayStrokes(strokeHistory: StrokeHistoryState): void {
+  replayStrokes(strokeHistory: StrokeHistoryState, onVisualChange?: (changed: boolean) => void): void {
     if (!this.compositeCtx) return;
 
     const { groups, currentIndex } = strokeHistory;
@@ -149,21 +157,26 @@ export class CanvasEngine {
           this.drawStrokeToContext(this.compositeCtx, stroke as AnyStroke);
           this._visibleStrokes.push(stroke as AnyStroke);
         }
+        this._visuallyChanged = true;
 
         this.lastRenderedIndex = currentIndex;
         this.lastRenderedGroupCount = groups.length;
+        onVisualChange?.(true);
         return;
       }
     }
 
     // --- SLOW PATH: FULL RENDER ---
-    const visibleStrokes = this.computeVisibleStrokes(groups, currentIndex);
-    this._visibleStrokes = visibleStrokes; // Update cache
+    const { strokes: visibleStrokes, visuallyChanged } =
+      this.computeVisibleStrokes(groups, currentIndex);
+    this._visibleStrokes = visibleStrokes;
+    this._visuallyChanged = visuallyChanged;
 
     this.refreshComposite(visibleStrokes);
 
     this.lastRenderedIndex = currentIndex;
     this.lastRenderedGroupCount = groups.length;
+    onVisualChange?.(visuallyChanged);
   }
 
   /**
@@ -179,7 +192,7 @@ export class CanvasEngine {
     this.compositeCtx.drawImage(this.baseCanvas, 0, 0);
 
     for (const stroke of strokes) {
-      // VISUAL UPDATE FIX: Skip strokes that are currently "preview hidden"
+      // Skip strokes that are currently "preview hidden"
       if (this.previewHiddenStrokes.has(stroke)) continue;
 
       this.drawStrokeToContext(this.compositeCtx, stroke);
@@ -337,7 +350,7 @@ export class CanvasEngine {
   private computeVisibleStrokes(
     groups: AnyStrokeGroup[],
     maxIndex: number,
-  ): AnyStroke[] {
+  ): { strokes: AnyStroke[]; visuallyChanged: boolean } {
     const activeStrokes: AnyStroke[] = [];
     for (let i = 0; i <= maxIndex; i++) {
       const group = groups[i];
@@ -358,7 +371,10 @@ export class CanvasEngine {
         }
       }
     }
-    return activeStrokes;
+    return {
+      strokes: activeStrokes,
+      visuallyChanged: activeStrokes.length > 0,
+    };
   }
 
   private isStrokeHitByEraser(
@@ -587,6 +603,7 @@ export class CanvasEngine {
     this.resetIncrementalState();
     this.previewHiddenStrokes.clear();
     this._visibleStrokes = [];
+    this._visuallyChanged = false;
   }
 
   destroy(): void {
