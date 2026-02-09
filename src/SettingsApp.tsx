@@ -82,8 +82,7 @@ function SettingsApp() {
     if (success) {
       // Emit event to main window that settings were saved with all changes
       await emit("settings-applied", settingsManager.saved);
-      const currentWindow = getCurrentWindow();
-      await currentWindow.close();
+      toast.success("Settings were saved.");
     } else {
       toast.error("Settings couldn't be saved.");
     }
