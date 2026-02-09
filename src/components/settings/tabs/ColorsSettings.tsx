@@ -150,44 +150,43 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
       >
         <div className="space-y-3">
           {availableThemes.map((theme) => (
-            <div
+            <button
               key={theme.name}
-              className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
+              onClick={() => handleThemeSelect(theme.name)}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
                 settings.activeTheme === theme.name
                   ? "bg-accent-primary/10 border-accent-primary"
                   : "bg-surface-bg border-toolbar-border hover:border-text-muted"
               }`}
             >
-              <button
-                onClick={() => handleThemeSelect(theme.name)}
-                className="flex items-center gap-3 flex-1 text-left"
-              >
-                <div
-                  className="size-10 rounded-md border border-toolbar-border shrink-0"
-                  style={{ backgroundColor: theme.colors.app.background }}
-                />
-                <div className="flex-1">
-                  <p
-                    className={`text-sm font-medium ${
-                      settings.activeTheme === theme.name
-                        ? "text-text-primary"
-                        : "text-text-secondary"
-                    }`}
-                  >
-                    {theme.label}
-                  </p>
-                  <p className="text-xs text-text-muted">{theme.description}</p>
-                </div>
-                {settings.activeTheme === theme.name && (
-                  <div className="size-2 rounded-full bg-accent-primary" />
-                )}
-              </button>
+              <div
+                className="size-10 items-center rounded-md border border-toolbar-border shrink-0"
+                style={{ backgroundColor: theme.colors.app.background }}
+              />
+              <div className="flex-1 text-left">
+                <p
+                  className={`text-sm font-medium ${
+                    settings.activeTheme === theme.name
+                      ? "text-text-primary"
+                      : "text-text-secondary"
+                  }`}
+                >
+                  {theme.label}
+                </p>
+                <p className="text-xs text-text-muted">{theme.description}</p>
+              </div>
+              {settings.activeTheme === theme.name && (
+                <div className="size-2 rounded-full bg-accent-primary" />
+              )}
               <IconButton
-                onClick={() => handlePreviewTheme(theme)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handlePreviewTheme(theme);
+                }}
                 title="Preview theme colors"
                 icon={<Eye className="size-4" />}
               />
-            </div>
+            </button>
           ))}
         </div>
       </SettingsSection>
@@ -200,18 +199,16 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
       >
         <div className="space-y-3">
           {availablePalettes.map((palette) => (
-            <div
+            <button
               key={palette.name}
+              onClick={() => updateDraft({ activePalette: palette.name })}
               className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all ${
                 settings.activePalette === palette.name
                   ? "bg-accent-primary/10 border-accent-primary"
                   : "bg-surface-bg border-toolbar-border hover:border-text-muted"
               }`}
             >
-              <button
-                onClick={() => updateDraft({ activePalette: palette.name })}
-                className="flex items-center gap-3 flex-1 text-left"
-              >
+              <div className="flex items-center gap-3 flex-1 text-left">
                 <div className="flex gap-1">
                   {palette.colors.map((color: string, idx: number) => (
                     <div
@@ -233,14 +230,17 @@ export function ColorsSettings({ settings, updateDraft }: ColorsSettingsProps) {
                 {settings.activePalette === palette.name && (
                   <div className="size-2 rounded-full bg-accent-primary" />
                 )}
-              </button>
+              </div>
 
               <IconButton
-                onClick={() => handlePreviewPalette(palette)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handlePreviewPalette(palette);
+                }}
                 title="Preview colors"
                 icon={<Eye className="size-4" />}
               />
-            </div>
+            </button>
           ))}
         </div>
       </SettingsSection>

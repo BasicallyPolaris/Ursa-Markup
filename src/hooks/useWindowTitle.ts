@@ -19,9 +19,6 @@ import { APP_SETTINGS_CONSTANTS } from "~/services/Settings/config";
 export function useWindowTitle(): void {
   const { activeDocument } = useTabManager();
 
-  // Extract primitive values for the dependency array.
-  // This ensures the effect runs only when the visual title actually needs to change,
-  // rather than on every minor internal update to the document object.
   const displayTitle = activeDocument?.getDisplayTitle();
   const hasChanges = activeDocument?.hasChanges;
 
@@ -29,9 +26,8 @@ export function useWindowTitle(): void {
     const updateTitle = async () => {
       const appWindow = getCurrentWindow();
 
-      // Construct the window title
       const newTitle = displayTitle
-        ? `${displayTitle}${hasChanges ? ` ${APP_SETTINGS_CONSTANTS.APP_NAME}` : ""} - ${APP_SETTINGS_CONSTANTS.UNSAVED_INDICATOR}`
+        ? `${hasChanges ? `${APP_SETTINGS_CONSTANTS.UNSAVED_INDICATOR} ` : ""}${displayTitle} - ${APP_SETTINGS_CONSTANTS.APP_NAME}`
         : APP_SETTINGS_CONSTANTS.APP_NAME;
 
       try {

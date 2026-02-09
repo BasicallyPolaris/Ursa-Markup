@@ -122,7 +122,7 @@ export function ShortcutsSettings({
     (action: HotkeyAction) => {
       updateDraft({ hotkeys: { [action]: DEFAULT_HOTKEYS[action] } });
     },
-    [hotkeys, updateDraft],
+    [updateDraft],
   );
 
   const handleResetAll = useCallback(() => {
