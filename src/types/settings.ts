@@ -112,6 +112,7 @@ export type MiscSettings = {
   closeTabBehavior: CloseTabBehavior;
   closeWindowBehavior: CloseWindowBehavior;
   showDebugInfo: boolean;
+  restoreFromTrayOnCliImage: boolean;
 };
 
 /**

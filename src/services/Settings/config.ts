@@ -162,5 +162,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
     closeTabBehavior: CloseTabBehaviors.PROMPT,
     closeWindowBehavior: CloseWindowBehaviors.EXIT,
     showDebugInfo: false,
+    restoreFromTrayOnCliImage: true,
   },
 };

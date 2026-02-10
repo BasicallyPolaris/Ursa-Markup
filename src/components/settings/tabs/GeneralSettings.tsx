@@ -104,6 +104,20 @@ export function GeneralSettings({
             }
           />
         </SettingsRow>
+
+        <SettingsRow
+          label="Restore from tray on CLI image"
+          description="Automatically restore the app from system tray when receiving images via command line"
+        >
+          <Switch
+            checked={miscSettings.restoreFromTrayOnCliImage}
+            onCheckedChange={(checked) =>
+              updateDraft({
+                miscSettings: { restoreFromTrayOnCliImage: checked },
+              })
+            }
+          />
+        </SettingsRow>
       </SettingsSection>
 
       {/* ---------------------------------------------------------------------
