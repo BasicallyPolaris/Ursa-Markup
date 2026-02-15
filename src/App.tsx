@@ -27,7 +27,7 @@ type AppContentProps = {
   canvasContainerRef: RefObject<HTMLDivElement | null>;
 };
 
-function DocumentContentInner({
+function DocumentContent({
   canvasContainerRef,
 }: {
   canvasContainerRef: RefObject<HTMLDivElement | null>;
@@ -42,18 +42,6 @@ function DocumentContentInner({
       <CloseTabDialog />
       <CanvasContainer className="flex-1" containerRef={canvasContainerRef} />
     </>
-  );
-}
-
-function DocumentContent({
-  canvasContainerRef,
-}: {
-  canvasContainerRef: RefObject<HTMLDivElement | null>;
-}) {
-  return (
-    <DrawingProvider>
-      <DocumentContentInner canvasContainerRef={canvasContainerRef} />
-    </DrawingProvider>
   );
 }
 
