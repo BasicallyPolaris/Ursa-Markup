@@ -22,6 +22,34 @@ struct SupportedImageFormat {
     mime_type: &'static str,
 }
 
+const SUPPORTED_IMAGE_FORMATS: [SupportedImageFormat; 5] = [
+    SupportedImageFormat {
+        image_format: image::ImageFormat::Png,
+        extension: "png",
+        mime_type: "image/png",
+    },
+    SupportedImageFormat {
+        image_format: image::ImageFormat::Jpeg,
+        extension: "jpg",
+        mime_type: "image/jpeg",
+    },
+    SupportedImageFormat {
+        image_format: image::ImageFormat::WebP,
+        extension: "webp",
+        mime_type: "image/webp",
+    },
+    SupportedImageFormat {
+        image_format: image::ImageFormat::Gif,
+        extension: "gif",
+        mime_type: "image/gif",
+    },
+    SupportedImageFormat {
+        image_format: image::ImageFormat::Bmp,
+        extension: "bmp",
+        mime_type: "image/bmp",
+    },
+];
+
 #[derive(serde::Serialize)]
 pub(crate) struct StdinImagePayload {
     pub(crate) data_base64: String,
@@ -209,35 +237,13 @@ fn read_image_bytes(reader: &mut impl Read) -> Result<(Vec<u8>, SupportedImageFo
 }
 
 fn supported_format(bytes: &[u8]) -> Result<SupportedImageFormat, String> {
-    match image::guess_format(bytes) {
-        Ok(image::ImageFormat::Png) => Ok(SupportedImageFormat {
-            image_format: image::ImageFormat::Png,
-            extension: "png",
-            mime_type: "image/png",
-        }),
-        Ok(image::ImageFormat::Jpeg) => Ok(SupportedImageFormat {
-            image_format: image::ImageFormat::Jpeg,
-            extension: "jpg",
-            mime_type: "image/jpeg",
-        }),
-        Ok(image::ImageFormat::WebP) => Ok(SupportedImageFormat {
-            image_format: image::ImageFormat::WebP,
-            extension: "webp",
-            mime_type: "image/webp",
-        }),
-        Ok(image::ImageFormat::Gif) => Ok(SupportedImageFormat {
-            image_format: image::ImageFormat::Gif,
-            extension: "gif",
-            mime_type: "image/gif",
-        }),
-        Ok(image::ImageFormat::Bmp) => Ok(SupportedImageFormat {
-            image_format: image::ImageFormat::Bmp,
-            extension: "bmp",
-            mime_type: "image/bmp",
-        }),
-        Ok(_) => Err("The piped data is not a supported image format".to_string()),
-        Err(_) => Err("The piped data is not a recognized image".to_string()),
-    }
+    let guessed_format = image::guess_format(bytes)
+        .map_err(|_| "The piped data is not a recognized image".to_string())?;
+    SUPPORTED_IMAGE_FORMATS
+        .iter()
+        .copied()
+        .find(|format| format.image_format == guessed_format)
+        .ok_or_else(|| "The piped data is not a supported image format".to_string())
 }
 
 fn ensure_inbox_directory(directory: &Path) -> Result<(), String> {
@@ -270,10 +276,12 @@ fn is_staged_image_path(path: &Path) -> bool {
         return false;
     }
 
-    matches!(
-        path.extension().and_then(OsStr::to_str),
-        Some("png" | "jpg" | "webp" | "gif" | "bmp")
-    )
+    let Some(extension) = path.extension().and_then(OsStr::to_str) else {
+        return false;
+    };
+    SUPPORTED_IMAGE_FORMATS
+        .iter()
+        .any(|format| format.extension == extension)
 }
 
 fn is_partial_image_path(path: &Path) -> bool {
