@@ -40,3 +40,10 @@ tauri-plugin-clipboard-manager = "2"
 
 [dev-dependencies]
 tempfile = "3"
+
+# tray-icon 0.21.3 publishes a generated Linux AppIndicator ID as the
+# user-visible name and maps `title` to the panel label instead of the
+# StatusNotifierItem Title. Keep this patch until the upstream GTK backend
+# publishes a proper application title.
+[patch.crates-io]
+tray-icon = { path = "vendor/tray-icon" }
