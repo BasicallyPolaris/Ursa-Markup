@@ -11,7 +11,41 @@ on:
         default: 'v1.1.0'
 
 jobs:
+  create-release:
+    permissions:
+      contents: write
+    runs-on: ubuntu-22.04
+    outputs:
+      release_id: ${{ steps.release.outputs.release_id }}
+
+    steps:
+      - name: Create or find draft release
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ inputs.version || github.ref_name }}
+        run: |
+          if release_id="$(gh release view "$TAG_NAME" --json databaseId --jq '.databaseId' 2>/dev/null)"; then
+            echo "Using existing release $release_id for $TAG_NAME"
+          else
+            release_id="$(
+              gh api --method POST \
+                "repos/${GITHUB_REPOSITORY}/releases" \
+                -f tag_name="$TAG_NAME" \
+                -f target_commitish="$GITHUB_SHA" \
+                -f name="App $TAG_NAME" \
+                -f body="See the assets to download this version and install." \
+                -F draft=true \
+                -F prerelease=false \
+                --jq '.id'
+            )"
+            echo "Created draft release $release_id for $TAG_NAME"
+          fi
+
+          echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
+
   release:
+    needs: create-release
     permissions:
       contents: write
     strategy:
@@ -56,9 +90,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          releaseId: ${{ needs.create-release.outputs.release_id }}
           tagName: ${{ inputs.version || github.ref_name }}
-          releaseName: "App v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
           releaseDraft: true
-          prerelease: false
           args: ${{ matrix.platform == 'ubuntu-22.04' && '--bundles appimage,deb,rpm' || '' }}
