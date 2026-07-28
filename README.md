@@ -69,6 +69,17 @@ Go to the [**Releases Page**](https://github.com/BasicallyPolaris/ursa-markup/re
 
 > **Note**: As this is an open-source project, the binaries are currently unsigned. You may need to bypass standard security warnings (e.g., "Run Anyway" on Windows or Right Click > Open on macOS) to install.
 
+### Building on Linux
+
+```bash
+bun run tauri build
+```
+
+Local Linux builds produce `.deb` and `.rpm` packages. Release AppImages are
+built by GitHub Actions on Ubuntu 22.04, since AppImages should be compiled on
+the oldest Linux base they intend to support rather than on a rolling-release
+distribution.
+
 ## Command Line
 
 Open one or more images by path:
