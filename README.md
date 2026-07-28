@@ -69,6 +69,28 @@ Go to the [**Releases Page**](https://github.com/BasicallyPolaris/ursa-markup/re
 
 > **Note**: As this is an open-source project, the binaries are currently unsigned. You may need to bypass standard security warnings (e.g., "Run Anyway" on Windows or Right Click > Open on macOS) to install.
 
+## Command Line
+
+Open one or more images by path:
+
+```bash
+ursamarkup screenshot.png
+```
+
+You can also pipe a PNG, JPEG, WebP, GIF, or BMP image into Ursa Markup. Both
+the conventional `-` positional argument and the explicit `--stdin` flag are
+supported:
+
+```bash
+cat screenshot.png | ursamarkup -
+grim - | ursamarkup --stdin
+```
+
+Path input remains available alongside stdin input. If Ursa Markup is already
+running or hidden in the system tray, the image is opened in that instance
+instead of starting another application instance. Piped images are limited to
+64 MiB.
+
 ## Keyboard Shortcuts
 
 Ursa Markup is designed to be keyboard-driven. All shortcuts can be customized in **Settings → Shortcuts**.

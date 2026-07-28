@@ -30,13 +30,19 @@
   "plugins": {
     "cli": {
       "description": "Ursa Markup - Image annotation tool",
+      "afterHelp": "Pass '-' as a file path or use --stdin to read one image from standard input.",
       "args": [
+        {
+          "name": "stdin",
+          "takesValue": false,
+          "description": "Read an image from standard input"
+        },
         {
           "name": "file",
           "index": 1,
           "takesValue": true,
           "multiple": true,
-          "description": "Image file paths to open"
+          "description": "Image file paths to open, or '-' to read standard input"
         }
       ]
     }

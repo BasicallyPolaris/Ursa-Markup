@@ -33,6 +33,10 @@ base64 = "0.21"
 tokio = { version = "1", features = ["time"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 arboard = { version = "3", features = ["wayland-data-control"] }
+dirs = "6"
 tauri-plugin-shell = "2"
 tauri-plugin-opener = "2"
 tauri-plugin-clipboard-manager = "2"
+
+[dev-dependencies]
+tempfile = "3"

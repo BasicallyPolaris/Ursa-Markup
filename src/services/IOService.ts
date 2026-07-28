@@ -30,6 +30,17 @@ export type CopyResult = {
   version: number;
 };
 
+export type StdinImage = {
+  data_base64: string;
+  mime_type: string;
+  file_name: string;
+};
+
+export type StdinImageBatch = {
+  images: StdinImage[];
+  errors: string[];
+};
+
 /**
  * IOService handles all file and clipboard operations
  * Provides a clean interface for file I/O and clipboard access
@@ -302,6 +313,31 @@ export class IOService {
     } catch {
       // No pending files or backend not ready
       return [];
+    }
+  }
+
+  /**
+   * Listen for stdin images staged by a secondary CLI launch.
+   */
+  async listenForStdinImages(
+    callback: () => void | Promise<void>,
+  ): Promise<UnlistenFn> {
+    return listen("stdin-images-pending", () => {
+      void callback();
+    });
+  }
+
+  /**
+   * Consume images that were piped to this or a secondary app launch.
+   */
+  async getPendingStdinImages(): Promise<StdinImageBatch> {
+    try {
+      return await invoke<StdinImageBatch>("get_pending_stdin_images");
+    } catch (error) {
+      return {
+        images: [],
+        errors: [`Could not read the piped image: ${String(error)}`],
+      };
     }
   }
 }

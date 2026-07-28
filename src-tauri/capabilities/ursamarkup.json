@@ -68,6 +68,10 @@
     }
   ],
   "commands": {
-    "allow": ["get_pending_file", "queue_clipboard_copy_base64"]
+    "allow": [
+      "get_pending_files",
+      "get_pending_stdin_images",
+      "queue_clipboard_copy_base64"
+    ]
   }
 }

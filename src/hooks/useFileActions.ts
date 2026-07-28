@@ -49,8 +49,9 @@ export function useFileActions() {
     const savedFilePath = await services.ioService.saveImage(canvas, defaultPath);
 
     if (savedFilePath) {
-      // Update file info for unnamed documents (clipboard pastes)
-      if (activeDoc.fileName === "Pasted Image") {
+      // A pathless image (clipboard paste or stdin pipe) becomes a normal
+      // file-backed document after its first save.
+      if (!activeDoc.filePath) {
         // Extract filename without extension
         const fileNameWithExt = savedFilePath.split("/").pop() || "";
         const lastDot = fileNameWithExt.lastIndexOf(".");

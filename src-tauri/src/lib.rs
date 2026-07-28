@@ -8,6 +8,9 @@ use tauri::{
     AppHandle, Emitter, Manager, State, Wry,
 };
 
+mod stdin_image;
+use stdin_image::{stdin_requested, StdinImageBatch, StdinImageInbox};
+
 struct TrayMenuState {
     toggle_item: Mutex<Option<MenuItem<Wry>>>,
 }
@@ -46,7 +49,7 @@ fn toggle_window(app: &AppHandle) {
         } else {
             let _ = window.show();
             let _ = window.set_focus();
-                            set_tray_text(app, "Hide Ursa Markup");
+            set_tray_text(app, "Hide Ursa Markup");
         }
     }
 }
@@ -153,20 +156,33 @@ fn get_pending_files(state: State<PendingFiles>) -> Vec<String> {
 }
 
 #[tauri::command]
+async fn get_pending_stdin_images(app: AppHandle) -> Result<StdinImageBatch, String> {
+    tokio::task::spawn_blocking(move || app.state::<StdinImageInbox>().take_pending())
+        .await
+        .map_err(|error| format!("Could not process piped images: {error}"))
+}
+
+#[tauri::command]
 fn exit_app() {
     std::process::exit(0);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let args: Vec<std::ffi::OsString> = std::env::args_os().collect();
+    let stdin_inbox = StdinImageInbox::default();
+    if cfg!(not(mobile)) && stdin_requested(&args) {
+        let stdin = std::io::stdin();
+        if let Err(error) = stdin_inbox.stage(&mut stdin.lock()) {
+            eprintln!("Ursa Markup could not open stdin: {error}");
+            std::process::exit(2);
+        }
+    }
+
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_store::Builder::new().build())
-        .plugin(tauri_plugin_cli::init())
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_clipboard_manager::init())
+        .manage(stdin_inbox)
+        // The single-instance plugin must be first so a secondary launch never
+        // initializes another application window or tray icon.
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             let file_paths: Vec<String> = argv
                 .iter()
@@ -177,17 +193,29 @@ pub fn run() {
             if !file_paths.is_empty() {
                 let _ = app.emit("open-files", OpenFilesPayload { file_paths });
             }
+            if stdin_requested(&argv) {
+                let _ = app.emit("stdin-images-pending", ());
+            }
         }))
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_cli::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![
             minimize_to_tray,
             restore_from_tray,
             queue_clipboard_copy_base64,
             get_pending_files,
+            get_pending_stdin_images,
             exit_app
         ])
         .setup(|app| {
             // Initial state: App is open, so menu says "Hide"
-            let toggle_i = MenuItem::with_id(app, "toggle", "Hide Ursa Markup", true, None::<&str>)?;
+            let toggle_i =
+                MenuItem::with_id(app, "toggle", "Hide Ursa Markup", true, None::<&str>)?;
             let open_file_i = MenuItem::with_id(app, "open_file", "Open File", true, None::<&str>)?;
             let sep = PredefinedMenuItem::separator(app)?;
             let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
@@ -217,7 +245,7 @@ pub fn run() {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.set_focus();
-            set_tray_text(app, "Hide Ursa Markup");
+                            set_tray_text(app, "Hide Ursa Markup");
                         }
                     }
                 })
@@ -234,11 +262,17 @@ pub fn run() {
                 if let Ok(matches) = app.cli().matches() {
                     if let Some(args) = matches.args.get("file") {
                         match &args.value {
-                            serde_json::Value::String(s) => paths.push(resolve_file_path(s)),
+                            serde_json::Value::String(s) => {
+                                if s != "-" {
+                                    paths.push(resolve_file_path(s));
+                                }
+                            }
                             serde_json::Value::Array(arr) => {
                                 for v in arr {
                                     if let Some(s) = v.as_str() {
-                                        paths.push(resolve_file_path(s));
+                                        if s != "-" {
+                                            paths.push(resolve_file_path(s));
+                                        }
                                     }
                                 }
                             }
