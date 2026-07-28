@@ -33,7 +33,6 @@ export type CopyResult = {
 export type StdinImage = {
   data_base64: string;
   mime_type: string;
-  file_name: string;
 };
 
 export type StdinImageBatch = {

@@ -55,11 +55,7 @@ export function useFileHandling(): void {
 
       for (const image of batch.images) {
         const imageSrc = `data:${image.mime_type};base64,${image.data_base64}`;
-        services.tabManager.createDocument(
-          undefined,
-          image.file_name,
-          imageSrc,
-        );
+        services.tabManager.createUntitledImage(imageSrc);
       }
 
       if (batch.images.length > 0) {

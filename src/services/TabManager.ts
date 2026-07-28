@@ -140,6 +140,24 @@ export class TabManager {
   }
 
   /**
+   * Create a pathless image document with an available untitled tab name.
+   */
+  createUntitledImage(imageSrc: string): string {
+    const usedNames = new Set(
+      Array.from(this.documents.values(), (document) => document.fileName),
+    );
+    let suffix = 1;
+    let fileName = "Untitled Image";
+
+    while (usedNames.has(fileName)) {
+      suffix++;
+      fileName = `Untitled Image ${suffix}`;
+    }
+
+    return this.createDocument(undefined, fileName, imageSrc);
+  }
+
+  /**
    * Close a document by ID
    * Handles close behavior (prompt, auto-save, discard)
    */

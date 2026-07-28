@@ -54,7 +54,6 @@ const SUPPORTED_IMAGE_FORMATS: [SupportedImageFormat; 5] = [
 pub(crate) struct StdinImagePayload {
     pub(crate) data_base64: String,
     pub(crate) mime_type: String,
-    pub(crate) file_name: String,
 }
 
 #[derive(serde::Serialize)]
@@ -300,7 +299,6 @@ fn consume_staged_image(path: &Path) -> Result<StdinImagePayload, String> {
     Ok(StdinImagePayload {
         data_base64: base64::engine::general_purpose::STANDARD.encode(bytes),
         mime_type: format.mime_type.to_string(),
-        file_name: format!("Piped Image.{}", format.extension),
     })
 }
 
@@ -342,7 +340,6 @@ mod tests {
         assert!(batch.errors.is_empty());
         assert_eq!(batch.images.len(), 1);
         assert_eq!(batch.images[0].mime_type, "image/png");
-        assert_eq!(batch.images[0].file_name, "Piped Image.png");
         assert_eq!(
             base64::engine::general_purpose::STANDARD
                 .decode(&batch.images[0].data_base64)
