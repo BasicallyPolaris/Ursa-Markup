@@ -15,6 +15,8 @@ struct TrayMenuState {
     toggle_item: Mutex<Option<MenuItem<Wry>>>,
 }
 
+const TRAY_DISPLAY_NAME: &str = "Ursa Markup";
+
 fn set_tray_text(app: &AppHandle, text: &str) {
     let state = app.state::<TrayMenuState>();
     let guard = state.toggle_item.lock().unwrap();
@@ -222,11 +224,11 @@ pub fn run() {
 
             let menu = Menu::with_items(app, &[&toggle_i, &open_file_i, &sep, &quit_i])?;
 
-            let _tray = TrayIconBuilder::with_id("ursamarkup-tray")
+            let _tray = TrayIconBuilder::with_id(TRAY_DISPLAY_NAME)
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .title("Ursa Markup")
-                .tooltip("Ursa Markup")
+                .title(TRAY_DISPLAY_NAME)
+                .tooltip(TRAY_DISPLAY_NAME)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => std::process::exit(0),
                     "toggle" => toggle_window(app),
